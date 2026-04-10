@@ -1,7 +1,7 @@
 {
   "name": "superopc",
-  "description": "SuperOPC — The One-Person Company Operating System. AI-powered workflow, agents, and skills for solo founders who build, ship, and grow without a team.",
-  "version": "0.6.0",
+  "description": "SuperOPC — The One-Person Company Operating System. AI-powered workflow, agents, skills, MCP templates, and multi-runtime exports for solo founders who build, ship, and grow without a team.",
+  "version": "0.7.0",
   "author": {
     "name": "Gjts"
   },
@@ -18,7 +18,16 @@
     "debugging",
     "market-research",
     "minimalist-entrepreneur",
-    "ai-coding"
+    "ai-coding",
+    "mcp",
+    "multi-runtime",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "copilot",
+    "codex",
+    "augment",
+    "cline"
   ],
   "agents": [
     "./agents/opc-assumptions-analyzer.md",

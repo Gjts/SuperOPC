@@ -41,7 +41,7 @@
 #### 文档补全
 - [x] CONTRIBUTING.md + SECURITY.md
 - [x] CHANGELOG.md
-- [x] `scripts/convert.js` — 多工具格式转换（Cursor/Windsurf/Gemini/OpenCode/OpenClaw）
+- [x] `scripts/convert.py` — 多工具格式转换（Cursor/Windsurf/Gemini/OpenCode/OpenClaw）
 
 ---
 
@@ -153,18 +153,20 @@
 
 ---
 
-### v0.7.0 — 多工具适配 + MCP
+### v0.7.0 [已完成] — 多工具适配 + MCP
 
-**目标：** 支持 10+ AI编码工具
+**目标：** 支持 10+ AI 编码运行时，并提供可复制的 MCP 模板
 
 #### MCP 服务器配置（融合 ECC mcp-configs/）
-- [ ] Context7 + Supabase + Sequential Thinking + Playwright MCP
+- [x] Context7 + Supabase + Sequential Thinking + Playwright MCP
+- [x] `mcp-configs/mcp-servers.json` 作为运行时 MCP 条目复制源
+- [x] `.mcp.json` 最小默认示例
 
-#### 多运行时适配（融合 GSD 10+运行时）
-- [ ] Claude Code / Cursor / Windsurf / Copilot / Gemini CLI
-- [ ] OpenCode / Codex / Trae / Cline / Augment Code
-- [ ] `scripts/convert.js` — 格式转换脚本
-- [ ] 运行时自动检测 + 钩子事件映射 + 工具名映射
+#### 多运行时适配（融合 GSD 运行时模式）
+- [x] Claude Code / Cursor / Windsurf / Copilot / Gemini CLI
+- [x] OpenCode / Codex / Trae / Cline / Augment Code / OpenClaw
+- [x] `scripts/convert.py` — Python 格式转换脚本
+- [x] 运行时自动检测 + 钩子事件映射 + 工具名映射
 
 ---
 
@@ -437,7 +439,7 @@
 | | v0.4.0 | 状态管理+文件 | 高 | ~20 | GSD .planning/+config |
 | | v0.5.0 | 工程技能深化 | 中 | ~17 | ECC skills+GSD功能 |
 | 深化 | v0.6.0 | 商业技能+仪表盘 | 中 | ~12 | ECC+Agency-Agents |
-| | v0.7.0 | 多工具+MCP | 高 | ~15 | GSD 10+运行时+ECC MCP |
+| | v0.7.0 | 多运行时+MCP | 高 | ~15 | GSD 运行时模式+ECC MCP |
 | | v0.8.0 | 会话+高级工作流 | 高 | ~18 | GSD 会话/自主/线程 |
 | | v0.9.0 | 质量保证 | 高 | ~15 | GSD QA功能群 |
 | | v1.0.0 | 正式发布 | 中 | ~20 | 模板+示例+社区 |
