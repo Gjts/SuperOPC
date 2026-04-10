@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Live documentation lookup for libraries, frameworks, and APIs."
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--project-ref=YOUR_PROJECT_REF"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "YOUR_SUPABASE_ACCESS_TOKEN_HERE"
+      },
+      "description": "Supabase database and project operations. Replace YOUR_PROJECT_REF before enabling."
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Step-by-step reasoning support for decomposition, planning, and debugging."
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "chrome"],
+      "description": "Browser automation and E2E verification via Playwright."
+    }
+  },
+  "_comments": {
+    "usage": "Copy only the servers you need into your runtime MCP config such as .mcp.json or ~/.claude.json.",
+    "placeholders": "Replace YOUR_PROJECT_REF and add any runtime-specific credentials before enabling a server.",
+    "context_budget": "Keep enabled MCPs minimal for the current task so they do not crowd the context window."
+  }
+}

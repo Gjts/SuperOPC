@@ -7,6 +7,30 @@
 
 ---
 
+## [0.7.0] - 开发中
+
+### 新增
+- **MCP 模板层** — `mcp-configs/mcp-servers.json` + `.mcp.json`
+  - 提供 `context7`、`supabase`、`sequential-thinking`、`playwright` 四个可复用 MCP 条目
+  - 增加最小默认 `.mcp.json` 示例，便于直接启用这 4 个服务器
+- **11 运行时导出注册表** — `scripts/convert.py`
+  - 新增 `claude-code`、`copilot`、`codex`、`trae`、`cline`、`augment` 导出支持
+  - 保留既有 `cursor`、`windsurf`、`gemini-cli`、`opencode`、`openclaw` 兼容输出
+- **运行时元数据生成**
+  - 每个导出运行时生成 `runtime-map.json`
+  - 每个导出运行时生成 `HOOKS.md`，说明 Claude Code hook 事件如何映射或降级
+- **运行时自动检测**
+  - `python scripts/convert.py --tool auto`
+  - `python scripts/convert.py --detect`
+
+### 变更
+- 重构 `scripts/convert.py` 为运行时注册表 + frontmatter / 正文 / 工具名映射结构
+- 更新 `README.md` 添加 10+ 运行时导出说明、自动检测、hook 映射说明和最小 `.mcp.json` 用法
+- 更新 `CONTRIBUTING.md` 修正 hooks Python 示例，并补充多运行时扩展规则
+- 更新 `ROADMAP.md` 标记 v0.7.0 的 MCP、运行时适配、convert 脚本与检测映射子项已完成
+- 更新 `.claude-plugin/plugin.json` 到 `0.7.0`
+
+
 ## [0.6.0] - 完成
 
 ### 新增

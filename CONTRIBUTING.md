@@ -246,47 +246,48 @@ hooks/
   hooks.json            # 钩子注册表
 scripts/
   hooks/
-    {hook-name}.js      # 钩子脚本
+    {hook-name}.py      # 钩子脚本
 ```
 
 ### 钩子类型
 
 | 事件 | 触发时机 | 用途 |
 |------|---------|------|
-| `PreToolUse` | 工具调用前 | 拦截/警告/检查 |
-| `PostToolUse` | 工具调用后 | 审计/追踪/质量检查 |
-| `PreCompact` | 上下文压缩前 | 保存状态 |
-| `Stop` | 响应结束时 | 批量检查/通知 |
-| `SessionStart` | 新会话开始 | 加载上下文 |
+| `PreToolUse` | 工具调用前 | 拦截 / 警告 / 检查 |
+| `PostToolUse` | 工具调用后 | 审计 / 追踪 / 质量检查 |
+| `Notification` | 状态通知时 | StatusLine / 提示消息 |
+| `Stop` | 响应结束时 | 会话总结 / 收尾检查 |
 
 ### 钩子脚本规范
 
 ```python
 #!/usr/bin/env python3
-# hooks/{hook_name}.py
+# scripts/hooks/{hook_name}.py
 #
 # 通过 stdin 接收 JSON：
-#   { tool_name, tool_input, ... }
+#   {"tool_name": "Edit", "tool_input": {...}, ...}
 #
 # 退出码：
-//   0 = 通过（可附带 stdout 消息作为建议）
-//   2 = 阻止（stdout 消息作为阻止原因）
-//
-// 原则：建议性优于强制性
+#   0 = 通过（可附带 stdout 消息作为建议）
+#   2 = 阻止（stdout 消息作为阻止原因）
+#
+# 原则：建议性优于强制性
 
-const input = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+import json
+import sys
 
-// 你的检查逻辑...
+payload = json.loads(sys.stdin.read() or "{}")
 
-if (shouldWarn) {
-  console.log('SuperOPC: 建议信息...');
-  process.exit(0); // 建议，不阻止
-}
+should_warn = False
+should_block = False
 
-if (shouldBlock) {
-  console.log('SuperOPC: 阻止原因...');
-  process.exit(2); // 阻止
-}
+if should_warn:
+    print("SuperOPC: 建议信息...")
+    raise SystemExit(0)
+
+if should_block:
+    print("SuperOPC: 阻止原因...")
+    raise SystemExit(2)
 ```
 
 ### 钩子设计原则
@@ -391,7 +392,8 @@ docs: update README with new skill
 
 - Git
 - Python 3.11+（运行 hooks 和 scripts）
-- 任意支持的 AI 编码工具（Claude Code / Cursor / Windsurf）
+- 任意支持的 AI 编码工具（Claude Code / Cursor / Windsurf / Copilot / Gemini CLI / OpenCode / Codex / Trae / Cline / Augment Code / OpenClaw）
+- Node.js / npm（运行 MCP server，如 Context7 / Supabase / Sequential Thinking / Playwright）
 
 ### 本地设置
 
@@ -402,8 +404,9 @@ cd SuperOPC
 # 如果使用 Claude Code，直接安装为插件
 # SuperOPC 的 CLAUDE.md 会自动生效
 
-# 运行格式转换（生成 Cursor/Windsurf 等格式）
+# 运行格式转换（生成 Claude Code / Cursor / Windsurf / Copilot / Gemini CLI / OpenCode / Codex / Trae / Cline / Augment / OpenClaw 格式）
 python scripts/convert.py --tool all
+python scripts/convert.py --tool auto   # 根据环境标记自动检测运行时
 ```
 
 ### 目录结构
@@ -415,6 +418,8 @@ SuperOPC/
   commands/opc/       # 斜杠命令
   hooks/              # 钩子系统
     hooks.json        # 钩子注册表
+  mcp-configs/        # MCP 模板
+    mcp-servers.json  # Context7 / Supabase / Sequential Thinking / Playwright
   scripts/            # 工具脚本
     hooks/            # 钩子脚本
     convert.py        # 多工具格式转换
@@ -434,17 +439,46 @@ SuperOPC/
 
 ## 多工具格式支持
 
-SuperOPC 原生支持 Claude Code 格式，同时通过 `scripts/convert.py` 转换为其他工具格式：
+SuperOPC 原生支持 Claude Code 格式，同时通过 `scripts/convert.py` 转换为其他工具格式。
+当前仓库已内置 11 个运行时目标，并保留 `openclaw` 兼容导出。
 
 | 工具 | 转换格式 | 输出位置 |
 |------|---------|---------|
-| Claude Code | SKILL.md + CLAUDE.md（原生） | 根目录 |
-| Cursor | .cursor/rules/*.mdc | `integrations/cursor/` |
-| Windsurf | .windsurfrules | `integrations/windsurf/` |
-| Gemini CLI | skills/*/SKILL.md | `integrations/gemini-cli/` |
-| OpenCode | .opencode/agents/*.md | `integrations/opencode/` |
+| Claude Code | 原生镜像 + hooks/MCP/plugin 元数据 | `integrations/claude-code/` |
+| Cursor | `.cursor/rules/*.mdc` | `integrations/cursor/` |
+| Windsurf | `.windsurfrules` | `integrations/windsurf/` |
+| Copilot | `.github/instructions/*.instructions.md` | `integrations/copilot/` |
+| Gemini CLI | `skills/*/SKILL.md` + `gemini-extension.json` | `integrations/gemini-cli/` |
+| OpenCode | `agents/*.md` + `commands/*.md` + `skills/*.md` | `integrations/opencode/` |
+| Codex | `agents/*.md` + `commands/*.md` + `skills/*.md` | `integrations/codex/` |
+| Trae | `rules/*.md` | `integrations/trae/` |
+| Cline | `.clinerules/*.md` | `integrations/cline/` |
+| Augment Code | `rules/*.md` | `integrations/augment/` |
+| OpenClaw | `SOUL.md` + `AGENTS.md` + `IDENTITY.md` | `integrations/openclaw/` |
 
-贡献新工具格式支持时，请在 `scripts/convert.py` 中添加对应的转换函数。
+### 转换器扩展规则
+
+贡献新运行时时，请在 `scripts/convert.py` 中同时补齐：
+1. `RUNTIME_CONFIGS` 中的目录 / 指令文件 / 工具映射 / hook 映射
+2. `DETECTION_MARKERS` 中的自动检测标记
+3. 对应输出布局函数或 `runtime_output_path()` 分支
+4. README / CONTRIBUTING / ROADMAP / CHANGELOG 中的运行时列表
+
+### MCP 模板
+
+`mcp-configs/mcp-servers.json` 提供 4 个可直接复用的 MCP 条目：
+- `context7`
+- `supabase`
+- `sequential-thinking`
+- `playwright`
+
+仓库根目录的 `.mcp.json` 提供最小默认示例。
+
+推荐流程：
+1. 从 `mcp-configs/mcp-servers.json` 复制当前项目真正需要的条目
+2. 粘贴到目标运行时的 MCP 配置文件
+3. 替换占位符（如 `YOUR_PROJECT_REF`、`YOUR_SUPABASE_ACCESS_TOKEN_HERE`）
+4. 保持启用的 MCP 数量尽量少，避免无关工具占用上下文窗口
 
 ---
 

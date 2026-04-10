@@ -44,17 +44,34 @@ git clone https://github.com/gjts/superopc.git ~/.claude/plugins/superopc
 /plugin install superopc
 ```
 
-### 其他 AI 工具（Cursor / Windsurf / Gemini CLI / OpenCode）
+### 多运行时导出（Claude Code / Cursor / Windsurf / Copilot / Gemini CLI / OpenCode / Codex / Trae / Cline / Augment / OpenClaw）
 ```bash
 git clone https://github.com/gjts/superopc.git
 cd superopc
-python scripts/convert.py --tool cursor     # 生成 .cursor/rules/*.mdc
-python scripts/convert.py --tool windsurf   # 生成 .windsurfrules
-python scripts/convert.py --tool gemini-cli # 生成 Gemini CLI skills
-python scripts/convert.py --tool opencode   # 生成 .opencode/agents
-python scripts/convert.py --tool all        # 一键全部生成
+python scripts/convert.py --tool claude-code  # 导出 Claude Code 原生包
+python scripts/convert.py --tool cursor       # 生成 Cursor rules
+python scripts/convert.py --tool copilot      # 生成 GitHub Copilot instructions
+python scripts/convert.py --tool codex        # 生成 Codex agents/commands/skills
+python scripts/convert.py --tool augment      # 生成 Augment rules
+python scripts/convert.py --tool auto         # 按环境标记自动选择运行时
+python scripts/convert.py --tool all          # 一键生成全部导出
 ```
-转换后的文件输出到 `integrations/<tool>/`，复制到对应工具配置目录即可。
+
+SuperOPC 当前支持 **Claude Code 原生格式**，并内置 **11 个运行时导出目标**：Claude Code、Cursor、Windsurf、Copilot、Gemini CLI、OpenCode、Codex、Trae、Cline、Augment Code、OpenClaw。
+转换后的文件输出到 `integrations/<tool>/`。`scripts/convert.py` 现在同时提供：
+- **运行时注册表**：统一维护每个目标运行时的目录、frontmatter 和输出布局
+- **工具名映射**：把 Claude Code 工具术语转换成目标运行时可理解的名称
+- **钩子事件映射**：为每个导出生成 `HOOKS.md` + `runtime-map.json`
+- **自动检测**：`--tool auto` / `--detect` 根据常见配置目录建议导出目标
+
+### MCP 服务器模板
+SuperOPC 提供常用 MCP 模板，位于 `mcp-configs/mcp-servers.json`：
+- `context7` — 实时文档查询
+- `supabase` — Supabase 数据库 / 项目操作
+- `sequential-thinking` — 分步推理
+- `playwright` — 浏览器自动化 / E2E 验证
+
+使用方式：复制你需要的条目到目标运行时的 MCP 配置文件，例如项目级 `.mcp.json` 或运行时自己的用户级配置文件，然后替换占位符（如 `YOUR_PROJECT_REF`、`YOUR_SUPABASE_ACCESS_TOKEN_HERE`）。仓库根目录也提供了一个最小默认示例 `.mcp.json`，便于直接启用这 4 个服务器。
 
 ## 钩子系统
 
@@ -145,6 +162,8 @@ SuperOPC/
 │       └── review.md          # /opc-review 代码审查
 ├── hooks/                     # 钩子系统（质量门控）
 │   └── hooks.json             # 钩子注册表（ECC 模式）
+├── mcp-configs/               # MCP 模板（Context7/Supabase/Sequential Thinking/Playwright）
+│   └── mcp-servers.json       # 可复制到运行时配置的 MCP 条目
 ├── rules/                     # 编码规则系统（ECC 模式）
 │   ├── common/                # 通用规则（5 文件）
 │   ├── typescript/            # TypeScript/Next.js 规则
@@ -265,7 +284,7 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 | | v0.4.0 | 状态管理+文件系统（.opc/） | ✅ 完成 |
 | | v0.5.0 | 工程技能深化（4→19） | ✅ 完成 |
 | **深化** | v0.6.0 | 商业技能+仪表盘 | ✅ 完成 |
-| | v0.7.0 | 多工具适配+MCP（10+工具） | 📋 计划中 |
+| | v0.7.0 | 多运行时适配+MCP（Claude Code + 10 个导出运行时） | ✅ 完成 |
 | | v0.8.0 | 会话管理+高级工作流 | 📋 计划中 |
 | | v0.9.0 | 质量保证体系 | 📋 计划中 |
 | | v1.0.0 | 正式开源发布 | 🎯 里程碑 |
