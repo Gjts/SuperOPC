@@ -7,7 +7,63 @@
 
 ---
 
-## [0.3.0] - 进行中
+## [0.5.0] - 完成
+
+### 新增
+- **15 个工程技能** — `skills/engineering/` 从 4 扩展到 19
+  - **通用工程（11 个）：**
+    - `api-design/` — RESTful + GraphQL API 设计（URL 结构、状态码、分页、版本策略）
+    - `database-migrations/` — 迁移生命周期 + ORM drift 检测 + 零停机模式
+    - `docker-patterns/` — 多阶段构建 + 安全加固 + docker-compose 开发环境
+    - `deployment-patterns/` — 蓝绿/金丝雀/滚动部署 + CI/CD 流水线 + 回滚策略
+    - `security-review/` — OWASP Top 10 完整检查清单 + 审查报告格式
+    - `e2e-testing/` — Playwright 配置 + Page Object + Fixtures + 视觉回归
+    - `architecture-decision-records/` — ADR 格式 + 索引 + 生命周期
+    - `frontend-patterns/` — React/Next.js 组件设计 + 状态管理 + 表单 + 性能
+    - `backend-patterns/` — 分层架构 + Repository/Service + N+1 + 缓存 + 错误处理
+    - `verification-loop/` — 四层验证 + Nyquist 采样 + 节点修复
+    - `codebase-onboarding/` — 五阶段棕地映射 + CLAUDE.md 生成
+    - `code-review-pipeline/` — Quick/Standard/Deep 三级审查
+  - **技术栈专属（4 个）：**
+    - `nextjs-patterns/` — Server Components + Server Actions + Route Handlers + Middleware
+    - `dotnet-patterns/` — Minimal API + EF Core + FluentValidation + DI
+    - `postgres-patterns/` — 索引策略 + 查询优化 + RLS + 连接池
+    - `kotlin-compose/` — State Hoisting + ViewModel + Navigation + Material 3
+
+### 变更
+- 更新 `ROADMAP.md` 标记 v0.5.0 已完成
+- 更新 `CHANGELOG.md` 添加 v0.5.0 变更记录
+- `skills/engineering/` 总技能数：19（基础 4 + 通用 11 + 技术栈 4）
+
+---
+
+## [0.4.0] - 完成
+
+### 新增
+- **配置系统** — `templates/config.json`
+  - 工作流开关：research, plan_check, verifier, nyquist, node_repair, code_review
+  - 模型配置：quality / balanced / budget / inherit
+  - 粒度控制：coarse(3-5) / standard(5-8) / fine(8-12)
+  - Git 策略：none / phase / milestone
+  - 并行执行配置：max_concurrent_agents, min_plans_for_parallel
+  - 门控配置：confirm_project, confirm_roadmap, confirm_plan, confirm_transition
+  - 安全策略：always_confirm_destructive, always_confirm_external_services
+- **模板系统** — `templates/` 目录（7 个模板）
+  - `project.md` — 项目愿景、核心价值、需求分类、约束、关键决策
+  - `requirements.md` — 可检查需求（v1/v2/超范围）+ 可追溯性矩阵
+  - `state.md` — 活状态：位置、决策、阻塞、性能指标、会话连续性
+  - `roadmap.md` — 阶段路线图（依赖、成功标准、进度追踪）
+  - `phase-prompt.md` — 可执行阶段计划（波次分配、验收标准、检查点）
+  - `summary.md` — 阶段摘要（依赖图、技术追踪、需求完成）
+  - `debug.md` — 调试会话（科学方法：假设→证据→排除→解决）
+
+### 变更
+- 更新 `ROADMAP.md` 标记 v0.4.0 已完成
+- 更新 `CHANGELOG.md` 添加 v0.4.0 变更记录
+
+---
+
+## [0.3.0] - 完成
 
 ### 新增
 - **9 个新代理** — 代理系统从 6 扩展到 15
@@ -24,18 +80,22 @@
   - DAG 依赖分析 → 波次分组 → 并行派发
   - 波前验证（波次 N+1 验证 N 产物）
   - 失败隔离 + 最多 2 次重试
+- **STATE.md 文件锁** — `scripts/hooks/state-file-lock.js`
+  - 基于文件的锁机制（30s 超时自动释放）
+  - 防止并行波次执行中多代理同时写入冲突
 
 ### 变更
 - 更新 `AGENTS.md` 添加 5 条新协作流水线（调试/安全/文档/规划验证）
 - 更新 `README.md` 架构图（15 代理 + parallel-agents 技能）
-- 更新 `ROADMAP.md` 标记 v0.3.0 完成项
+- 更新 `ROADMAP.md` 标记 v0.3.0 完成
+- 更新 `hooks/hooks.json` 注册 state-file-lock 钩子
 
 ---
 
 ## [0.2.0] - 完成
 
 ### 新增
-- **Hooks 系统** — `hooks/hooks.json` 钩子注册表 + 9 个钩子脚本
+- **Hooks 系统** — `hooks/hooks.json` 钩子注册表 + 11 个钩子脚本
   - `block-no-verify` — 阻止 git --no-verify 绕过
   - `commit-quality` — Conventional Commits 格式 + 密钥检测
   - `read-before-edit` — 先读后改提醒
@@ -45,10 +105,14 @@
   - `console-log-warn` — debug 语句提醒
   - `git-push-reminder` — 推送前检查清单
   - `session-summary` — 会话活动持久化
-- **Rules 系统** — 编码规则目录
+  - `statusline` — 模型+任务+目录+上下文使用率进度条
+  - `state-file-lock` — STATE.md 并行写入防护
+- **Rules 系统** — 编码规则目录（4 语言 17 文件）
   - `rules/common/` — 5 个通用规则（coding-style, security, testing, git-workflow, patterns）
   - `rules/typescript/` — 3 个 TypeScript 规则（coding-style, testing, security）
   - `rules/csharp/` — 3 个 C# 规则（coding-style, testing, security）
+  - `rules/python/` — 3 个 Python 规则（coding-style, testing, security）
+  - `rules/kotlin/` — 3 个 Kotlin/Android 规则（coding-style, testing, security）
 - **References 系统** — 引用文档目录
   - `references/gates.md` — 4 种门控分类
   - `references/verification-patterns.md` — 验证模式（存在→实质→接线→功能）

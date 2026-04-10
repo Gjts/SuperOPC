@@ -67,6 +67,17 @@
         ],
         "description": "Scan for prompt injection patterns in files being written (advisory, non-blocking)",
         "id": "pre:write:prompt-injection-scan"
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/state-file-lock.js\""
+          }
+        ],
+        "description": "STATE.md file lock guard — prevent parallel write conflicts during wave execution",
+        "id": "pre:write:state-file-lock"
       }
     ],
     "PostToolUse": [
@@ -103,6 +114,20 @@
         ],
         "description": "Remind to review changes before git push",
         "id": "post:bash:git-push-reminder"
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "StatusLine",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/statusline.js\"",
+            "timeout": 3
+          }
+        ],
+        "description": "StatusLine: model + current task + directory + context usage percentage with progress bar",
+        "id": "notification:statusline"
       }
     ],
     "Stop": [
