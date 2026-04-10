@@ -21,7 +21,7 @@
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/commit_quality.py\""
           }
         ],
-        "description": "Pre-commit quality: validate commit message format (Conventional Commits), detect console.log/debugger/secrets",
+        "description": "Pre-commit quality: validate git commit -m message format (Conventional Commits) and scan commit messages for likely secrets",
         "id": "pre:bash:commit-quality"
       },
       {
@@ -32,7 +32,7 @@
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/read_before_edit.py\""
           }
         ],
-        "description": "Warn when editing a file that hasn't been read in current session (advisory, non-blocking)",
+        "description": "Remind to read a file before editing it (advisory, non-blocking)",
         "id": "pre:edit:read-before-edit"
       },
       {
@@ -65,7 +65,7 @@
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/prompt_injection_scan.py\""
           }
         ],
-        "description": "Scan for prompt injection patterns in files being written (advisory, non-blocking)",
+        "description": "Scan written content for prompt injection patterns and invisible characters (advisory, non-blocking)",
         "id": "pre:write:prompt-injection-scan"
       },
       {
@@ -76,7 +76,7 @@
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/state_file_lock.py\""
           }
         ],
-        "description": "STATE.md file lock guard — prevent parallel write conflicts during wave execution",
+        "description": "STATE.md lock marker — warn about likely parallel write conflicts during wave execution",
         "id": "pre:write:state-file-lock"
       }
     ],
@@ -89,7 +89,7 @@
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/command_audit_log.py\""
           }
         ],
-        "description": "Audit log all bash commands with timestamps for session review",
+        "description": "Append executed bash commands with timestamps to .opc/audit.log for session review",
         "id": "post:bash:command-audit-log"
       },
       {
@@ -141,7 +141,7 @@
             "timeout": 10
           }
         ],
-        "description": "Persist session activity summary (files edited, commands run, skills invoked)",
+        "description": "Persist a minimal session record (timestamp, tool name, session id)",
         "id": "stop:session-summary"
       }
     ]

@@ -212,7 +212,7 @@ fix(hooks): 修复状态文件锁超时判断错误
 例如：
 
 ```/dev/null/file-item-format-example.txt#L1-6
-- `scripts/hooks/state-file-lock.js` — STATE 文件锁：
+- `scripts/hooks/state_file_lock.py` — STATE 文件锁：
   - 关键配置项/参数：锁文件 `.opc/STATE.md.lock`；30 秒超时；建议性守卫；兼容 `.planning/`。
 - `templates/config.json` — 默认项目配置模板：
   - 关键配置项/参数：mode、granularity、model_profile、workflow、parallelization、git、gates、safety、hooks。
@@ -328,7 +328,7 @@ fix(hooks): 修复状态文件锁超时判断错误
 - 来源融合说明：延续 GSD 的状态化工作流和 ECC 的 hook 守卫思路。
 
 逐文件详细说明：
-- scripts/hooks/state-file-lock.js — 修复锁超时判断逻辑：
+- scripts/hooks/state_file_lock.py — 修复锁超时判断逻辑：
   - 关键配置项/参数：保留 30 秒超时策略，修正旧锁比较逻辑。
 
 来源引用：

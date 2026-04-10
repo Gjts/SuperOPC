@@ -29,7 +29,7 @@
 ### 变更
 - 更新 `templates/state.md`，新增“商业指标”区块，供仪表盘读取
 - 更新 `scripts/convert.py`，Gemini CLI 扩展版本号改为读取插件 manifest，避免漂移
-- 将现有工具脚本从 JavaScript 迁移到 Python：`scripts/convert.py` + `scripts/hooks/*.py`
+- 将主工具脚本迁移并统一到 Python：`scripts/convert.py` + `scripts/hooks/*.py` 作为当前主实现，替代早期 JavaScript 版本
 - 更新 `.claude-plugin/plugin.json` 到 `0.6.0`，并注册完整 15 代理
 - 更新 `README.md`、`ROADMAP.md` 标记 v0.6.0 已完成
 
@@ -108,9 +108,9 @@
   - DAG 依赖分析 → 波次分组 → 并行派发
   - 波前验证（波次 N+1 验证 N 产物）
   - 失败隔离 + 最多 2 次重试
-- **STATE.md 文件锁** — `scripts/hooks/state_file_lock.py`
-  - 基于文件的锁机制（30s 超时自动释放）
-  - 防止并行波次执行中多代理同时写入冲突
+- **STATE.md 文件锁提示** — `scripts/hooks/state_file_lock.py`
+  - 基于文件锁标记的建议性守卫（30s 超时判定，后续写入时清理旧锁）
+  - 用于提示并行波次执行中的潜在写入冲突，不提供严格阻塞式锁语义
 
 ### 变更
 - 更新 `AGENTS.md` 添加 5 条新协作流水线（调试/安全/文档/规划验证）
