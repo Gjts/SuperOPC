@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/block-no-verify.js\""
+          }
+        ],
+        "description": "Block git --no-verify flag to protect pre-commit hooks from being bypassed",
+        "id": "pre:bash:block-no-verify"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/commit-quality.js\""
+          }
+        ],
+        "description": "Pre-commit quality: validate commit message format (Conventional Commits), detect console.log/debugger/secrets",
+        "id": "pre:bash:commit-quality"
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/read-before-edit.js\""
+          }
+        ],
+        "description": "Warn when editing a file that hasn't been read in current session (advisory, non-blocking)",
+        "id": "pre:edit:read-before-edit"
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/doc-file-warning.js\""
+          }
+        ],
+        "description": "Warn about creating non-standard documentation files outside recognized paths",
+        "id": "pre:write:doc-file-warning"
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/config-protection.js\""
+          }
+        ],
+        "description": "Warn when modifying linter/formatter config files — steer toward fixing code instead of weakening configs",
+        "id": "pre:edit:config-protection"
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/prompt-injection-scan.js\""
+          }
+        ],
+        "description": "Scan for prompt injection patterns in files being written (advisory, non-blocking)",
+        "id": "pre:write:prompt-injection-scan"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/command-audit-log.js\""
+          }
+        ],
+        "description": "Audit log all bash commands with timestamps for session review",
+        "id": "post:bash:command-audit-log"
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/console-log-warn.js\"",
+            "timeout": 5
+          }
+        ],
+        "description": "Warn about console.log/print statements left in edited files",
+        "id": "post:edit:console-log-warn"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/git-push-reminder.js\""
+          }
+        ],
+        "description": "Remind to review changes before git push",
+        "id": "post:bash:git-push-reminder"
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/session-summary.js\"",
+            "async": true,
+            "timeout": 10
+          }
+        ],
+        "description": "Persist session activity summary (files edited, commands run, skills invoked)",
+        "id": "stop:session-summary"
+      }
+    ]
+  }
+}
