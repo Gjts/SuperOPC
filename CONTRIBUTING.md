@@ -11,6 +11,7 @@
 - [命令贡献指南](#命令贡献指南)
 - [Hooks 贡献指南](#hooks-贡献指南)
 - [Pull Request 流程](#pull-request-流程)
+- [Commit 规范](#commit-规范)
 - [开发环境](#开发环境)
 
 ---
@@ -260,14 +261,14 @@ scripts/
 
 ### 钩子脚本规范
 
-```javascript
-#!/usr/bin/env node
-// hooks/{hook-name}.js
-//
-// 通过 stdin 接收 JSON：
-//   { tool_name, tool_input, ... }
-//
-// 退出码：
+```python
+#!/usr/bin/env python3
+# hooks/{hook_name}.py
+#
+# 通过 stdin 接收 JSON：
+#   { tool_name, tool_input, ... }
+#
+# 退出码：
 //   0 = 通过（可附带 stdout 消息作为建议）
 //   2 = 阻止（stdout 消息作为阻止原因）
 //
@@ -317,6 +318,20 @@ if (shouldBlock) {
 
 ### Commit 消息格式
 
+提交信息请优先遵循仓库根目录中的 `COMMIT_STYLE.md`。
+
+核心要求：
+
+- 标题采用 Conventional Commits 风格
+- 正文使用三段式：
+  - `概述：`
+  - `逐文件详细说明：`
+  - `来源引用：`
+- 文件较多时，允许在 `逐文件详细说明：` 中按分类分组，分类标题格式统一为：
+  - `【分类名（数量 + 来源/适配说明）】`
+
+简化标题示例：
+
 ```
 feat(skills): add {skill-name}
 feat(agents): add opc-{agent-name}
@@ -325,6 +340,21 @@ feat(hooks): add {hook-name} hook
 fix(skills): improve {skill-name} trigger conditions
 docs: update README with new skill
 ```
+
+如提交涉及多个文件、系统结构、技能/代理/规则扩展或来源融合，请使用 `COMMIT_STYLE.md` 中的完整模板，而不是只写单行标题。
+
+### Commit 规范
+
+完整提交规范见仓库根目录：`COMMIT_STYLE.md`
+
+建议以下类型严格遵循完整规范：
+
+- `feat`
+- `refactor`
+- `docs`
+- `perf`
+- `build`
+- `chore`（涉及结构、模板、规范、工具链时）
 
 ### PR 模板
 
@@ -360,7 +390,7 @@ docs: update README with new skill
 ### 前提条件
 
 - Git
-- Node.js 18+（运行 hooks 和 scripts）
+- Python 3.11+（运行 hooks 和 scripts）
 - 任意支持的 AI 编码工具（Claude Code / Cursor / Windsurf）
 
 ### 本地设置
@@ -373,7 +403,7 @@ cd SuperOPC
 # SuperOPC 的 CLAUDE.md 会自动生效
 
 # 运行格式转换（生成 Cursor/Windsurf 等格式）
-node scripts/convert.js --tool all
+python scripts/convert.py --tool all
 ```
 
 ### 目录结构
@@ -387,7 +417,7 @@ SuperOPC/
     hooks.json        # 钩子注册表
   scripts/            # 工具脚本
     hooks/            # 钩子脚本
-    convert.js        # 多工具格式转换
+    convert.py        # 多工具格式转换
   skills/             # 技能系统（核心）
     using-superopc/   # 元技能
     product/          # 产品技能组
@@ -404,7 +434,7 @@ SuperOPC/
 
 ## 多工具格式支持
 
-SuperOPC 原生支持 Claude Code 格式，同时通过 `scripts/convert.js` 转换为其他工具格式：
+SuperOPC 原生支持 Claude Code 格式，同时通过 `scripts/convert.py` 转换为其他工具格式：
 
 | 工具 | 转换格式 | 输出位置 |
 |------|---------|---------|
@@ -414,7 +444,7 @@ SuperOPC 原生支持 Claude Code 格式，同时通过 `scripts/convert.js` 转
 | Gemini CLI | skills/*/SKILL.md | `integrations/gemini-cli/` |
 | OpenCode | .opencode/agents/*.md | `integrations/opencode/` |
 
-贡献新工具格式支持时，请在 `scripts/convert.js` 中添加对应的转换函数。
+贡献新工具格式支持时，请在 `scripts/convert.py` 中添加对应的转换函数。
 
 ---
 

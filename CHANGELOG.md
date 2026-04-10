@@ -7,6 +7,34 @@
 
 ---
 
+## [0.6.0] - 完成
+
+### 新增
+- **8 个商业技能** — `skills/business/` 从 10 扩展到 18
+  - `legal-basics/` — 名称/商标/合同/隐私/GDPR 最小风险盘点
+  - `finance-ops/` — 记账、发票、MRR、Burn、Runway 周月节奏
+  - `investor-materials/` — deck、memo、KPI snapshot、data room
+  - `product-lens/` — 激活路径、留存锚点、PMF 信号审查
+  - `seo/` — 搜索意图、内容集群、money pages
+  - `content-engine/` — 输入→生产→分发→复用内容系统
+  - `brand-voice/` — 品牌语调支柱、禁用词、场景化写作
+  - `user-interview/` — The Mom Test 访谈提纲与证据分级
+- **2 个仪表盘命令** — `commands/opc/dashboard.md` + `commands/opc/stats.md`
+- **项目指标脚本** — `scripts/opc_dashboard.py` + `scripts/opc_stats.py`
+  - 自动读取 `.opc/PROJECT.md` / `REQUIREMENTS.md` / `ROADMAP.md` / `STATE.md`
+  - 输出阶段、计划、需求、债务、MRR、Git 指标
+  - 支持 `--cwd` 指向目标项目
+- **共享指标解析模块** — `scripts/opc_insights.py`
+
+### 变更
+- 更新 `templates/state.md`，新增“商业指标”区块，供仪表盘读取
+- 更新 `scripts/convert.py`，Gemini CLI 扩展版本号改为读取插件 manifest，避免漂移
+- 将现有工具脚本从 JavaScript 迁移到 Python：`scripts/convert.py` + `scripts/hooks/*.py`
+- 更新 `.claude-plugin/plugin.json` 到 `0.6.0`，并注册完整 15 代理
+- 更新 `README.md`、`ROADMAP.md` 标记 v0.6.0 已完成
+
+---
+
 ## [0.5.0] - 完成
 
 ### 新增
@@ -80,7 +108,7 @@
   - DAG 依赖分析 → 波次分组 → 并行派发
   - 波前验证（波次 N+1 验证 N 产物）
   - 失败隔离 + 最多 2 次重试
-- **STATE.md 文件锁** — `scripts/hooks/state-file-lock.js`
+- **STATE.md 文件锁** — `scripts/hooks/state_file_lock.py`
   - 基于文件的锁机制（30s 超时自动释放）
   - 防止并行波次执行中多代理同时写入冲突
 
@@ -120,7 +148,7 @@
   - `references/context-budget.md` — 上下文预算规则
   - `references/tdd.md` — TDD 参考
   - `references/git-integration.md` — Git 集成参考
-- **多工具格式转换** — `scripts/convert.js`
+- **多工具格式转换** — `scripts/convert.py`
   - 支持 Cursor (.mdc)、Windsurf (.windsurfrules)、Gemini CLI、OpenCode、OpenClaw
   - 一键转换 37 个技能/代理/命令到 5 种工具格式
 - **文档**

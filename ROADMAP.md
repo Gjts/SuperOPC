@@ -133,23 +133,23 @@
 
 ## 阶段二：能力深化 (v0.6 - v1.0)
 
-### v0.6.0 — 商业技能深化 + 仪表盘
+### v0.6.0 [已完成] — 商业技能深化 + 仪表盘
 
 **目标：** 10到18商业技能 + OPC仪表盘
 
 #### 新增技能
-- [ ] `legal-basics/` — 商标、合同、隐私政策、GDPR
-- [ ] `finance-ops/` — 记账、税务、发票、MRR
-- [ ] `investor-materials/` — 投资材料（ECC）
-- [ ] `product-lens/` — 产品视角审查（ECC）
-- [ ] `seo/` — SEO优化（融合 Agency-Agents）
-- [ ] `content-engine/` — 内容引擎（ECC）
-- [ ] `brand-voice/` — 品牌语调（ECC）
-- [ ] `user-interview/` — The Mom Test 方法论
+- [x] `legal-basics/` — 商标、合同、隐私政策、GDPR 风险盘点
+- [x] `finance-ops/` — 记账、税务、发票、MRR / Burn / Runway
+- [x] `investor-materials/` — 投资材料（deck / memo / data room）
+- [x] `product-lens/` — 产品视角审查（激活 / 留存 / PMF 信号）
+- [x] `seo/` — SEO优化（意图词 + 内容集群 + money pages）
+- [x] `content-engine/` — 内容引擎（输入→生产→分发→复用）
+- [x] `brand-voice/` — 品牌语调（支柱 + 禁用词 + 场景映射）
+- [x] `user-interview/` — The Mom Test 方法论
 
 #### 仪表盘（融合 GSD stats + manager）
-- [ ] `/opc-dashboard` — 项目全貌：进度+MRR+债务+下一步
-- [ ] `/opc-stats` — 项目指标：阶段/计划/需求/git
+- [x] `/opc-dashboard` — 项目全貌：进度+MRR+债务+下一步
+- [x] `/opc-stats` — 项目指标：阶段/计划/需求/git
 
 ---
 
