@@ -1,0 +1,9 @@
+{
+  "slug": "superopc",
+  "display_name": "SuperOPC",
+  "tagline": "一人公司超级操作系统",
+  "category": "productivity",
+  "icon": "🚀",
+  "featured": false,
+  "install_command": "/plugin marketplace add gjts/superopc"
+}

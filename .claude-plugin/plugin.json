@@ -1,0 +1,34 @@
+{
+  "name": "superopc",
+  "description": "SuperOPC — The One-Person Company Operating System. AI-powered workflow, agents, and skills for solo founders who build, ship, and grow without a team.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Gjts"
+  },
+  "homepage": "https://github.com/gjts/superopc",
+  "repository": "https://github.com/gjts/superopc",
+  "license": "MIT",
+  "keywords": [
+    "one-person-company",
+    "solo-founder",
+    "skills",
+    "agents",
+    "workflows",
+    "tdd",
+    "debugging",
+    "market-research",
+    "minimalist-entrepreneur",
+    "ai-coding"
+  ],
+  "agents": [
+    "./agents/opc-orchestrator.md",
+    "./agents/opc-planner.md",
+    "./agents/opc-executor.md",
+    "./agents/opc-reviewer.md",
+    "./agents/opc-researcher.md",
+    "./agents/opc-verifier.md"
+  ],
+  "skills": ["./skills/"],
+  "commands": ["./commands/"],
+  "hooks": ["./hooks/hooks.json"]
+}
