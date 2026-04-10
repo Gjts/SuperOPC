@@ -48,11 +48,11 @@ git clone https://github.com/gjts/superopc.git ~/.claude/plugins/superopc
 ```bash
 git clone https://github.com/gjts/superopc.git
 cd superopc
-node scripts/convert.js --tool cursor     # 生成 .cursor/rules/*.mdc
-node scripts/convert.js --tool windsurf   # 生成 .windsurfrules
-node scripts/convert.js --tool gemini-cli # 生成 Gemini CLI skills
-node scripts/convert.js --tool opencode   # 生成 .opencode/agents
-node scripts/convert.js --tool all        # 一键全部生成
+python scripts/convert.py --tool cursor     # 生成 .cursor/rules/*.mdc
+python scripts/convert.py --tool windsurf   # 生成 .windsurfrules
+python scripts/convert.py --tool gemini-cli # 生成 Gemini CLI skills
+python scripts/convert.py --tool opencode   # 生成 .opencode/agents
+python scripts/convert.py --tool all        # 一键全部生成
 ```
 转换后的文件输出到 `integrations/<tool>/`，复制到对应工具配置目录即可。
 
@@ -97,6 +97,14 @@ SuperOPC/
 │   │   ├── processize/        # 先手动后自动
 │   │   ├── first-customers/   # 找前 100 个客户
 │   │   ├── pricing/           # 定价策略
+│   │   ├── legal-basics/      # 法务基础与合规边界
+│   │   ├── finance-ops/       # 财务运营与 MRR / Burn / Runway
+│   │   ├── investor-materials/# 融资材料
+│   │   ├── product-lens/      # 产品视角审查
+│   │   ├── seo/               # 搜索增长
+│   │   ├── content-engine/    # 内容引擎
+│   │   ├── brand-voice/       # 品牌语调
+│   │   ├── user-interview/    # The Mom Test 访谈
 │   │   ├── marketing-plan/    # 内容营销
 │   │   ├── grow-sustainably/  # 可持续增长
 │   │   ├── company-values/    # 公司价值观
@@ -130,6 +138,8 @@ SuperOPC/
 │       ├── plan.md            # /opc-plan 规划功能
 │       ├── build.md           # /opc-build 执行开发
 │       ├── research.md        # /opc-research 市场研究
+│       ├── dashboard.md       # /opc-dashboard 项目仪表盘
+│       ├── stats.md           # /opc-stats 项目指标
 │       ├── ship.md            # /opc-ship 发布
 │       ├── quick.md           # /opc-quick 快速任务
 │       └── review.md          # /opc-review 代码审查
@@ -148,7 +158,10 @@ SuperOPC/
 │   └── git-integration.md     # Git 集成
 ├── scripts/                   # 工具脚本
 │   ├── hooks/                 # 9 个钩子脚本实现
-│   └── convert.js             # 多工具格式转换
+│   ├── convert.py             # 多工具格式转换
+│   ├── opc_dashboard.py       # .opc 项目仪表盘
+│   ├── opc_stats.py           # .opc 结构化指标
+│   └── opc_insights.py        # 仪表盘 / 指标解析
 ├── CLAUDE.md                  # AI 系统指令
 ├── AGENTS.md                  # 代理编排规则
 ├── CONTRIBUTING.md            # 贡献指南
@@ -187,6 +200,18 @@ AI 会：逐任务 TDD 执行 → 双阶段审查 → 原子提交
 ```
 多源调研 → 竞品分析 → 行动建议
 
+### 6. 查看项目仪表盘
+```bash
+python scripts/opc_dashboard.py --cwd /path/to/your/project
+```
+汇总阶段、计划、需求、MRR、债务、下一步。
+
+### 7. 导出结构化指标
+```bash
+python scripts/opc_stats.py --cwd /path/to/your/project
+```
+输出 JSON，适合日报、CI 或外部面板消费。
+
 ## 核心工作流
 
 ### 产品开发流水线
@@ -211,11 +236,12 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 | 类别 | 技能数 | 核心理念 |
 |------|--------|---------|
 | 产品开发 | 5 | brainstorm → plan → implement → review → ship |
-| 工程质量 | 4 | TDD 铁律 + 系统调试 + 隔离工作空间 + 波次并行 |
-| 商业运营 | 10 | 极简创业者方法论 |
+| 工程质量 | 19 | TDD 铁律 + 调试 + 并行执行 + 工程模式库 |
+| 商业运营 | 18 | 极简创业 + 财务 / 法务 / 内容 / SEO / 用户访谈 |
 | 市场情报 | 2 | 多源调研 + 建造者追踪 |
 | 学习进化 | 3 | 从大师学习 + 创建技能 + 持续改进 |
-| **总计** | **25** | |
+| 元技能 | 1 | 如何在项目里正确使用 SuperOPC |
+| **总计** | **48** | |
 
 ## 设计原则
 
@@ -233,10 +259,10 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 |------|------|------|------|
 | **基础** | v0.1.0 | 骨架搭建（24技能+6代理+7命令） | ✅ 完成 |
 | | v0.2.0 | Hooks + Rules + 引用系统 | ✅ 完成 |
-| | v0.3.0 | 代理扩展+波次执行（6→15代理+并行引擎） | � 进行中 |
-| | v0.4.0 | 状态管理+文件系统（.opc/） | 📋 计划中 |
-| | v0.5.0 | 工程技能深化（3→16） | 📋 计划中 |
-| **深化** | v0.6.0 | 商业技能+仪表盘 | 📋 计划中 |
+| | v0.3.0 | 代理扩展+波次执行（6→15代理+并行引擎） | ✅ 完成 |
+| | v0.4.0 | 状态管理+文件系统（.opc/） | ✅ 完成 |
+| | v0.5.0 | 工程技能深化（3→16） | ✅ 完成 |
+| **深化** | v0.6.0 | 商业技能+仪表盘 | ✅ 完成 |
 | | v0.7.0 | 多工具适配+MCP（10+工具） | 📋 计划中 |
 | | v0.8.0 | 会话管理+高级工作流 | 📋 计划中 |
 | | v0.9.0 | 质量保证体系 | 📋 计划中 |
@@ -261,6 +287,8 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 - 📝 完善文档
 - 🌐 添加多语言支持
 
+提交信息规范请参考 [COMMIT_STYLE.md](COMMIT_STYLE.md)。
+
 ## 致谢
 
 SuperOPC 站在巨人的肩膀上。感谢所有开源项目的作者：
@@ -282,9 +310,9 @@ SuperOPC 站在巨人的肩膀上。感谢所有开源项目的作者：
 
 SuperOPC（超级一人公司操作系统）是一个 AI 驱动的开源工具，专为独立创始人设计。它融合了 9 个顶级开源项目的精华，提供：
 
-- **25 个 AI 技能**：覆盖产品开发、工程质量、商业运营、市场情报、学习进化
+- **48 个 AI 技能**：覆盖产品开发、工程质量、商业运营、市场情报、学习进化
 - **15 个专业代理**：编排器、规划师、执行者、审查员、调试器、安全审计、UI 审计、文档写作等
-- **7 个斜杠命令**：一键触发完整工作流
+- **9 个斜杠命令**：含 `/opc-dashboard` 与 `/opc-stats`
 
 **理念：** 你是一个人，但有了 SuperOPC，你拥有一个 AI 团队。
 

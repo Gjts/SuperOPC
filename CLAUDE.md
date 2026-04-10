@@ -8,10 +8,10 @@ SuperOPC is a **content/plugin repository**, not an application service. The mai
 - markdown-based **skills** in `skills/`
 - markdown-based **agents** in `agents/`
 - slash-command entrypoints in `commands/opc/`
-- quality gates in `hooks/hooks.json` + `scripts/hooks/*.js`
+- quality gates in `hooks/hooks.json` + `scripts/hooks/*.py`
 - reusable engineering rules in `rules/`
 - reference docs in `references/`
-- format export tooling in `scripts/convert.js`
+- format export tooling in `scripts/convert.py`
 
 Most changes in this repo are documentation and workflow changes; the main executable code is the hook scripts and the format converter.
 
@@ -44,18 +44,18 @@ Marketplace metadata also advertises:
 
 ### Generate integrations for other tools
 ```bash
-node scripts/convert.js --tool cursor
-node scripts/convert.js --tool windsurf
-node scripts/convert.js --tool gemini-cli
-node scripts/convert.js --tool opencode
-node scripts/convert.js --tool openclaw
-node scripts/convert.js --tool all
-node scripts/convert.js --help
+python scripts/convert.py --tool cursor
+python scripts/convert.py --tool windsurf
+python scripts/convert.py --tool gemini-cli
+python scripts/convert.py --tool opencode
+python scripts/convert.py --tool openclaw
+python scripts/convert.py --tool all
+python scripts/convert.py --help
 ```
 
 ### Development reality for this repo
 
-- `Node.js 18+` is required for `scripts/convert.js` and the hook scripts (`CONTRIBUTING.md`).
+- `Python 3.11+` is required for `scripts/convert.py`, `scripts/opc_*.py`, and the hook scripts (`CONTRIBUTING.md`).
 - There is currently **no repo-root `package.json`, Makefile, or dedicated build/lint/test script** for this repository itself.
 - There is therefore **no repo-specific single-test command** to document right now.
 - Validation is mainly done by checking:
@@ -67,7 +67,7 @@ node scripts/convert.js --help
 ## High-level architecture
 
 ### 1. Commands are the user-facing entrypoints
-`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, and `/opc-research`.
+`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, `/opc-research`, `/opc-dashboard`, and `/opc-stats`.
 
 These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
 
@@ -75,7 +75,7 @@ These files are thin workflow routers. They do not contain the full logic themse
 `skills/` is the core of the system and is organized by operating domain:
 - `skills/product/` — product delivery pipeline
 - `skills/engineering/` — TDD, debugging, git worktrees, parallel execution
-- `skills/business/` — solo-founder operating skills
+- `skills/business/` — solo-founder operating skills across validation, pricing, finance, legal, GTM, content, and interviews
 - `skills/intelligence/` — market research and builder tracking
 - `skills/learning/` — learning/evolution workflows
 - `skills/using-superopc/` — meta-skill that explains how the whole system should be used
@@ -96,7 +96,7 @@ If you need to understand how SuperOPC is supposed to behave, start with the rel
 When changing implementation guidance or quality expectations, update the matching `rules/` or `references/` doc rather than scattering the same policy across many skills.
 
 ### 5. Hooks enforce guardrails around Claude tool use
-`hooks/hooks.json` registers Claude Code hooks, and `scripts/hooks/*.js` contains the implementations.
+`hooks/hooks.json` registers Claude Code hooks, and `scripts/hooks/*.py` contains the implementations.
 
 Current hook coverage includes:
 - blocking `git --no-verify`
@@ -111,8 +111,8 @@ Current hook coverage includes:
 
 The repo docs describe these hooks as **advisory-first**: most warn rather than block, except for higher-severity checks.
 
-### 6. `scripts/convert.js` republishes the repo to other ecosystems
-`scripts/convert.js` is the main executable in the repo. It reads source content from:
+### 6. `scripts/convert.py` republishes the repo to other ecosystems
+`scripts/convert.py` is the main executable in the repo. It reads source content from:
 - `skills/`
 - `agents/`
 - `commands/opc/`
@@ -130,7 +130,7 @@ The repo docs describe these hooks as **advisory-first**: most warn rather than 
 - `.claude-plugin/plugin.json` is the plugin manifest used by Claude Code
 - `.claude-plugin/marketplace.json` contains marketplace metadata
 
-Important detail: the repo contains more agent definitions in `agents/` than are currently registered in `.claude-plugin/plugin.json`. If you expect a new or edited agent to be available through the shipped plugin, update the manifest as well as the markdown file.
+The plugin manifest should stay aligned with the full shipped agent set in `agents/`. If you add or rename an agent, update `.claude-plugin/plugin.json` in the same change.
 
 ## Workflow artifacts and expectations
 
@@ -156,4 +156,4 @@ If you are changing these workflows, make sure command docs, relevant skills, an
 - `skills/using-superopc/SKILL.md` — meta-skill for how the system expects Claude to operate
 - `hooks/hooks.json` — actual hook registrations
 - `rules/common/testing.md` and `rules/common/git-workflow.md` — repo-level quality and git expectations
-- `scripts/convert.js` — the main executable path in the repo
+- `scripts/convert.py` — the main executable path in the repo
