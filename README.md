@@ -63,15 +63,15 @@ SuperOPC 内置质量门控钩子（源自 [ECC hooks.json](https://github.com/n
 | 钩子 | 类型 | 功能 |
 |------|------|------|
 | **block-no-verify** | PreToolUse | 阻止 `git --no-verify` 绕过 pre-commit |
-| **commit-quality** | PreToolUse | 提交格式（Conventional Commits）+ 密钥检测 |
-| **read-before-edit** | PreToolUse | 提醒先读后改，防止编辑失败循环 |
-| **config-protection** | PreToolUse | 保护 linter 配置不被削弱 |
-| **prompt-injection-scan** | PreToolUse | 提示注入模式检测（建议性） |
-| **command-audit-log** | PostToolUse | 命令审计日志 |
-| **console-log-warn** | PostToolUse | 提醒清理 debug 语句 |
-| **session-summary** | Stop | 会话活动持久化 |
+| **commit-quality** | PreToolUse | 检查 `git commit -m` 是否符合 Conventional Commits，并扫描提交消息中的疑似密钥 |
+| **read-before-edit** | PreToolUse | 编辑前提示先读取目标文件（建议性提醒，不跟踪真实读取状态） |
+| **config-protection** | PreToolUse | 保护 linter / formatter 配置不被轻易削弱 |
+| **prompt-injection-scan** | PreToolUse | 扫描写入内容中的常见提示注入模式（建议性） |
+| **command-audit-log** | PostToolUse | 记录命令审计日志到 `.opc/audit.log` |
+| **console-log-warn** | PostToolUse | 检测编辑内容中的常见 debug 语句并提醒清理 |
+| **session-summary** | Stop | 持久化基础会话摘要（时间戳、工具名、会话 ID） |
 
-钩子遵循**建议性优先**原则——大多数钩子警告但不阻止，仅密钥泄露等严重问题才会阻止。
+钩子遵循**建议性优先**原则——大多数钩子只发出警告或提示，不会阻止正常工作流；只有 `--no-verify` 和提交消息中的高风险密钥模式会被阻止。
 
 ## 架构
 
@@ -148,7 +148,9 @@ SuperOPC/
 ├── rules/                     # 编码规则系统（ECC 模式）
 │   ├── common/                # 通用规则（5 文件）
 │   ├── typescript/            # TypeScript/Next.js 规则
-│   └── csharp/                # C#/.NET 8 规则
+│   ├── csharp/                # C#/.NET 8 规则
+│   ├── python/                # Python 规则
+│   └── kotlin/                # Kotlin / Android 规则
 ├── references/                # 引用文档（GSD 模式）
 │   ├── gates.md               # 4 种门控分类
 │   ├── verification-patterns.md # 验证模式
@@ -157,7 +159,7 @@ SuperOPC/
 │   ├── tdd.md                 # TDD 参考
 │   └── git-integration.md     # Git 集成
 ├── scripts/                   # 工具脚本
-│   ├── hooks/                 # 9 个钩子脚本实现
+│   ├── hooks/                 # Python 钩子脚本实现
 │   ├── convert.py             # 多工具格式转换
 │   ├── opc_dashboard.py       # .opc 项目仪表盘
 │   ├── opc_stats.py           # .opc 结构化指标
@@ -261,7 +263,7 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 | | v0.2.0 | Hooks + Rules + 引用系统 | ✅ 完成 |
 | | v0.3.0 | 代理扩展+波次执行（6→15代理+并行引擎） | ✅ 完成 |
 | | v0.4.0 | 状态管理+文件系统（.opc/） | ✅ 完成 |
-| | v0.5.0 | 工程技能深化（3→16） | ✅ 完成 |
+| | v0.5.0 | 工程技能深化（4→19） | ✅ 完成 |
 | **深化** | v0.6.0 | 商业技能+仪表盘 | ✅ 完成 |
 | | v0.7.0 | 多工具适配+MCP（10+工具） | 📋 计划中 |
 | | v0.8.0 | 会话管理+高级工作流 | 📋 计划中 |
