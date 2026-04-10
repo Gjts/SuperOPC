@@ -1,72 +1,159 @@
-# SuperOPC — One-Person Company Operating System
+# CLAUDE.md
 
-你是一个服务于一人公司创始人的 AI 操作系统。你同时具备**产品开发**、**商业运营**、**市场情报**和**持续学习**四大能力。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 核心身份
+## What this repository is
 
-你不是一个普通的编码助手。你是创始人的**联合创始人**——一个能独立完成产品开发、市场研究、商业决策的超级代理系统。
+SuperOPC is a **content/plugin repository**, not an application service. The main deliverables are Claude Code instructions and workflow assets:
+- markdown-based **skills** in `skills/`
+- markdown-based **agents** in `agents/`
+- slash-command entrypoints in `commands/opc/`
+- quality gates in `hooks/hooks.json` + `scripts/hooks/*.js`
+- reusable engineering rules in `rules/`
+- reference docs in `references/`
+- format export tooling in `scripts/convert.js`
 
-## 运作原则
+Most changes in this repo are documentation and workflow changes; the main executable code is the hook scripts and the format converter.
 
-1. **技能优先** — 收到任何任务时，先检查是否有适用的技能。有就用，没有就提出创建
-2. **代理委托** — 复杂任务自动委托给专业代理（planner/executor/reviewer/researcher/verifier）
-3. **质量铁律** — 没有失败测试就不写生产代码；没有根因分析就不修 bug
-4. **商业思维** — 每个技术决策都考虑商业影响：ROI、时间成本、可维护性
-5. **持续进化** — 从每次交互中学习，不断改进技能和工作流
+## Core repository guidance
 
-## 工作流优先级
+- Treat this repo as a **one-person company operating system** for solo founders: product, engineering, business, and market-intelligence workflows live side by side.
+- Existing repo guidance is **skill-first**: if a relevant skill exists, prefer the skill-driven workflow over ad-hoc behavior.
+- Feature work follows the documented pipeline: `brainstorming -> planning -> implementing -> reviewing -> shipping`.
+- Bug work follows: `debugging -> tdd -> implementing`.
+- TDD is a repo-level expectation for behavior-changing work; `rules/common/testing.md` sets an **80% coverage target** and documents the RED/GREEN/REFACTOR loop.
+- Commits are expected to use **Conventional Commits**; `rules/common/git-workflow.md` also forbids bypassing hooks with `--no-verify`.
+- `AGENTS.md` instructs Claude to delegate proactively to specialist agents for planning, execution, review, verification, debugging, security review, and documentation.
 
-| 场景 | 调用技能 | 然后 |
-|------|---------|------|
-| 新功能/新产品 | brainstorming → planning | implementing → reviewing → shipping |
-| 修 Bug | debugging | tdd → implementing |
-| 商业决策 | minimalist-review | 相关商业技能 |
-| 市场研究 | market-research | follow-builders |
-| 学习新领域 | skill-from-masters | writing-skills |
-| 快速任务 | 直接执行 | 原子提交 |
+## Common commands
 
-## 项目结构
-
-```
-skills/           — 技能系统（核心）
-  using-superopc/ — 元技能：如何使用 SuperOPC
-  product/        — 产品开发技能组
-  engineering/    — 工程质量技能组
-  business/       — 商业运营技能组
-  intelligence/   — 市场情报技能组
-  learning/       — 学习进化技能组
-agents/           — 专业代理（15个：编排/规划/执行/审查/研究/验证/调试/安全/文档×2/地图/UI/计划检查/假设/路线图）
-commands/         — 斜杠命令
-hooks/            — 钩子系统（质量门控）
-  hooks.json      — 钩子注册表
-rules/            — 编码规则系统
-  common/         — 通用规则（coding-style, security, testing, git-workflow, patterns）
-  typescript/     — TypeScript/Next.js 规则
-  csharp/         — C#/.NET 8 规则
-references/       — 引用文档
-  gates.md        — 门控分类（Pre-flight/Revision/Escalation/Abort）
-  verification-patterns.md — 验证模式
-  anti-patterns.md         — 反模式检测
-  context-budget.md        — 上下文预算
-  tdd.md                   — TDD 参考
-  git-integration.md       — Git 集成
-scripts/          — 工具脚本
-  hooks/          — 钩子脚本实现
-  convert.js      — 多工具格式转换（Cursor/Windsurf/Gemini/OpenCode/OpenClaw）
+### Install / use as a Claude Code plugin
+```bash
+git clone https://github.com/gjts/superopc.git ~/.claude/plugins/superopc
 ```
 
-## 编码规则
+Then inside Claude Code:
+```text
+/plugin install superopc
+```
 
-开发代码时自动加载 `rules/` 中的规则：
-- `rules/common/` 始终适用
-- `rules/typescript/` 编辑 .ts/.tsx 文件时适用
-- `rules/csharp/` 编辑 .cs 文件时适用
-- 参考 `references/` 中的文档做质量决策
+Marketplace metadata also advertises:
+```text
+/plugin marketplace add gjts/superopc
+```
 
-## 技能使用规则
+### Generate integrations for other tools
+```bash
+node scripts/convert.js --tool cursor
+node scripts/convert.js --tool windsurf
+node scripts/convert.js --tool gemini-cli
+node scripts/convert.js --tool opencode
+node scripts/convert.js --tool openclaw
+node scripts/convert.js --tool all
+node scripts/convert.js --help
+```
 
-收到用户请求后：
-1. 检查是否有 1% 可能适用的技能 → 如果有，**必须调用**
-2. 过程技能优先（brainstorming, debugging） → 然后执行技能
-3. 技能说做什么就做什么，不要跳过步骤
-4. 用户的显式指令优先于技能指令
+### Development reality for this repo
+
+- `Node.js 18+` is required for `scripts/convert.js` and the hook scripts (`CONTRIBUTING.md`).
+- There is currently **no repo-root `package.json`, Makefile, or dedicated build/lint/test script** for this repository itself.
+- There is therefore **no repo-specific single-test command** to document right now.
+- Validation is mainly done by checking:
+  - markdown/frontmatter correctness
+  - plugin manifest wiring
+  - hook registration in `hooks/hooks.json`
+  - generated output under `integrations/` when converter behavior or source content changes
+
+## High-level architecture
+
+### 1. Commands are the user-facing entrypoints
+`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, and `/opc-research`.
+
+These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
+
+### 2. Skills are the main behavior layer
+`skills/` is the core of the system and is organized by operating domain:
+- `skills/product/` — product delivery pipeline
+- `skills/engineering/` — TDD, debugging, git worktrees, parallel execution
+- `skills/business/` — solo-founder operating skills
+- `skills/intelligence/` — market research and builder tracking
+- `skills/learning/` — learning/evolution workflows
+- `skills/using-superopc/` — meta-skill that explains how the whole system should be used
+
+If you need to understand how SuperOPC is supposed to behave, start with the relevant skill before reading individual agents.
+
+### 3. Agents are specialist delegates
+`agents/` contains the specialist roles used by the workflows: planner, executor, reviewer, researcher, verifier, debugger, security auditor, documentation roles, UI/codebase analysis roles, and roadmap/planning roles.
+
+`AGENTS.md` defines the intended orchestration patterns, e.g. planner -> executor -> reviewer -> verifier, plus dedicated debugging and security-review flows.
+
+### 4. Rules and references are the quality system
+- `rules/common/` applies across the repo
+- `rules/typescript/` is the language-specific layer for `.ts` / `.tsx`
+- `rules/csharp/` is the language-specific layer for `.cs`
+- `references/` contains the supporting docs for gates, verification patterns, anti-patterns, TDD, git integration, and context budgeting
+
+When changing implementation guidance or quality expectations, update the matching `rules/` or `references/` doc rather than scattering the same policy across many skills.
+
+### 5. Hooks enforce guardrails around Claude tool use
+`hooks/hooks.json` registers Claude Code hooks, and `scripts/hooks/*.js` contains the implementations.
+
+Current hook coverage includes:
+- blocking `git --no-verify`
+- commit quality / secret scanning
+- read-before-edit reminders
+- config-protection warnings
+- prompt-injection scanning for writes
+- bash command audit logging
+- console-log warnings after edits
+- git-push reminders
+- session summary persistence on stop
+
+The repo docs describe these hooks as **advisory-first**: most warn rather than block, except for higher-severity checks.
+
+### 6. `scripts/convert.js` republishes the repo to other ecosystems
+`scripts/convert.js` is the main executable in the repo. It reads source content from:
+- `skills/`
+- `agents/`
+- `commands/opc/`
+
+…and writes derived artifacts to `integrations/<tool>/` for:
+- Cursor
+- Windsurf
+- Gemini CLI
+- OpenCode
+- OpenClaw
+
+`integrations/` should be treated as **generated output**, not the canonical source of truth.
+
+### 7. Plugin metadata controls what Claude Code actually ships
+- `.claude-plugin/plugin.json` is the plugin manifest used by Claude Code
+- `.claude-plugin/marketplace.json` contains marketplace metadata
+
+Important detail: the repo contains more agent definitions in `agents/` than are currently registered in `.claude-plugin/plugin.json`. If you expect a new or edited agent to be available through the shipped plugin, update the manifest as well as the markdown file.
+
+## Workflow artifacts and expectations
+
+- `/opc-plan` runs brainstorming + planning and outputs a `PLAN.md` artifact (the command docs refer to `docs/plans/`).
+- `/opc-build` consumes a `PLAN.md`, executes tasks with TDD, and produces `SUMMARY.md`.
+- `/opc-ship` verifies tests, summarizes changes, and handles merge / PR / keep / discard flows.
+- `/opc-quick` is the reduced-ceremony path: no formal `PLAN.md`, but it still keeps TDD and atomic-task execution.
+
+If you are changing these workflows, make sure command docs, relevant skills, and agent expectations stay aligned.
+
+## Editing guidance specific to this repo
+
+- Prefer editing the **source-of-truth** files in `skills/`, `agents/`, `commands/`, `hooks/`, `rules/`, `references/`, and `scripts/`.
+- Avoid hand-editing `integrations/` unless you are intentionally changing generated output or debugging the converter.
+- Keep markdown frontmatter accurate; `name` and `description` are used by discovery/conversion flows.
+- If you add or rename commands, agents, or skills, check whether `README.md`, `AGENTS.md`, `.claude-plugin/plugin.json`, or generated integrations also need updates.
+- When editing repo policy, prefer updating the single authoritative location (for example `rules/common/testing.md` for testing policy or `hooks/hooks.json` for hook wiring) instead of duplicating the same rule in many places.
+
+## Files worth reading first
+
+- `README.md` — product positioning, install flow, and top-level architecture
+- `AGENTS.md` — orchestration rules and specialist-agent usage
+- `skills/using-superopc/SKILL.md` — meta-skill for how the system expects Claude to operate
+- `hooks/hooks.json` — actual hook registrations
+- `rules/common/testing.md` and `rules/common/git-workflow.md` — repo-level quality and git expectations
+- `scripts/convert.js` — the main executable path in the repo

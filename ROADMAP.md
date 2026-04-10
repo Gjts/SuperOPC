@@ -12,7 +12,7 @@
 
 ---
 
-### v0.2.0 [进行中] — Hooks + Rules + 引用系统
+### v0.2.0 [已完成] — Hooks + Rules + 引用系统
 
 **目标：** 自动化质量门控 + 多语言编码规则 + 共享知识库
 
@@ -22,13 +22,13 @@
 - [x] **PreCommit Hook**: 提交质量检查 commit格式+密钥扫描（ECC+GSD）
 - [x] **PostToolUse Hook**: 命令审计日志 + console.log 警告 + git push 提醒
 - [x] **PreWrite Hook**: 提示注入检测 + 配置保护 + 文档路径警告
-- [ ] **StatusLine Hook**: 模型+任务+目录+上下文使用率（GSD statusline）
+- [x] **StatusLine Hook**: 模型+任务+目录+上下文使用率（GSD statusline）
 
 #### Rules 系统（融合 ECC rules/ 12语言）
 - [x] `rules/common/` — coding-style, security, testing, git-workflow, patterns（5文件）
 - [x] `rules/typescript/` — Next.js 14（coding-style, testing, security）
 - [x] `rules/csharp/` — .NET 8（coding-style, testing, security）
-- [ ] `rules/python/` + `rules/kotlin/` — Android
+- [x] `rules/python/` + `rules/kotlin/` — Python 3.11+ / Android Kotlin
 - [ ] 按需扩展：golang, rust, java, swift, dart, php
 
 #### References 引用系统（融合 GSD 35个引用文档）
@@ -45,7 +45,7 @@
 
 ---
 
-### v0.3.0 [进行中] — 代理扩展 + 波次执行
+### v0.3.0 [已完成] — 代理扩展 + 波次执行
 
 **目标：** 6到15代理 + 并行波次执行引擎
 
@@ -61,12 +61,12 @@
 
 #### 波次执行引擎（融合 GSD + Superpowers）
 - [x] 依赖分析 - 波次分组 - 并行派发
-- [ ] STATE.md 文件锁（防并行写入冲突）
+- [x] STATE.md 文件锁（防并行写入冲突）
 - [x] 波前依赖检查（波次N+1验证N产物）
 - [x] 技能 `skills/engineering/parallel-agents/SKILL.md`
 
 
-### v0.4.0 — 状态管理 + 文件系统
+### v0.4.0 [已完成] — 状态管理 + 文件系统
 
 **目标：** 引入 .opc/ 文件级状态管理——可读、可追踪、可 git
 
@@ -95,39 +95,39 @@
 ```
 
 #### 配置系统（融合 GSD config.json 30+设置项）
-- [ ] 工作流开关：research, plan_check, verifier, nyquist, node_repair, code_review
-- [ ] 模型配置：quality / balanced / budget / inherit / adaptive
-- [ ] 粒度控制：coarse(3-5) / standard(5-8) / fine(8-12)
-- [ ] Git 策略：none / phase / milestone
+- [x] 工作流开关：research, plan_check, verifier, nyquist, node_repair, code_review
+- [x] 模型配置：quality / balanced / budget / inherit / adaptive
+- [x] 粒度控制：coarse(3-5) / standard(5-8) / fine(8-12)
+- [x] Git 策略：none / phase / milestone
 
 #### 模板系统（融合 GSD templates/）
-- [ ] project.md, requirements.md, roadmap.md, state.md 模板
-- [ ] phase-prompt.md, summary.md, debug.md 模板
+- [x] project.md, requirements.md, roadmap.md, state.md 模板
+- [x] phase-prompt.md, summary.md, debug.md 模板
 
 ---
 
-### v0.5.0 — 工程技能深化
+### v0.5.0 [已完成] — 工程技能深化
 
 **目标：** 3到16工程技能，覆盖全栈+技术栈专属
 
 #### 通用工程技能（融合 ECC skills/）
-- [ ] `api-design/` — RESTful + GraphQL
-- [ ] `database-migrations/` — 迁移 + ORM schema drift 检测
-- [ ] `docker-patterns/` — 容器化模式
-- [ ] `deployment-patterns/` — 蓝绿/金丝雀/滚动
-- [ ] `security-review/` — OWASP Top 10
-- [ ] `e2e-testing/` — Playwright
-- [ ] `architecture-decision-records/` — ADR
-- [ ] `frontend-patterns/` + `backend-patterns/`
-- [ ] `verification-loop/` — Nyquist + 节点修复
-- [ ] `codebase-onboarding/` — 棕地映射
-- [ ] `code-review-pipeline/` — quick/standard/deep 三级
+- [x] `api-design/` — RESTful + GraphQL
+- [x] `database-migrations/` — 迁移 + ORM schema drift 检测
+- [x] `docker-patterns/` — 容器化模式
+- [x] `deployment-patterns/` — 蓝绿/金丝雀/滚动
+- [x] `security-review/` — OWASP Top 10
+- [x] `e2e-testing/` — Playwright
+- [x] `architecture-decision-records/` — ADR
+- [x] `frontend-patterns/` + `backend-patterns/`
+- [x] `verification-loop/` — Nyquist + 节点修复
+- [x] `codebase-onboarding/` — 棕地映射
+- [x] `code-review-pipeline/` — quick/standard/deep 三级
 
 #### 技术栈专属
-- [ ] `nextjs-patterns/` — Next.js 14 App Router
-- [ ] `dotnet-patterns/` — .NET 8 Minimal API + EF Core
-- [ ] `postgres-patterns/` — PostgreSQL 15
-- [ ] `kotlin-compose/` — Jetpack Compose
+- [x] `nextjs-patterns/` — Next.js 14 App Router
+- [x] `dotnet-patterns/` — .NET 8 Minimal API + EF Core
+- [x] `postgres-patterns/` — PostgreSQL 15
+- [x] `kotlin-compose/` — Jetpack Compose
 
 ---
 
