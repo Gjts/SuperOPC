@@ -1,0 +1,182 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = REPO_ROOT / "scripts"
+
+sys.path.insert(0, str(SCRIPTS_DIR))
+
+from opc_context import handle_backlog, handle_seed, handle_thread  # noqa: E402
+from opc_insights import collect_project_insights  # noqa: E402
+from opc_workflow import collect_progress_snapshot, collect_session_report, pause_project, resume_project  # noqa: E402
+
+
+def create_sample_project(tmp_path: Path) -> Path:
+    project_root = tmp_path / "sample-project"
+    opc_dir = project_root / ".opc"
+    sessions_dir = opc_dir / "sessions"
+    todos_dir = opc_dir / "todos"
+    sessions_dir.mkdir(parents=True)
+    todos_dir.mkdir(parents=True)
+
+    (opc_dir / "PROJECT.md").write_text(
+        "# Sample Project\n\n## 项目参考\n\n**核心价值：** 更快恢复上下文\n",
+        encoding="utf-8",
+    )
+    (opc_dir / "REQUIREMENTS.md").write_text(
+        "# Requirements\n\n- [x] 已完成需求\n- [ ] 未完成需求\n",
+        encoding="utf-8",
+    )
+    (opc_dir / "ROADMAP.md").write_text(
+        "# 路线图\n\n## 进度\n\n| 阶段 | 已完成计划 | 状态 | 完成时间 |\n|------|-----------|------|---------|\n| 基础 | 1 / 2 | 进行中 | - |\n\n- [ ] 下一个计划\n",
+        encoding="utf-8",
+    )
+    (opc_dir / "STATE.md").write_text(
+        "# 项目状态\n\n## 项目参考\n\n**核心价值：** 更快恢复上下文\n**当前焦点：** 会话恢复\n\n## 当前位置\n\n阶段：[1] / [2]（基础）\n计划：[1] / [2]（当前阶段内）\n状态：执行中\n最近活动：[2026-04-11] — 新增 progress 命令\n\n进度：[████░░░░░░] 40%\n\n## 待办事项\n\n- 清理 README 元数据\n\n## 阻塞/关注\n\n- 等待验证输出格式\n\n## 验证欠债\n\n- 未运行 CLI 冒烟测试\n\n## 会话连续性\n\n上次会话：2026-04-10T10:00:00Z\n停止于：完成 progress 草稿\n恢复文件：.opc/STATE.md\n",
+        encoding="utf-8",
+    )
+    (sessions_dir / "session-2026-04-11T00-00-00Z.json").write_text(
+        json.dumps(
+            {
+                "timestamp": "2026-04-11T00:00:00Z",
+                "tool_name": "Bash",
+                "session_id": "session-1",
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (opc_dir / "audit.log").write_text(
+        "[2026-04-11T00:00:00Z] python scripts/opc_progress.py\n",
+        encoding="utf-8",
+    )
+    return project_root
+
+
+def test_collect_project_insights_includes_session_fields(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+
+    insights = collect_project_insights(project_root)
+
+    assert insights["state"]["resumeFile"] == ".opc/STATE.md"
+    assert insights["state"]["blockers"] == ["等待验证输出格式"]
+    assert insights["state"]["todos"] == ["清理 README 元数据"]
+    assert Path(insights["files"]["handoff"]).name == "HANDOFF.json"
+    assert Path(insights["files"]["handoff"]).parent.name == ".opc"
+
+
+def test_progress_snapshot_exposes_validation_debt_and_resume_file(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+
+    snapshot = collect_progress_snapshot(project_root)
+
+    assert snapshot["position"]["resumeFile"] == ".opc/STATE.md"
+    assert "未运行 CLI 冒烟测试" in snapshot["validationDebt"]
+    assert snapshot["recommendation"]["command"] == "/opc-discuss"
+
+
+def test_pause_and_resume_round_trip(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+
+    handoff = pause_project(project_root, note="先暂停", stop_point="准备更新 README")
+    handoff_file = project_root / ".opc" / "HANDOFF.json"
+
+    assert handoff_file.exists()
+    saved = json.loads(handoff_file.read_text(encoding="utf-8"))
+    assert saved["notes"] == ["先暂停"]
+    assert saved["summary"]["stopPoint"] == "准备更新 README"
+
+    state_text = (project_root / ".opc" / "STATE.md").read_text(encoding="utf-8")
+    assert "停止于：准备更新 README" in state_text
+    assert "恢复文件：" in state_text and "HANDOFF.json" in state_text
+
+    resumed = resume_project(project_root)
+    assert resumed["handoff"]["notes"] == ["先暂停"]
+    assert resumed["progress"]["position"]["focus"] == "会话恢复"
+
+    resumed_state_text = (project_root / ".opc" / "STATE.md").read_text(encoding="utf-8")
+    assert "恢复文件：.opc/STATE.md" in resumed_state_text
+    assert "已从 HANDOFF.json 恢复上下文" in resumed_state_text
+
+
+def test_session_report_collects_handoff_sessions_and_audit(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+    pause_project(project_root, note="写完报告再恢复", stop_point="等待验证")
+
+    report = collect_session_report(project_root)
+
+    assert report["handoff"]["notes"] == ["写完报告再恢复"]
+    assert len(report["recentSessions"]) == 1
+    assert report["recentAudit"] == ["[2026-04-11T00:00:00Z] python scripts/opc_progress.py"]
+
+
+def test_context_commands_create_thread_seed_and_backlog_entries(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+    opc_dir = project_root / ".opc"
+
+    thread_output = handle_thread(opc_dir, "pricing-page-copy", as_json=False)
+    seed_output = handle_seed(opc_dir, "viral referral loop", "当激活率停滞时", as_json=False)
+    backlog_output = handle_backlog(opc_dir, "整理 onboarding 文案", "等本阶段结束后再做", as_json=False)
+
+    thread_file = opc_dir / "threads" / "pricing-page-copy.md"
+    seed_file = opc_dir / "seeds" / "SEED-001-viral-referral-loop.md"
+    backlog_file = opc_dir / "todos" / "BACKLOG-001-整理-onboarding-文案.md"
+
+    assert "Thread created" in thread_output
+    assert "Seed created" in seed_output
+    assert "Backlog item created" in backlog_output
+    assert thread_file.exists()
+    assert seed_file.exists()
+    assert backlog_file.exists()
+    assert "trigger: 当激活率停滞时" in seed_file.read_text(encoding="utf-8")
+    assert "等本阶段结束后再做" in backlog_file.read_text(encoding="utf-8")
+
+
+def test_context_commands_list_existing_entries(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+    opc_dir = project_root / ".opc"
+
+    handle_thread(opc_dir, "supabase-migration-risk", as_json=False)
+    handle_seed(opc_dir, "community launch", "当 beta 结束时", as_json=False)
+    handle_backlog(opc_dir, "补充 docs", "当前先不做", as_json=False)
+
+    threads_listing = handle_thread(opc_dir, "", as_json=False)
+    seeds_listing = handle_seed(opc_dir, "", "", as_json=False)
+    backlog_listing = handle_backlog(opc_dir, "", "", as_json=False)
+
+    assert "SuperOPC Threads" in threads_listing
+    assert "supabase-migration-risk" in threads_listing
+    assert "SuperOPC Seeds" in seeds_listing
+    assert "community-launch" in seeds_listing
+    assert "trigger=当 beta 结束时" in seeds_listing
+    assert "SuperOPC Backlog" in backlog_listing
+    assert "补充-docs" in backlog_listing
+
+
+def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: Path) -> None:
+    out_dir = tmp_path / "integrations"
+
+    subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "convert.py"), "--tool", "all", "--out", str(out_dir)],
+        check=True,
+        cwd=REPO_ROOT,
+    )
+
+    runtime_map = json.loads((out_dir / "claude-code" / "runtime-map.json").read_text(encoding="utf-8"))
+    assert runtime_map["pluginVersion"] == "0.8.0"
+
+    claude_plugin = json.loads((out_dir / "claude-code" / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    assert claude_plugin["version"] == "0.8.0"
+
+    assert (out_dir / "claude-code" / "commands" / "opc" / "progress.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "pause.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "resume.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "session-report.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "thread.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "seed.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "backlog.md").exists()

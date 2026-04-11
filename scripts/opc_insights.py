@@ -9,7 +9,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 
 @dataclass
@@ -48,6 +48,33 @@ def read_text(file_path: Path) -> str:
         return file_path.read_text(encoding="utf-8")
     except OSError:
         return ""
+
+
+def read_json(file_path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(file_path.read_text(encoding="utf-8"))
+        return payload if isinstance(payload, dict) else {}
+    except Exception:
+        return {}
+
+
+def read_recent_sessions(sessions_dir: Path, limit: int = 5) -> list[dict[str, Any]]:
+    if not sessions_dir.exists():
+        return []
+
+    sessions: list[dict[str, Any]] = []
+    for session_file in sorted(
+        sessions_dir.glob("session-*.json"),
+        key=lambda item: item.stat().st_mtime,
+        reverse=True,
+    ):
+        payload = read_json(session_file)
+        if payload:
+            payload["file"] = str(session_file)
+            sessions.append(payload)
+        if len(sessions) >= limit:
+            break
+    return sessions
 
 
 def get_section(markdown: str, heading: str) -> str:
@@ -128,14 +155,21 @@ def parse_next_roadmap_task(roadmap_text: str) -> str:
     return "未在 ROADMAP.md 中找到未完成计划"
 
 
-def count_list_items(section_text: str) -> int:
+def extract_list_items(section_text: str) -> list[str]:
     if not section_text or "暂无" in section_text:
-        return 0
-    return sum(
-        1
-        for line in section_text.splitlines()
-        if re.match(r"^(-|\d+\.)\s+", line.strip())
-    )
+        return []
+
+    items: list[str] = []
+    for raw_line in section_text.splitlines():
+        line = raw_line.strip()
+        match = re.match(r"^(?:-|\d+\.)\s+(.+)$", line)
+        if match:
+            items.append(match.group(1).strip())
+    return items
+
+
+def count_list_items(section_text: str) -> int:
+    return len(extract_list_items(section_text))
 
 
 def count_files(dir_path: Path) -> int:
@@ -179,6 +213,8 @@ def parse_state(state_text: str) -> dict:
     phase_match = re.search(r"阶段：\[(.+?)\]\s*/\s*\[(.+?)\]\s*（(.+?)）", state_text)
     plan_match = re.search(r"计划：\[(.+?)\]\s*/\s*\[(.+?)\]\s*", state_text)
     progress_match = re.search(r"进度：.*?(\d+)%", state_text)
+    todos = extract_list_items(get_section(state_text, "待办事项"))
+    blockers = extract_list_items(get_section(state_text, "阻塞/关注"))
 
     return {
         "currentFocus": extract_inline_value(state_text, "当前焦点") or "未记录",
@@ -187,6 +223,7 @@ def parse_state(state_text: str) -> dict:
         "recentActivity": extract_inline_value(state_text, "最近活动") or "未记录",
         "lastSession": extract_inline_value(state_text, "上次会话") or "未记录",
         "stopPoint": extract_inline_value(state_text, "停止于") or "未记录",
+        "resumeFile": extract_inline_value(state_text, "恢复文件") or "未记录",
         "phase": (
             {
                 "current": phase_match.group(1),
@@ -205,8 +242,10 @@ def parse_state(state_text: str) -> dict:
             else None
         ),
         "progressPercent": int(progress_match.group(1)) if progress_match else None,
-        "blockerCount": count_list_items(get_section(state_text, "阻塞/关注")),
-        "todoCountFromState": count_list_items(get_section(state_text, "待办事项")),
+        "blockerCount": len(blockers),
+        "blockers": blockers,
+        "todoCountFromState": len(todos),
+        "todos": todos,
     }
 
 
@@ -257,6 +296,27 @@ def parse_git_info(project_root: Path) -> dict:
         }
 
 
+def parse_validation_debt(state_text: str, git_info: dict, warnings: list[str]) -> list[str]:
+    debt: list[str] = []
+
+    validation_section = get_section(state_text, "验证欠债")
+    debt.extend(extract_list_items(validation_section))
+
+    if git_info.get("available") and git_info.get("dirtyFiles", 0) > 0:
+        debt.append(f"未提交工作区变更：{git_info['dirtyFiles']} 个文件")
+
+    debt.extend(warnings)
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in debt:
+        normalized = item.strip()
+        if normalized and normalized not in seen:
+            deduped.append(normalized)
+            seen.add(normalized)
+    return deduped
+
+
 def collect_project_insights(start_dir: Path) -> dict:
     opc_dir = find_opc_dir(start_dir)
     if opc_dir is None:
@@ -276,6 +336,9 @@ def collect_project_insights(start_dir: Path) -> dict:
     completed_plans = sum(row.completed_plans for row in roadmap_rows)
     todos_dir_count = count_files(opc_dir / "todos")
     warnings: list[str] = []
+    handoff_file = opc_dir / "HANDOFF.json"
+    handoff = read_json(handoff_file)
+    sessions = read_recent_sessions(opc_dir / "sessions", limit=10)
 
     business_metric_sources = [
         state_text,
@@ -302,6 +365,9 @@ def collect_project_insights(start_dir: Path) -> dict:
         warnings.append("缺少 .opc/ROADMAP.md。")
     if not state_text:
         warnings.append("缺少 .opc/STATE.md。")
+
+    git_info = parse_git_info(project_root)
+    validation_debt = parse_validation_debt(state_text, git_info, warnings)
 
     return {
         "projectRoot": str(project_root),
@@ -331,12 +397,27 @@ def collect_project_insights(start_dir: Path) -> dict:
         },
         "debt": {
             "blockers": state["blockerCount"],
+            "blockerItems": state["blockers"],
             "todos": max(todos_dir_count, state["todoCountFromState"]),
+            "todoItems": state["todos"],
             "riskyDecisions": parse_risky_decisions(project_text),
         },
+        "validationDebt": validation_debt,
         "business": business,
-        "git": parse_git_info(project_root),
+        "git": git_info,
         "warnings": warnings,
+        "handoff": handoff,
+        "sessions": sessions,
+        "files": {
+            "project": str(opc_dir / "PROJECT.md"),
+            "requirements": str(opc_dir / "REQUIREMENTS.md"),
+            "roadmap": str(opc_dir / "ROADMAP.md"),
+            "state": str(opc_dir / "STATE.md"),
+            "handoff": str(opc_dir / "HANDOFF.json"),
+            "sessionsDir": str(opc_dir / "sessions"),
+            "auditLog": str(opc_dir / "audit.log"),
+            "todosDir": str(opc_dir / "todos"),
+        },
     }
 
 
@@ -423,6 +504,7 @@ def format_stats(insights: dict) -> str:
         },
         "progress": insights["progress"],
         "debt": insights["debt"],
+        "validationDebt": insights["validationDebt"],
         "business": insights["business"],
         "roadmap": insights["roadmap"]["rows"],
         "nextTask": insights["roadmap"]["nextTask"],

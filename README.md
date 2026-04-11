@@ -157,9 +157,22 @@ SuperOPC/
 │       ├── research.md        # /opc-research 市场研究
 │       ├── dashboard.md       # /opc-dashboard 项目仪表盘
 │       ├── stats.md           # /opc-stats 项目指标
+│       ├── progress.md        # /opc-progress 会话进度
+│       ├── pause.md           # /opc-pause 暂停并交接
+│       ├── resume.md          # /opc-resume 恢复会话
+│       ├── session-report.md  # /opc-session-report 会话报告
 │       ├── ship.md            # /opc-ship 发布
 │       ├── quick.md           # /opc-quick 快速任务
-│       └── review.md          # /opc-review 代码审查
+│       ├── review.md          # /opc-review 代码审查
+│       ├── next.md            # /opc-next 推荐下一步
+│       ├── autonomous.md      # /opc-autonomous 有边界自主推进
+│       ├── fast.md            # /opc-fast 微任务执行
+│       ├── discuss.md         # /opc-discuss 纯讨论模式
+│       ├── explore.md         # /opc-explore 苏格拉底式探索
+│       ├── thread.md          # /opc-thread 上下文线程
+│       ├── seed.md            # /opc-seed 想法种子
+│       ├── backlog.md         # /opc-backlog 延后任务池
+│       └── do.md              # /opc-do 自然语言路由
 ├── hooks/                     # 钩子系统（质量门控）
 │   └── hooks.json             # 钩子注册表（ECC 模式）
 ├── mcp-configs/               # MCP 模板（Context7/Supabase/Sequential Thinking/Playwright）
@@ -176,12 +189,27 @@ SuperOPC/
 │   ├── anti-patterns.md       # 反模式检测
 │   ├── context-budget.md      # 上下文预算
 │   ├── tdd.md                 # TDD 参考
-│   └── git-integration.md     # Git 集成
+│   ├── git-integration.md     # Git 集成
+│   ├── session-management.md  # 会话管理规则
+│   ├── workflow-modes.md      # 工作流模式边界
+│   ├── context-threads.md     # 线程 / 种子 / backlog 边界
+│   ├── session-workflows.md   # 会话工作流参考
+│   └── handoff-format.md      # HANDOFF.json 格式
 ├── scripts/                   # 工具脚本
 │   ├── hooks/                 # Python 钩子脚本实现
 │   ├── convert.py             # 多工具格式转换
 │   ├── opc_dashboard.py       # .opc 项目仪表盘
 │   ├── opc_stats.py           # .opc 结构化指标
+│   ├── opc_workflow.py        # 会话/下一步共享工作流引擎
+│   ├── opc_progress.py        # .opc 会话进度
+│   ├── opc_pause.py           # 写入 HANDOFF.json
+│   ├── opc_resume.py          # 从 handoff 恢复
+│   ├── opc_session_report.py  # 聚合会话报告
+│   ├── opc_next.py            # 推荐下一步
+│   ├── opc_context.py         # 线程 / 种子 / backlog 共享引擎
+│   ├── opc_thread.py          # .opc 上下文线程
+│   ├── opc_seed.py            # .opc 想法种子
+│   ├── opc_backlog.py         # .opc 延后任务池
 │   └── opc_insights.py        # 仪表盘 / 指标解析
 ├── CLAUDE.md                  # AI 系统指令
 ├── AGENTS.md                  # 代理编排规则
@@ -227,11 +255,37 @@ python scripts/opc_dashboard.py --cwd /path/to/your/project
 ```
 汇总阶段、计划、需求、MRR、债务、下一步。
 
-### 7. 导出结构化指标
+### 7. 查看会话进度
+```bash
+python scripts/opc_progress.py --cwd /path/to/your/project
+```
+查看当前位置、主下一步、完成度与验证欠债。
+
+### 8. 生成会话报告
+```bash
+python scripts/opc_session_report.py --cwd /path/to/your/project
+```
+汇总最近会话、handoff、阻塞和恢复建议。
+
+### 9. 暂停并恢复工作
+```bash
+python scripts/opc_pause.py --cwd /path/to/your/project --note "今天先停在这里"
+python scripts/opc_resume.py --cwd /path/to/your/project
+```
+将恢复快照写入 `.opc/HANDOFF.json`，并在新会话中恢复上下文。
+
+### 10. 导出结构化指标
 ```bash
 python scripts/opc_stats.py --cwd /path/to/your/project
 ```
 输出 JSON，适合日报、CI 或外部面板消费。
+
+- `references/session-management.md` — pause / resume / progress / report 生命周期与冲突规则
+- `references/workflow-modes.md` — autonomous / fast / quick / discuss / explore / do / next 边界
+- `references/context-threads.md` — thread / seed / backlog 的存储边界与升级路径
+- `references/session-workflows.md` — progress / pause / resume / report 生命周期（兼容参考）
+- `references/handoff-format.md` — `.opc/HANDOFF.json` 交接格式（兼容参考）
+- `templates/handoff.json` — 恢复快照模板
 
 ## 核心工作流
 
@@ -257,12 +311,12 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 | 类别 | 技能数 | 核心理念 |
 |------|--------|---------|
 | 产品开发 | 5 | brainstorm → plan → implement → review → ship |
-| 工程质量 | 19 | TDD 铁律 + 调试 + 并行执行 + 工程模式库 |
+| 工程质量 | 20 | TDD 铁律 + 调试 + 并行执行 + 工程模式库 |
 | 商业运营 | 18 | 极简创业 + 财务 / 法务 / 内容 / SEO / 用户访谈 |
 | 市场情报 | 2 | 多源调研 + 建造者追踪 |
 | 学习进化 | 3 | 从大师学习 + 创建技能 + 持续改进 |
-| 元技能 | 1 | 如何在项目里正确使用 SuperOPC |
-| **总计** | **48** | |
+| 元技能 | 3 | 如何在项目里正确使用 SuperOPC |
+| **总计** | **51** | |
 
 ## 设计原则
 
@@ -285,7 +339,7 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 | | v0.5.0 | 工程技能深化（4→19） | ✅ 完成 |
 | **深化** | v0.6.0 | 商业技能+仪表盘 | ✅ 完成 |
 | | v0.7.0 | 多运行时适配+MCP（Claude Code + 10 个导出运行时） | ✅ 完成 |
-| | v0.8.0 | 会话管理+高级工作流 | 📋 计划中 |
+| | v0.8.0 | 会话管理+高级工作流 | ✅ 完成 |
 | | v0.9.0 | 质量保证体系 | 📋 计划中 |
 | | v1.0.0 | 正式开源发布 | 🎯 里程碑 |
 | **智能** | v1.1.0 | 开发者画像+全局学习 | 📋 计划中 |
@@ -331,9 +385,9 @@ SuperOPC 站在巨人的肩膀上。感谢所有开源项目的作者：
 
 SuperOPC（超级一人公司操作系统）是一个 AI 驱动的开源工具，专为独立创始人设计。它融合了 9 个顶级开源项目的精华，提供：
 
-- **48 个 AI 技能**：覆盖产品开发、工程质量、商业运营、市场情报、学习进化
+- **51 个 AI 技能**：覆盖产品开发、工程质量、商业运营、市场情报、学习进化
 - **15 个专业代理**：编排器、规划师、执行者、审查员、调试器、安全审计、UI 审计、文档写作等
-- **9 个斜杠命令**：含 `/opc-dashboard` 与 `/opc-stats`
+- **22 个斜杠命令**：覆盖规划、执行、发布、状态查看、会话恢复、工作流模式与自然语言路由
 
 **理念：** 你是一个人，但有了 SuperOPC，你拥有一个 AI 团队。
 

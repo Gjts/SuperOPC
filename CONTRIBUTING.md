@@ -423,6 +423,9 @@ SuperOPC/
   scripts/            # 工具脚本
     hooks/            # 钩子脚本
     convert.py        # 多工具格式转换
+    opc_*.py          # .opc 仪表盘 / 会话 / 工作流脚本
+  references/         # 引用文档
+  templates/          # .opc / handoff 模板
   skills/             # 技能系统（核心）
     using-superopc/   # 元技能
     product/          # 产品技能组
