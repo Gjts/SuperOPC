@@ -67,7 +67,7 @@ python scripts/convert.py --help
 ## High-level architecture
 
 ### 1. Commands are the user-facing entrypoints
-`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, `/opc-research`, `/opc-dashboard`, `/opc-stats`, `/opc-progress`, `/opc-pause`, `/opc-resume`, `/opc-session-report`, `/opc-next`, and `/opc-do`.
+`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, `/opc-research`, `/opc-dashboard`, `/opc-stats`, `/opc-progress`, `/opc-pause`, `/opc-resume`, `/opc-session-report`, `/opc-autonomous`, `/opc-fast`, `/opc-discuss`, `/opc-explore`, `/opc-thread`, `/opc-seed`, `/opc-backlog`, `/opc-next`, and `/opc-do`.
 
 These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
 

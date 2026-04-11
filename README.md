@@ -206,6 +206,7 @@ SuperOPC/
 │   ├── opc_resume.py          # 从 handoff 恢复
 │   ├── opc_session_report.py  # 聚合会话报告
 │   ├── opc_next.py            # 推荐下一步
+│   ├── opc_autonomous.py      # 有边界自主推进
 │   ├── opc_context.py         # 线程 / 种子 / backlog 共享引擎
 │   ├── opc_thread.py          # .opc 上下文线程
 │   ├── opc_seed.py            # .opc 想法种子
@@ -267,14 +268,29 @@ python scripts/opc_session_report.py --cwd /path/to/your/project
 ```
 汇总最近会话、handoff、阻塞和恢复建议。
 
-### 9. 暂停并恢复工作
+### 9. 有边界自主推进
+```bash
+python scripts/opc_autonomous.py --cwd /path/to/your/project --from 2 --to 4
+python scripts/opc_autonomous.py --cwd /path/to/your/project --only 3 --interactive
+```
+在明确窗口内连续推进，并在 blocker、验证欠债或人工检查点处停下。
+
+### 10. 暂停并恢复工作
 ```bash
 python scripts/opc_pause.py --cwd /path/to/your/project --note "今天先停在这里"
 python scripts/opc_resume.py --cwd /path/to/your/project
 ```
 将恢复快照写入 `.opc/HANDOFF.json`，并在新会话中恢复上下文。
 
-### 10. 导出结构化指标
+### 11. 管理上下文线程 / 种子 / backlog
+```bash
+python scripts/opc_thread.py --cwd /path/to/your/project "pricing-page-copy"
+python scripts/opc_seed.py --cwd /path/to/your/project "viral referral loop" --trigger "当激活率停滞时"
+python scripts/opc_backlog.py --cwd /path/to/your/project "整理 onboarding 文案" --note "等本阶段结束后再做"
+```
+把长期上下文写入 `.opc/threads/`、把未来想法写入 `.opc/seeds/`，并把延后可执行任务写入 `.opc/todos/`。
+
+### 12. 导出结构化指标
 ```bash
 python scripts/opc_stats.py --cwd /path/to/your/project
 ```

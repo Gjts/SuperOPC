@@ -36,13 +36,15 @@ description: Use when deciding whether to discuss, explore, route, fast-execute,
    - 否 → `explore`
 2. 问题清楚但要做方案取舍？
    - 是 → `discuss`
-3. 是否只是一个明确微任务？
+3. 是否想在明确边界内连续推进，而不是每步都重新确认？
+   - 是 → `autonomous`
+4. 是否只是一个明确微任务？
    - 是 → `fast`
-4. 是否需要轻量任务流？
+5. 是否需要轻量任务流？
    - 是 → `quick`
-5. 用户只是说一句自然语言，不知道怎么开始？
+6. 用户只是说一句自然语言，不知道怎么开始？
    - 是 → `do`
-6. 用户只想知道下一步？
+7. 用户只想知道下一步？
    - 是 → `next`
 
 ## 原则
