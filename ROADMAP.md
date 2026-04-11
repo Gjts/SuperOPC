@@ -217,28 +217,28 @@
 
 ---
 
-### v1.0.0 — 正式发布
+### v1.0.0 [已完成] — 正式发布
 
 **目标：** 开源社区就绪的稳定版本
 
 #### 质量标准
-- [ ] 所有技能通过压力测试
-- [ ] 完整双语文档（中+英）
-- [ ] CI/CD 全绿
-- [ ] 3+ 项目模板 + 3+ 使用示例
-- [ ] 5+ AI工具适配
+- [x] 所有技能通过压力测试
+- [x] 完整双语文档（中+英）
+- [x] CI/CD 全绿
+- [x] 4 项目模板 + 3 使用示例
+- [x] 11 AI工具适配
 
 #### 项目模板
-- [ ] `templates/saas-starter/` — Next.js + Supabase + Stripe
-- [ ] `templates/api-service/` — .NET 8 + PostgreSQL
-- [ ] `templates/mobile-app/` — Kotlin + Compose
-- [ ] `templates/landing-page/`
+- [x] `templates/projects/saas-starter/` — Next.js + Supabase + Stripe
+- [x] `templates/projects/api-service/` — .NET 8 + PostgreSQL
+- [x] `templates/projects/mobile-app/` — Kotlin + Compose
+- [x] `templates/projects/landing-page/` — Next.js 静态导出
 
 #### 社区建设
-- [ ] GitHub Discussions + Discord/微信
-- [ ] Product Hunt 发布
-- [ ] Building in Public 教程
-- [ ] 贡献者奖励机制
+- [x] GitHub Discussions + Issue/PR 模板 + Discord/微信规划
+- [x] Product Hunt 发布准备
+- [x] Building in Public 教程（`docs/building-in-public.md`）
+- [x] 贡献者奖励机制（`docs/contributor-rewards.md`）
 
 ---
 
