@@ -36,13 +36,16 @@ SuperOPC 融合了开源社区最优秀的 AI 工程实践：
 
 ### Claude Code
 ```bash
-git clone https://github.com/gjts/superopc.git ~/.claude/plugins/superopc
+git clone https://github.com/gjts/superopc.git
 ```
 
-然后在 Claude Code 中：
-```
-/plugin install superopc
-```
+> 当前仓库是 SuperOPC 的**插件源码仓库**，尚未在 Claude Code 可识别的 marketplace 中发布，因此**不能**直接使用 ` /plugin install superopc `。
+>
+> 在独立的 marketplace 仓库发布并验证前，请将本仓库视为插件源码/本地开发包来使用。
+>
+> 未来的终端用户安装流预计为：
+> ` /plugin marketplace add gjts/superopc-marketplace `
+> ` /plugin install superopc@superopc-marketplace `
 
 ### 多运行时导出（Claude Code / Cursor / Windsurf / Copilot / Gemini CLI / OpenCode / Codex / Trae / Cline / Augment / OpenClaw）
 ```bash

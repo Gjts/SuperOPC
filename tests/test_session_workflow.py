@@ -197,6 +197,7 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
 
     claude_plugin = json.loads((out_dir / "claude-code" / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert claude_plugin["version"] == "1.0.0"
+    assert not (out_dir / "claude-code" / ".claude-plugin" / "marketplace.json").exists()
 
     assert (out_dir / "claude-code" / "commands" / "opc" / "progress.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "pause.md").exists()

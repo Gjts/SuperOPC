@@ -37,13 +37,16 @@ SuperOPC merges the best AI engineering practices from the open-source community
 ### Claude Code
 
 ```bash
-git clone https://github.com/gjts/superopc.git ~/.claude/plugins/superopc
+git clone https://github.com/gjts/superopc.git
 ```
 
-Then in Claude Code:
-```
-/plugin install superopc
-```
+> This repository is the **plugin source repository** for SuperOPC. It is not yet published in a Claude Code-discoverable marketplace, so users **cannot** install it with ` /plugin install superopc ` yet.
+>
+> Until the separate marketplace repository is live and verified, treat this repository as plugin source/local development content.
+>
+> The expected end-user install flow after publication is:
+> ` /plugin marketplace add gjts/superopc-marketplace `
+> ` /plugin install superopc@superopc-marketplace `
 
 ### Multi-Runtime Export (11 targets)
 

@@ -788,15 +788,24 @@ def validate_plugin_manifest(repo_root: Path) -> list[str]:
     if not payload:
         return [f"{plugin_file}: invalid JSON"]
 
-    for key in ("agents", "hooks"):
-        value = payload.get(key)
-        if not isinstance(value, list):
-            errors.append(f"{plugin_file}: {key} must be a list")
-            continue
-        for entry in value:
+    agents = payload.get("agents")
+    if not isinstance(agents, list):
+        errors.append(f"{plugin_file}: agents must be a list")
+    else:
+        for entry in agents:
             target = repo_root / str(entry).lstrip("./")
             if not target.exists():
                 errors.append(f"{plugin_file}: missing referenced path {entry}")
+
+    hooks = payload.get("hooks")
+    if hooks is not None:
+        if not isinstance(hooks, list):
+            errors.append(f"{plugin_file}: hooks must be a list")
+        else:
+            for entry in hooks:
+                target = repo_root / str(entry).lstrip("./")
+                if not target.exists():
+                    errors.append(f"{plugin_file}: missing referenced path {entry}")
     return errors
 
 
