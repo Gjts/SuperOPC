@@ -64,3 +64,15 @@ description: Use when you want to improve the SuperOPC system itself based on pa
 - 遇到了反复出现的问题
 - 用户明确要求改进系统
 - 每两周例行检查
+
+## 压力测试
+
+### 高压场景
+- 每次做完项目就直接切到下一个，不沉淀经验。
+
+### 常见偏差
+- 依赖记忆，不形成可复用模式。
+
+### 使用技能后的纠正
+- 把有效做法和失败教训结构化沉淀进系统。
+

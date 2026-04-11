@@ -16,6 +16,7 @@ depends_on: []              # 此计划依赖的计划 ID（如 ["01-01"]）
 files_modified: []          # 此计划修改的文件
 autonomous: true            # 如果计划有需要用户交互的检查点则为 false
 requirements: []            # 必需 — 此计划涉及的需求 ID
+checkpoints: []             # 可选 — 记录 checkpoint:decision / checkpoint:human-verify 摘要
 
 # 目标反向验证（规划时推导，执行后验证）
 must_haves:
@@ -81,6 +82,8 @@ must_haves:
 1. truths: [逐条检查可观察行为]
 2. artifacts: [确认文件存在且非空]
 3. key_links: [验证工件间连接]
+4. regression: [说明会影响哪些前序阶段/既有路径]
+5. traceability: [标记需求 ID、测试证据、人工验证或外部来源]
 </verification>
 ```
 
@@ -92,6 +95,7 @@ must_haves:
 - **auto**：完全自动执行，无需用户干预
 - **checkpoint:decision**：需要用户做出选择
 - **checkpoint:human-verify**：需要用户手动验证（如 UI 检查）
+- `checkpoints` frontmatter 只记录会真正阻断自动推进的检查点摘要，供 `/opc-autonomous` 与 `/opc-health` 读取
 
 ### 波次分配
 - `wave: 1` — 无依赖，第一波并行执行

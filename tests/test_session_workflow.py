@@ -193,10 +193,10 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
     )
 
     runtime_map = json.loads((out_dir / "claude-code" / "runtime-map.json").read_text(encoding="utf-8"))
-    assert runtime_map["pluginVersion"] == "0.8.0"
+    assert runtime_map["pluginVersion"] == "0.9.0"
 
     claude_plugin = json.loads((out_dir / "claude-code" / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert claude_plugin["version"] == "0.8.0"
+    assert claude_plugin["version"] == "0.9.0"
 
     assert (out_dir / "claude-code" / "commands" / "opc" / "progress.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "pause.md").exists()
@@ -206,3 +206,5 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
     assert (out_dir / "claude-code" / "commands" / "opc" / "thread.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "seed.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "backlog.md").exists()
+
+

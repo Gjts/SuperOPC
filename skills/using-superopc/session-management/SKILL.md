@@ -43,3 +43,15 @@ description: Use when the task is about pausing, resuming, checkpointing, report
 - 不区分项目状态和会话状态
 - 给出多个平行“下一步”导致分心
 - 忽略恢复文件是否仍存在
+
+## 压力测试
+
+### 高压场景
+- 会话快结束了，还想靠记忆接着做。
+
+### 常见偏差
+- 不写 handoff、resume file 和 stop point。
+
+### 使用技能后的纠正
+- 在暂停前固化恢复入口，保证下次能快速接续。
+

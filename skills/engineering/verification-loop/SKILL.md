@@ -97,10 +97,16 @@ description: Use after executing a plan or phase to verify deliverables meet req
   └── 🔵 Low: 代码质量/命名 → 记录 TODO
 
 修复预算：最多 2 次重试
-  ├── 重试 1: 尝试最小修复
-  ├── 重试 2: 扩大范围修复
+  ├── RETRY: 尝试最小修复，保持范围不扩张
+  ├── DECOMPOSE: 问题过大时拆成更小的可验证任务
+  ├── PRUNE: 发现无需求映射/无来源支撑的声明时标记为范围漂移并移除承诺
   └── 仍然失败 → 升级为阻塞，记录到 STATE.md
 ```
+
+### 选择规则
+- **RETRY**：问题局部、原因明确、可在当前节点修复
+- **DECOMPOSE**：问题跨多个文件/职责，继续硬修会放大风险
+- **PRUNE**：发现“完成声明”没有 requirement / source / verification 支撑
 
 ## 验证报告格式
 
@@ -131,3 +137,15 @@ description: Use after executing a plan or phase to verify deliverables meet req
 - 关键路径全查，其余 Nyquist 采样
 - 修复预算严格（2 次），避免无限循环
 - 验证报告写入 SUMMARY.md
+
+## 压力测试
+
+### 高压场景
+- 实现完成后只看“文件存在”，就想宣布完成。
+
+### 常见偏差
+- 把存在性当作功能正确。
+
+### 使用技能后的纠正
+- 按 Exists/Substantive/Wired/Functional 四层验证，并在失败时执行 node repair。
+

@@ -7,6 +7,31 @@
 
 ---
 
+## [0.9.0] - 开发中
+
+### 新增
+- **共享 QA 引擎** — `scripts/opc_quality.py` + `scripts/opc_health.py`
+  - 项目模式检查 `.opc/` 核心文件、支撑目录、`config.json`、`HANDOFF.json`、需求覆盖、VERIFICATION 配对、声明溯源与 SUMMARY 追踪字段
+  - 仓库模式检查 frontmatter、plugin/hook 接线、内部 markdown 链接、GitHub Actions 与版本元数据
+  - `--repair` 支持补齐确定性缺失结构，并输出结构化 JSON 结果供后续 CI / 命令消费
+- **健康检查命令** — `commands/opc/health.md`
+  - 暴露 `/opc-health` 作为 v0.9.0 质量保证体系入口
+  - 支持 project / repo / all 三种目标范围
+- **验证模板** — `templates/verification.md`
+  - 为 SUMMARY 之外的验证证据提供统一格式
+- **技能压力测试契约** — `skills/**/SKILL.md`
+  - 全量技能补齐 `## 压力测试` 区块
+- **GitHub Actions** — `.github/workflows/quality.yml` + `.github/workflows/release.yml`
+  - 覆盖 pytest、repo health、convert smoke 与 release 打包
+
+### 变更
+- 更新 `templates/config.json`、`phase-prompt.md`、`summary.md`、`requirements.md`、`state.md`，增加 v0.9.0 质量字段与可追溯性锚点
+- 更新 `references/gates.md` 与 `references/verification-patterns.md`，同步 health / traceability / node repair 语义
+- 更新 `README.md`、`CLAUDE.md`、`ROADMAP.md`，并将插件版本升级到 `0.9.0`
+- 更新 `tests/test_session_workflow.py`，覆盖 repo health 与 repair scaffolding 回归
+
+---
+
 ## [0.8.0] - 开发中
 
 ### 新增

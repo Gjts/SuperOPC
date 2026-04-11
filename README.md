@@ -165,6 +165,7 @@ SuperOPC/
 │       ├── quick.md           # /opc-quick 快速任务
 │       ├── review.md          # /opc-review 代码审查
 │       ├── next.md            # /opc-next 推荐下一步
+│       ├── health.md          # /opc-health 质量与目录体检
 │       ├── autonomous.md      # /opc-autonomous 有边界自主推进
 │       ├── fast.md            # /opc-fast 微任务执行
 │       ├── discuss.md         # /opc-discuss 纯讨论模式
@@ -206,6 +207,8 @@ SuperOPC/
 │   ├── opc_resume.py          # 从 handoff 恢复
 │   ├── opc_session_report.py  # 聚合会话报告
 │   ├── opc_next.py            # 推荐下一步
+│   ├── opc_health.py          # 目录与质量体检入口
+│   ├── opc_quality.py         # 共享质量检查/修复引擎
 │   ├── opc_autonomous.py      # 有边界自主推进
 │   ├── opc_context.py         # 线程 / 种子 / backlog 共享引擎
 │   ├── opc_thread.py          # .opc 上下文线程
@@ -262,27 +265,35 @@ python scripts/opc_progress.py --cwd /path/to/your/project
 ```
 查看当前位置、主下一步、完成度与验证欠债。
 
-### 8. 生成会话报告
+### 8. 运行项目健康检查
+```bash
+python scripts/opc_health.py --cwd /path/to/your/project
+python scripts/opc_health.py --cwd /path/to/your/project --repair
+python scripts/opc_health.py --cwd /path/to/your/project --json
+```
+检查 `.opc/` 完整性、需求覆盖、SUMMARY 追踪字段、恢复文件引用，并可补齐缺失的基础结构。
+
+### 9. 生成会话报告
 ```bash
 python scripts/opc_session_report.py --cwd /path/to/your/project
 ```
 汇总最近会话、handoff、阻塞和恢复建议。
 
-### 9. 有边界自主推进
+### 10. 有边界自主推进
 ```bash
 python scripts/opc_autonomous.py --cwd /path/to/your/project --from 2 --to 4
 python scripts/opc_autonomous.py --cwd /path/to/your/project --only 3 --interactive
 ```
 在明确窗口内连续推进，并在 blocker、验证欠债或人工检查点处停下。
 
-### 10. 暂停并恢复工作
+### 11. 暂停并恢复工作
 ```bash
 python scripts/opc_pause.py --cwd /path/to/your/project --note "今天先停在这里"
 python scripts/opc_resume.py --cwd /path/to/your/project
 ```
 将恢复快照写入 `.opc/HANDOFF.json`，并在新会话中恢复上下文。
 
-### 11. 管理上下文线程 / 种子 / backlog
+### 12. 管理上下文线程 / 种子 / backlog
 ```bash
 python scripts/opc_thread.py --cwd /path/to/your/project "pricing-page-copy"
 python scripts/opc_seed.py --cwd /path/to/your/project "viral referral loop" --trigger "当激活率停滞时"
@@ -290,7 +301,7 @@ python scripts/opc_backlog.py --cwd /path/to/your/project "整理 onboarding 文
 ```
 把长期上下文写入 `.opc/threads/`、把未来想法写入 `.opc/seeds/`，并把延后可执行任务写入 `.opc/todos/`。
 
-### 12. 导出结构化指标
+### 13. 导出结构化指标
 ```bash
 python scripts/opc_stats.py --cwd /path/to/your/project
 ```
@@ -356,7 +367,7 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 | **深化** | v0.6.0 | 商业技能+仪表盘 | ✅ 完成 |
 | | v0.7.0 | 多运行时适配+MCP（Claude Code + 10 个导出运行时） | ✅ 完成 |
 | | v0.8.0 | 会话管理+高级工作流 | ✅ 完成 |
-| | v0.9.0 | 质量保证体系 | 📋 计划中 |
+| | v0.9.0 | 质量保证体系 | ✅ 完成 |
 | | v1.0.0 | 正式开源发布 | 🎯 里程碑 |
 | **智能** | v1.1.0 | 开发者画像+全局学习 | 📋 计划中 |
 | | v1.2.0 | CLI 工具层 | 📋 计划中 |

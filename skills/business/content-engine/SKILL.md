@@ -74,3 +74,15 @@ description: Use when building a repeatable content system from research to publ
 2. 选题池框架
 3. 多平台分发计划
 4. 复用策略
+
+## 压力测试
+
+### 高压场景
+- 每次发内容都从零开始想选题和分发。
+
+### 常见偏差
+- 没有输入源、生产节奏和复用路径。
+
+### 使用技能后的纠正
+- 建立输入→生产→分发→复用的内容流水线。
+

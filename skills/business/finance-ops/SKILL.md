@@ -71,3 +71,15 @@ description: Use when setting up bookkeeping, invoicing, tax hygiene, cash track
 2. 周/月运营节奏
 3. 当前应追踪的 5 个数字
 4. 降本或保现金建议
+
+## 压力测试
+
+### 高压场景
+- 月底才想起来看现金流。
+
+### 常见偏差
+- 收入、成本、跑道没有固定节奏追踪。
+
+### 使用技能后的纠正
+- 按周/月维护财务节奏，持续更新 MRR、Burn 和 Runway。
+

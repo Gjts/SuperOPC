@@ -149,3 +149,15 @@ ALTER TABLE users ALTER COLUMN age TYPE bigint;
 - [ ] EXPLAIN ANALYZE 优化慢查询
 - [ ] 连接池配置
 - [ ] 定期 VACUUM ANALYZE
+
+## 压力测试
+
+### 高压场景
+- 查询先写出来，慢了再说。
+
+### 常见偏差
+- 忽略索引、事务边界和连接池。
+
+### 使用技能后的纠正
+- 先按访问路径设计索引与事务，再落查询。
+

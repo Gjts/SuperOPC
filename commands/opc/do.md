@@ -25,6 +25,7 @@ description: Route a natural-language intent to the most appropriate existing Su
    - 执行计划 → `/opc-build`
    - 代码审查 → `/opc-review`
    - 发布 → `/opc-ship`
+   - 质量健康检查 / 完整性诊断 → `/opc-health`
    - 查看状态 → `/opc-progress` / `/opc-dashboard` / `/opc-stats`
 
 3. **输出路由结果**

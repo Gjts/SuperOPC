@@ -89,3 +89,15 @@ description: Use when making basic legal decisions for a solo business: naming, 
 2. 最小法务文件包
 3. 立即要补的披露或合同条款
 4. 必须升级给律师的问题
+
+## 压力测试
+
+### 高压场景
+- 先做业务，法务问题以后再说。
+
+### 常见偏差
+- 拖到出事后才补合同、隐私和条款。
+
+### 使用技能后的纠正
+- 优先补齐高风险法务底线，降低早期暴雷概率。
+

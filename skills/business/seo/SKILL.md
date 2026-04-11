@@ -70,3 +70,15 @@ description: Use when planning search acquisition, content clusters, landing pag
 2. 内容集群地图
 3. Money pages 缺口
 4. 下周应发布的 3 个页面
+
+## 压力测试
+
+### 高压场景
+- 想做 SEO，于是先大量堆内容。
+
+### 常见偏差
+- 不做搜索意图分层，文章和转化页混写。
+
+### 使用技能后的纠正
+- 先按搜索意图和内容集群规划，再安排产出。
+

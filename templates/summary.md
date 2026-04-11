@@ -38,6 +38,8 @@ patterns-established:
   - "模式 1：描述"
 
 requirements-completed: []  # 必需 — 复制计划 frontmatter 中的所有需求 ID
+verification-files: []      # 必需 — 指向对应的 `*-VERIFICATION.md`
+claim-sources: []           # 关键结论的来源（文件、issue、URL、手动验证项）
 
 # 指标
 duration: Xmin
@@ -76,6 +78,22 @@ completed: YYYY-MM-DD
 - [关键决策 1：选择了什么，为什么]
 - [关键决策 2：选择了什么，为什么]
 
+## 验证记录
+
+### Tests
+- [命令] — [通过 / 失败 / 未运行]
+
+### Manual verification
+- [ ] [需要人工确认的路径或截图检查]
+
+### Regression impact
+- 影响面：[本阶段可能影响的前序功能 / 测试面]
+- 新增欠债：[无 / 具体说明]
+
+### Claims and sources
+- 结论：[你声称已经完成的结论]
+  - 来源：[文件路径 / issue / URL / 手动验证项]
+
 ## 下阶段准备度
 
 ### 就绪
@@ -86,6 +104,17 @@ completed: YYYY-MM-DD
 
 ### 阻塞
 - 无
+
+## 验证结果
+- **自动化测试：** [已运行什么，结果如何]
+- **人工验证：** [需要/已完成的人工验证项]
+- **回归影响：** [受影响的旧路径、组件或阶段]
+- **Schema drift：** [无 / 已检查 / 需要补迁移]
+
+## 声明溯源
+- **需求来源：** [REQ-ID 列表]
+- **代码证据：** [关键文件或提交]
+- **验证证据：** [测试、截图、手动检查、外部资料]
 ```
 
 ---
@@ -99,5 +128,7 @@ completed: YYYY-MM-DD
 
 ### frontmatter 的重要性
 - `requirements-completed` 必须非空 — 与 REQUIREMENTS.md 的可追溯性关联
+- `verification-files` 必须指向实际验证工件 — 供 `/opc-health` 做回归门与覆盖门检查
+- `claim-sources` 用于标记关键结论的来源，避免无来源完成声明
 - `provides` 和 `affects` 用于跨阶段依赖分析
 - `duration` 用于性能指标追踪

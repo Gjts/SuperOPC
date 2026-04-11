@@ -68,3 +68,15 @@ description: Use when defining how the product should sound across landing pages
 2. 可用/禁用词表
 3. 场景化写作指南
 4. 三段示例文案
+
+## 压力测试
+
+### 高压场景
+- 不同渠道内容都临时发挥。
+
+### 常见偏差
+- 今天像专家，明天像段子手，品牌语气漂移。
+
+### 使用技能后的纠正
+- 用统一语调支柱和禁用词维护一致品牌表达。
+

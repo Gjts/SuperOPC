@@ -53,3 +53,14 @@ description: Use when deciding whether to discuss, explore, route, fast-execute,
 - `do` 是路由器，不是新工作流引擎
 - `fast` 不要膨胀成 `quick`
 - `discuss` / `explore` 不要偷偷进入实现
+
+## 压力测试
+
+### 高压场景
+- 用户同时给出模糊目标和一点实现细节时，容易直接切进执行，没先判断该走 explore、discuss 还是 quick。
+
+### 常见偏差
+- 见到“做一下”就默认进入 fast 或 quick，导致问题还没定义清楚就开始产出。
+
+### 使用技能后的纠正
+- 先按任务清晰度和推进边界选模式：未定义清楚先 explore，要取舍先 discuss，小而明确再用 fast/quick。

@@ -71,3 +71,15 @@ description: Use when reviewing a product from the user's perspective: value pro
 2. 激活路径瓶颈
 3. 留存风险
 4. 最值得优先修的一个点
+
+## 压力测试
+
+### 高压场景
+- 只看新增功能数量，不看用户是否真的激活和留存。
+
+### 常见偏差
+- 把产出当成价值，把忙碌当成进展。
+
+### 使用技能后的纠正
+- 用激活、留存和 PMF 信号审视产品优先级。
+

@@ -96,3 +96,15 @@ description: Use when planning or analyzing customer interviews with The Mom Tes
 2. 证据分级摘要
 3. 高价值痛点列表
 4. 对产品/文案/定价的调整建议
+
+## 压力测试
+
+### 高压场景
+- 准备访谈时，想直接去证明自己的想法。
+
+### 常见偏差
+- 问题带引导，收集到的是“礼貌支持”。
+
+### 使用技能后的纠正
+- 用非引导式问题获取真实痛点和现有行为。
+

@@ -33,7 +33,7 @@ description: Advance a bounded slice of roadmap work autonomously, while stoppin
 
 3. **执行前先做闸门判断**
    - 如果存在 blocker，先退回 `/opc-discuss`
-   - 如果 validation debt 已影响继续执行，先退回 `/opc-progress`
+   - 如果 validation debt 或 quality debt 已影响继续执行，先退回 `/opc-progress` 或 `/opc-health`
    - 如果计划包含 `checkpoint:decision` 或 `checkpoint:human-verify`，切换为交互式推进
 
 4. **输出自主执行序列**

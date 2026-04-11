@@ -70,3 +70,15 @@ description: Use after brainstorming design is approved. Breaks design into bite
 - **必须** 调用 `implementing` 技能执行计划
 - 每个任务用子代理执行 + TDD
 - 完成后调用 `reviewing` 技能审查
+
+## 压力测试
+
+### 高压场景
+- 方案刚被接受，就想直接开工。
+
+### 常见偏差
+- 任务切分模糊，缺文件路径和验证标准。
+
+### 使用技能后的纠正
+- 把目标拆成可执行、可测试、可交接的原子任务。
+

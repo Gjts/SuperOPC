@@ -49,3 +49,15 @@ description: Use when setting prices, considering price changes, or deciding on 
 2. 具体价格点建议
 3. 分层方案（如适用）
 4. 提价路径规划
+
+## 压力测试
+
+### 高压场景
+- 担心用户嫌贵，想先永久免费。
+
+### 常见偏差
+- 用低价掩盖价值表达不清。
+
+### 使用技能后的纠正
+- 按客户获得的价值定价，并预留后续提价路径。
+
