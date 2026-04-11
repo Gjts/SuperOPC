@@ -7,7 +7,46 @@
 
 ---
 
-## [0.9.0] - 开发中
+## [1.0.0] - 正式发布
+
+### 新增
+- **4 个项目模板** — `templates/projects/`
+  - `saas-starter/` — Next.js 14 + Supabase + Stripe 全栈 SaaS 模板（README + project/requirements/roadmap/config）
+  - `api-service/` — .NET 8 Minimal API + PostgreSQL API 服务模板
+  - `mobile-app/` — Kotlin + Jetpack Compose Android 原生应用模板
+  - `landing-page/` — Next.js 14 静态导出营销页模板（轻量 coarse 粒度配置）
+- **3 个使用示例** — `examples/`
+  - `01-saas-mvp-workflow/` — 从零到上线的 SaaS MVP 完整工作流演示
+  - `02-api-development/` — .NET 8 API 从设计到部署的工作流演示
+  - `03-business-workflow/` — 商业技能在产品验证、定价和增长中的应用
+- **英文文档** — `README_EN.md`
+  - 完整英文版 README，覆盖安装、架构、快速开始、技能一览、设计原则
+  - 中文 README 添加英文版链接
+- **社区建设文件**
+  - `CODE_OF_CONDUCT.md` — Contributor Covenant 2.1 中英双语行为准则
+  - `.github/ISSUE_TEMPLATE/bug_report.md` — 结构化 Bug 报告模板
+  - `.github/ISSUE_TEMPLATE/feature_request.md` — 功能建议模板（含一人公司价值维度）
+  - `.github/PULL_REQUEST_TEMPLATE.md` — PR 模板（含检查清单）
+  - `.github/DISCUSSION_TEMPLATE/ideas.yml` — Discussion 想法分享模板
+  - `docs/building-in-public.md` — Building in Public 教程（内容来源映射 + 日历模板）
+  - `docs/contributor-rewards.md` — 贡献者奖励机制（4 等级 + 积分体系）
+  - `docs/community-guide.md` — 社区指南（渠道 + 活动 + 获取帮助）
+
+### 变更
+- 更新 `README.md` 添加项目模板、示例和英文版链接，路线图表格标记 v1.0.0 为当前版本
+- 更新 `ROADMAP.md` 标记 v1.0.0 所有子项已完成
+- 更新 `.claude-plugin/plugin.json` 到 `1.0.0`
+
+### 质量标准达成
+- 51 个技能全部包含压力测试区块
+- 完整双语文档（中文 README + 英文 README_EN.md）
+- CI/CD 覆盖 pytest + repo health + convert smoke + release 打包
+- 4 个项目模板 + 3 个使用示例
+- 11 个 AI 工具适配（Claude Code / Cursor / Windsurf / Copilot / Gemini CLI / OpenCode / Codex / Trae / Cline / Augment / OpenClaw）
+
+---
+
+## [0.9.0] - 完成
 
 ### 新增
 - **共享 QA 引擎** — `scripts/opc_quality.py` + `scripts/opc_health.py`
@@ -32,7 +71,7 @@
 
 ---
 
-## [0.8.0] - 开发中
+## [0.8.0] - 完成
 
 ### 新增
 - **会话工作流层** — `scripts/opc_workflow.py` + `scripts/opc_progress.py` + `scripts/opc_pause.py` + `scripts/opc_resume.py` + `scripts/opc_session_report.py` + `scripts/opc_next.py`
@@ -52,7 +91,7 @@
 
 ---
 
-## [0.7.0] - 开发中
+## [0.7.0] - 完成
 
 ### 新增
 - **MCP 模板层** — `mcp-configs/mcp-servers.json` + `.mcp.json`

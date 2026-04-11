@@ -1,0 +1,66 @@
+{
+  "_comment": "Landing Page 模板配置 — 轻量级快速开发",
+
+  "mode": "interactive",
+  "granularity": "coarse",
+  "model_profile": "balanced",
+
+  "workflow": {
+    "research": false,
+    "plan_check": true,
+    "verifier": true,
+    "nyquist": false,
+    "node_repair": false,
+    "requirements_gate": true,
+    "regression_gate": false,
+    "schema_drift": false,
+    "scope_guard": true,
+    "claim_traceability": false,
+    "code_review": true,
+    "code_review_depth": "quick",
+    "auto_advance": false,
+    "discuss_mode": "discuss",
+    "skip_discuss": true,
+    "text_mode": false
+  },
+
+  "parallelization": {
+    "enabled": false,
+    "plan_level": false,
+    "task_level": false,
+    "max_concurrent_agents": 1,
+    "min_plans_for_parallel": 3
+  },
+
+  "git": {
+    "branching_strategy": "none",
+    "commit_docs": true,
+    "phase_branch_template": "feat/phase-{N}-{name}",
+    "milestone_branch_template": "release/{version}"
+  },
+
+  "gates": {
+    "confirm_project": true,
+    "confirm_roadmap": true,
+    "confirm_plan": false,
+    "confirm_transition": false,
+    "issues_review": false
+  },
+
+  "safety": {
+    "always_confirm_destructive": true,
+    "always_confirm_external_services": false
+  },
+
+  "hooks": {
+    "context_warnings": true,
+    "state_file_lock": false
+  },
+
+  "project_code": null,
+  "response_language": null,
+  "agent_skills": {
+    "primary": ["nextjs-patterns", "frontend-patterns", "seo"],
+    "secondary": ["brand-voice", "content-engine"]
+  }
+}

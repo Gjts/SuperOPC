@@ -18,10 +18,15 @@
 
 ## 行为准则
 
+请参阅 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) 了解完整的行为准则。
+
+核心原则：
 - **尊重** — 尊重每位贡献者，鼓励建设性讨论
 - **包容** — 欢迎所有背景的人参与
 - **务实** — 聚焦一人公司场景的实际价值
 - **质量** — 宁可少而精，不要多而杂
+
+详细的贡献者奖励机制见 [docs/contributor-rewards.md](docs/contributor-rewards.md)。
 
 ---
 
@@ -487,9 +492,11 @@ SuperOPC 原生支持 Claude Code 格式，同时通过 `scripts/convert.py` 转
 
 ## 问题和讨论
 
-- **Bug 报告**：[GitHub Issues](https://github.com/user/SuperOPC/issues)
-- **功能建议**：[GitHub Discussions](https://github.com/user/SuperOPC/discussions)
-- **问题咨询**：[GitHub Discussions](https://github.com/user/SuperOPC/discussions)
+- **Bug 报告**：[GitHub Issues](https://github.com/gjts/superopc/issues)（使用 Bug Report 模板）
+- **功能建议**：[GitHub Issues](https://github.com/gjts/superopc/issues)（使用 Feature Request 模板）
+- **想法讨论**：[GitHub Discussions](https://github.com/gjts/superopc/discussions)
+- **社区指南**：[docs/community-guide.md](docs/community-guide.md)
+- **Building in Public**：[docs/building-in-public.md](docs/building-in-public.md)
 
 ---
 
