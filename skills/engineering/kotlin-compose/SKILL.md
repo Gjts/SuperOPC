@@ -225,3 +225,15 @@ app/src/main/java/com/myapp/
 - [ ] LazyColumn + key 列表优化
 - [ ] 错误/加载/空状态处理
 - [ ] ProGuard/R8 代码混淆
+
+## 压力测试
+
+### 高压场景
+- Compose 页面先堆 UI，再考虑状态管理。
+
+### 常见偏差
+- 把业务状态直接塞进可组合函数。
+
+### 使用技能后的纠正
+- 使用 state hoisting 和 ViewModel 管理状态。
+

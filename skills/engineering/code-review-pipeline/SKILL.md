@@ -131,3 +131,15 @@ git log --oneline main..HEAD
 - 每个阶段/计划完成后自动触发 Standard 审查
 - 支付/认证相关变更必须 Deep 审查
 - 审查报告写入 SUMMARY.md 或 PR 描述
+
+## 压力测试
+
+### 高压场景
+- PR 很大，想只做一次随意 review。
+
+### 常见偏差
+- 对所有变更都用同一深度审查。
+
+### 使用技能后的纠正
+- 按 quick/standard/deep 选择合适的审查深度。
+

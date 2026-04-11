@@ -175,3 +175,15 @@ users.MapPost("/", async (CreateUserRequest req,
 - [ ] Serilog 结构化日志
 - [ ] 健康检查端点
 - [ ] OpenAPI/Swagger 文档
+
+## 压力测试
+
+### 高压场景
+- 写 .NET 服务时把框架默认用法全堆在 Program.cs。
+
+### 常见偏差
+- 缺少清晰的依赖注入、验证和分层边界。
+
+### 使用技能后的纠正
+- 采用 Minimal API + DI + 验证 + 分层约定。
+

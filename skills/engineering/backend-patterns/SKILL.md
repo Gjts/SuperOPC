@@ -172,3 +172,15 @@ function errorHandler(err: Error, req: Request, res: Response) {
 - [ ] 健康检查端点（`/health`）
 - [ ] 数据库连接池配置
 - [ ] 速率限制（至少全局级别）
+
+## 压力测试
+
+### 高压场景
+- 后端需求增加时，想把所有逻辑塞进 controller。
+
+### 常见偏差
+- 把路由、业务、存储逻辑混在一起。
+
+### 使用技能后的纠正
+- 按分层职责拆分 controller/service/repository。
+

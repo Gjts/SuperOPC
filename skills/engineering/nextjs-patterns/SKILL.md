@@ -217,3 +217,15 @@ lib/
 - [ ] Middleware 处理认证路由守卫
 - [ ] `loading.tsx` + `error.tsx` 每个路由段
 - [ ] `next/image` + `next/font` 性能优化
+
+## 压力测试
+
+### 高压场景
+- 看到 Next.js 新能力就全部混用。
+
+### 常见偏差
+- Server/Client 组件边界混乱，数据流不清。
+
+### 使用技能后的纠正
+- 先定渲染边界，再选择 Server Components、Actions 和 Route Handlers。
+

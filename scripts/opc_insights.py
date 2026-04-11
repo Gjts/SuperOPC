@@ -296,7 +296,7 @@ def parse_git_info(project_root: Path) -> dict:
         }
 
 
-def parse_validation_debt(state_text: str, git_info: dict, warnings: list[str]) -> list[str]:
+def parse_validation_debt(state_text: str, git_info: dict, warnings: list[str], extra_items: list[str] | None = None) -> list[str]:
     debt: list[str] = []
 
     validation_section = get_section(state_text, "验证欠债")
@@ -306,6 +306,8 @@ def parse_validation_debt(state_text: str, git_info: dict, warnings: list[str]) 
         debt.append(f"未提交工作区变更：{git_info['dirtyFiles']} 个文件")
 
     debt.extend(warnings)
+    if extra_items:
+        debt.extend(extra_items)
 
     deduped: list[str] = []
     seen: set[str] = set()
@@ -367,7 +369,16 @@ def collect_project_insights(start_dir: Path) -> dict:
         warnings.append("缺少 .opc/STATE.md。")
 
     git_info = parse_git_info(project_root)
-    validation_debt = parse_validation_debt(state_text, git_info, warnings)
+    from opc_quality import collect_project_quality_report
+
+    quality_report = collect_project_quality_report(project_root, repair=False)
+    quality_signals = quality_report["qualitySignals"]
+    validation_debt = parse_validation_debt(
+        state_text,
+        git_info,
+        warnings,
+        extra_items=quality_report["validationDebt"],
+    )
 
     return {
         "projectRoot": str(project_root),
@@ -401,8 +412,11 @@ def collect_project_insights(start_dir: Path) -> dict:
             "todos": max(todos_dir_count, state["todoCountFromState"]),
             "todoItems": state["todos"],
             "riskyDecisions": parse_risky_decisions(project_text),
+            "qualityFindings": quality_report["findings"],
+            "qualitySummary": quality_report["summary"],
         },
         "validationDebt": validation_debt,
+        "quality": quality_signals,
         "business": business,
         "git": git_info,
         "warnings": warnings,
@@ -474,6 +488,8 @@ def format_dashboard(insights: dict) -> str:
             "业务指标: "
             f"MRR={business['mrr']} · Burn={business['burn']} · Runway={business['runway']} · Customers={business['customers']}",
             f"项目债务: blockers={debt['blockers']} · todos={debt['todos']} · risky-decisions={debt['riskyDecisions']}",
+            "质量债务: "
+            f"requirements={insights['quality']['requirementsCoverageDebt']} · regression={insights['quality']['regressionDebt']} · scope={insights['quality']['scopeDebt']} · traceability={insights['quality']['traceabilityDebt']} · schema={insights['quality']['schemaDriftDebt']}",
             f"下一步: {insights['roadmap']['nextTask']}",
             f"最近活动: {state['recentActivity']}",
         ]
@@ -505,6 +521,7 @@ def format_stats(insights: dict) -> str:
         "progress": insights["progress"],
         "debt": insights["debt"],
         "validationDebt": insights["validationDebt"],
+        "quality": insights["quality"],
         "business": insights["business"],
         "roadmap": insights["roadmap"]["rows"],
         "nextTask": insights["roadmap"]["nextTask"],

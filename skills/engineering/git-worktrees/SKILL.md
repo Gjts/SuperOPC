@@ -86,3 +86,15 @@ git worktree remove <worktree-path>
 - **brainstorming 技能** → 设计批准后建议创建 worktree
 - **implementing 技能** → 在 worktree 中执行计划
 - **shipping 技能** → 完成后清理 worktree
+
+## 压力测试
+
+### 高压场景
+- 想并行做多个分支任务，但都在同一个工作区操作。
+
+### 常见偏差
+- 在一个目录里反复切分支，污染未提交状态。
+
+### 使用技能后的纠正
+- 为并行任务建立独立 worktree，隔离上下文和改动。
+

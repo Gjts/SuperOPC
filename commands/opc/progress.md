@@ -17,6 +17,7 @@ description: Show the current working position, next step, completion status, bl
    - 当前阶段 / 当前计划 / 当前状态
    - 最近活动 / 停止于 / 恢复文件
    - 阶段、计划、需求完成度
+   - requirements / regression / scope / traceability / schema 质量债务摘要
 
 3. **给出一个主下一步**
    - 优先显示路线图中下一个未完成计划
@@ -26,6 +27,7 @@ description: Show the current working position, next step, completion status, bl
 4. **显示执行风险**
    - blockers / todos / risky decisions
    - validation debt（待验证项、未运行检查、人工验证欠债）
+   - quality debt（requirements coverage、跨阶段回归、scope reduction、claim traceability、schema drift）
    - 最近一次会话记录和 handoff（如存在）
 
 ## 输出约定

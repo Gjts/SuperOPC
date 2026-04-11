@@ -53,6 +53,9 @@
 | /opc-build | 完成 | Revision | 交付物完整性 | 重新执行不完整任务 |
 | /opc-review | 评估 | Escalation | 未通过标准 | 上报开发者 |
 | /opc-ship | 入口 | Pre-flight | 测试通过 | 阻止 |
+| /opc-health | 项目体检 | Pre-flight | `.opc` 目录完整性 / requirements coverage | 报告并建议修复 |
+| /opc-health | 质量诊断 | Revision | regression / traceability / schema drift / scope drift | 输出 findings 或进入 repair |
+| /opc-autonomous | 自主推进 | Abort | blocker / 人工检查点 / 高风险 validation debt | 停止并切回 discuss/progress/health |
 
 ---
 

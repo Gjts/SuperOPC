@@ -47,6 +47,18 @@
 
 ## 累积上下文
 
+### 质量健康摘要
+
+- 上次健康检查：[YYYY-MM-DD HH:MM]
+- 健康状态：[green / yellow / red]
+- Requirements coverage debt：[无 / 具体说明]
+- Regression debt：[无 / 具体说明]
+- Scope drift：[无 / 具体说明]
+- Traceability debt：[无 / 具体说明]
+- Schema drift：[无 / 具体说明]
+- Claim traceability debt：[无 / 具体说明]
+- Node repair ledger：[无 / RETRY 1 次 / DECOMPOSE 待规划 / PRUNE 待确认]
+
 ### 决策
 
 决策记录在 PROJECT.md 关键决策表中。
@@ -94,6 +106,8 @@
 每个重要操作后：
 - **执行后**：更新位置、记录新决策、添加阻塞
 - **阶段转换后**：更新进度条、清除已解决阻塞、刷新项目参考日期
+- **健康检查后**：刷新质量健康摘要，记录最新 requirements/regression/scope/traceability/schema/claim-traceability 欠债
+- **节点修复后**：记录 RETRY / DECOMPOSE / PRUNE 的结果，避免重复修复循环
 - **经营数据变化后**：刷新 MRR / Burn / Runway / Active Customers，供 `/opc-dashboard` 和 `/opc-stats` 读取
 
 ### 尺寸约束

@@ -48,3 +48,15 @@ description: Use when you have a product and need to find your first 100 custome
 2. 接触话术
 3. 反馈收集模板
 4. 里程碑跟踪表
+
+## 压力测试
+
+### 高压场景
+- 产品刚上线就想大规模投放广告。
+
+### 常见偏差
+- 在没有明确 ICP 和成交脚本前盲目获客。
+
+### 使用技能后的纠正
+- 先锁定少量高匹配用户，逐个成交并提炼重复话术。
+

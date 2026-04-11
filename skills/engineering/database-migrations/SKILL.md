@@ -75,6 +75,7 @@ alembic check
 1. 不要手动修改数据库来匹配代码
 2. 创建新迁移来弥合差距
 3. 记录为什么会发生 drift
+4. 如果工具链不可用，至少保留“schema 文件存在但迁移缺失”的建议性 finding，供 `/opc-health` 报告
 
 ## 零停机迁移模式
 
@@ -131,3 +132,15 @@ CREATE INDEX idx_users_email ON users(email);
 - [ ] 生产迁移前先在 staging 测试
 - [ ] 大表操作用 CONCURRENTLY
 - [ ] 数据迁移前备份
+
+## 压力测试
+
+### 高压场景
+- 改了 schema，想先不写迁移直接上线。
+
+### 常见偏差
+- 把 ORM 模型修改当成数据库已同步。
+
+### 使用技能后的纠正
+- 每次 schema 变更都补迁移并做 drift 检查。
+

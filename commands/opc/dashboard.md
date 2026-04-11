@@ -16,6 +16,7 @@ description: Show a live operating dashboard for the current .opc project, inclu
 2. **输出经营全貌**
    - 当前阶段 / 当前计划 / 当前状态
    - 阶段、计划、需求完成度
+   - requirements / regression / scope / traceability / schema 质量债务
    - MRR / Burn / Runway / 活跃客户（若已记录）
    - 阻塞、待办、待复核决策
 
@@ -33,6 +34,7 @@ python scripts/opc_dashboard.py --cwd /path/to/project
 ## 数据来源约定
 
 - 商业指标优先从 `.opc/STATE.md` 的“商业指标”部分读取
+- 质量债务来自 `scripts/opc_insights.py` 聚合的 requirements / regression / scope / traceability / schema 信号
 - 如果没有记录 MRR/Burn/Runway，命令会保留 `未记录` 并提示补充
 - `todos/` 目录中的文件会被计入项目债务
 

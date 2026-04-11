@@ -83,3 +83,15 @@ description: Use when preparing fundraising narrative, pitch deck, investor memo
 2. 核心融资叙事
 3. KPI 清单
 4. Data room 缺口列表
+
+## 压力测试
+
+### 高压场景
+- 要见投资人时才临时拼 deck。
+
+### 常见偏差
+- 材料只讲愿景，不讲数据和证据。
+
+### 使用技能后的纠正
+- 提前维护 deck、memo、KPI snapshot 和 data room。
+

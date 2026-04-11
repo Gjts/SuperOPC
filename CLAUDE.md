@@ -62,12 +62,13 @@ python scripts/convert.py --help
   - markdown/frontmatter correctness
   - plugin manifest wiring
   - hook registration in `hooks/hooks.json`
+  - repo / project health checks via `scripts/opc_quality.py` and `scripts/opc_health.py`
   - generated output under `integrations/` when converter behavior or source content changes
 
 ## High-level architecture
 
 ### 1. Commands are the user-facing entrypoints
-`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, `/opc-research`, `/opc-dashboard`, `/opc-stats`, `/opc-progress`, `/opc-pause`, `/opc-resume`, `/opc-session-report`, `/opc-autonomous`, `/opc-fast`, `/opc-discuss`, `/opc-explore`, `/opc-thread`, `/opc-seed`, `/opc-backlog`, `/opc-next`, and `/opc-do`.
+`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, `/opc-research`, `/opc-dashboard`, `/opc-stats`, `/opc-progress`, `/opc-pause`, `/opc-resume`, `/opc-session-report`, `/opc-autonomous`, `/opc-fast`, `/opc-discuss`, `/opc-explore`, `/opc-thread`, `/opc-seed`, `/opc-backlog`, `/opc-next`, `/opc-health`, and `/opc-do`.
 
 These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
 
@@ -137,6 +138,7 @@ The plugin manifest should stay aligned with the full shipped agent set in `agen
 - `/opc-plan` runs brainstorming + planning and outputs a `PLAN.md` artifact (the command docs refer to `docs/plans/`).
 - `/opc-build` consumes a `PLAN.md`, executes tasks with TDD, and produces `SUMMARY.md`.
 - `/opc-ship` verifies tests, summarizes changes, and handles merge / PR / keep / discard flows.
+- `/opc-health` validates `.opc` integrity, requirements coverage, summary traceability, plugin / hook wiring, and internal markdown links.
 - `/opc-quick` is the reduced-ceremony path: no formal `PLAN.md`, but it still keeps TDD and atomic-task execution.
 
 If you are changing these workflows, make sure command docs, relevant skills, and agent expectations stay aligned.

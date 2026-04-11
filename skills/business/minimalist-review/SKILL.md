@@ -53,3 +53,15 @@ description: Use when gut-checking any business decision through the minimalist 
 **理由:** [一段话总结]
 **如果 GO，下一步:** [具体行动]
 ```
+
+## 压力测试
+
+### 高压场景
+- 每周都在加功能，但看不清哪些值得保留。
+
+### 常见偏差
+- 把“忙”误认为“有效进展”。
+
+### 使用技能后的纠正
+- 按 ROI 和复杂度复盘，删掉不能带来复利的项目。
+

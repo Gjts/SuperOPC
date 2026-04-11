@@ -19,6 +19,7 @@ description: Summarize recent session activity, current progress, blockers, next
    - 当前停在什么位置
    - 完成度变化
    - 新增 blockers / todos / risky decisions
+   - 新增 quality debt（requirements / regression / scope / traceability / schema）
 
 3. **生成可复用报告**
    - 适合日结、handoff、复盘、经理视角

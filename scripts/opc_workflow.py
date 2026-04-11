@@ -149,6 +149,7 @@ def collect_progress_snapshot(start_dir: Path) -> dict[str, Any]:
         "completion": insights["progress"],
         "debt": insights["debt"],
         "validationDebt": insights["validationDebt"],
+        "quality": insights["quality"],
         "nextTask": insights["roadmap"]["nextTask"],
         "recommendation": recommendation,
         "warnings": insights["warnings"],
@@ -190,6 +191,8 @@ def format_progress(snapshot: dict[str, Any]) -> str:
         [
             f"完成度: phases={completion['phasesCompleted']}/{completion['phasesTotal']} · plans={completion['plansCompleted']}/{completion['plansTotal']} · requirements={completion['requirementsCompleted']}/{completion['requirementsTotal']}",
             f"项目债务: blockers={debt['blockers']} · todos={debt['todos']} · risky-decisions={debt['riskyDecisions']}",
+            "质量债务: "
+            f"requirements={snapshot['quality']['requirementsCoverageDebt']} · regression={snapshot['quality']['regressionDebt']} · scope={snapshot['quality']['scopeDebt']} · traceability={snapshot['quality']['traceabilityDebt']} · schema={snapshot['quality']['schemaDriftDebt']}",
             f"下一步: {snapshot['nextTask']}",
             f"建议命令: {recommendation['command']} — {recommendation['reason']}",
             f"最近活动: {position['recentActivity']}",
@@ -423,6 +426,7 @@ def collect_session_report(start_dir: Path) -> dict[str, Any]:
         "progress": insights["progress"],
         "debt": insights["debt"],
         "validationDebt": insights["validationDebt"],
+        "quality": insights["quality"],
         "handoff": handoff,
         "recentSessions": sessions,
         "recentAudit": audit_lines,
@@ -440,6 +444,8 @@ def format_session_report(report: dict[str, Any]) -> str:
         f"当前焦点: {report['state']['currentFocus']}",
         f"进度: phases={report['progress']['phasesCompleted']}/{report['progress']['phasesTotal']} · plans={report['progress']['plansCompleted']}/{report['progress']['plansTotal']} · requirements={report['progress']['requirementsCompleted']}/{report['progress']['requirementsTotal']}",
         f"债务: blockers={report['debt']['blockers']} · todos={report['debt']['todos']} · risky-decisions={report['debt']['riskyDecisions']}",
+        "质量债务: "
+        f"requirements={report['quality']['requirementsCoverageDebt']} · regression={report['quality']['regressionDebt']} · scope={report['quality']['scopeDebt']} · traceability={report['quality']['traceabilityDebt']} · schema={report['quality']['schemaDriftDebt']}",
         f"建议命令: {report['recommendation']['command']} — {report['recommendation']['reason']}",
     ]
 

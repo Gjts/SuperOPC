@@ -58,3 +58,15 @@ description: Use when ready to build first product or struggling with scope. Man
 3. 这个周末能交付什么
 4. 初始定价
 5. 如何收集反馈
+
+## 压力测试
+
+### 高压场景
+- 想一次把产品做完整再上线。
+
+### 常见偏差
+- 把“首个可卖版本”扩张成完整平台。
+
+### 使用技能后的纠正
+- 只保留验证核心价值所需的最小功能集。
+
