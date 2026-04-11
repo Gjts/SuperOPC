@@ -292,6 +292,7 @@
   - `opc-verifier` — 验证专家
 - **命令系统** — 7 个 `/opc-*` 命令
 - **系统指令** — `CLAUDE.md` + `AGENTS.md`
-- **插件清单** — `.claude-plugin/plugin.json` + `marketplace.json`
+- **插件清单** — `.claude-plugin/plugin.json`
+- **Marketplace 模板** — `templates/marketplaces/superopc-marketplace/`
 - **路线图** — `ROADMAP.md`（v0.1.0 到 v2.0.0，480 行）
 - **许可证** — MIT

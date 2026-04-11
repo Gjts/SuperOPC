@@ -325,7 +325,6 @@ STATIC_CLAUDE_EXPORTS = (
     "AGENTS.md",
     "hooks/hooks.json",
     ".claude-plugin/plugin.json",
-    ".claude-plugin/marketplace.json",
     ".mcp.json",
     "mcp-configs/mcp-servers.json",
 )

@@ -29,17 +29,20 @@ Most changes in this repo are documentation and workflow changes; the main execu
 
 ### Install / use as a Claude Code plugin
 ```bash
-git clone https://github.com/gjts/superopc.git ~/.claude/plugins/superopc
+git clone https://github.com/gjts/superopc.git
 ```
 
-Then inside Claude Code:
+This repo is the **plugin source repository** for SuperOPC.
+
+It is not yet published in a Claude Code-discoverable marketplace, so do **not** claim that users can install it with:
 ```text
 /plugin install superopc
 ```
 
-Marketplace metadata also advertises:
+When the separate marketplace repository is live and verified, the expected end-user flow will be:
 ```text
-/plugin marketplace add gjts/superopc
+/plugin marketplace add gjts/superopc-marketplace
+/plugin install superopc@superopc-marketplace
 ```
 
 ### Generate integrations for other tools
@@ -129,7 +132,7 @@ The repo docs describe these hooks as **advisory-first**: most warn rather than 
 
 ### 7. Plugin metadata controls what Claude Code actually ships
 - `.claude-plugin/plugin.json` is the plugin manifest used by Claude Code
-- `.claude-plugin/marketplace.json` contains marketplace metadata
+- marketplace metadata for end-user installation should live in a **separate marketplace repository**, not in this plugin source repo
 
 The plugin manifest should stay aligned with the full shipped agent set in `agents/`. If you add or rename an agent, update `.claude-plugin/plugin.json` in the same change.
 
