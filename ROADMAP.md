@@ -175,21 +175,21 @@
 **目标：** 跨会话持续性 + 自主/快速/讨论模式
 
 #### 会话管理（融合 GSD pause/resume/progress）
-- [ ] `/opc-pause` — 保存位置到 HANDOFF.json
-- [ ] `/opc-resume` — 恢复上下文
-- [ ] `/opc-progress` — 位置+下一步+完成度+验证欠债
-- [ ] `/opc-session-report` — 会话报告
+- [x] `/opc-pause` — 保存位置到 HANDOFF.json
+- [x] `/opc-resume` — 恢复上下文
+- [x] `/opc-progress` — 位置+下一步+完成度+验证欠债
+- [x] `/opc-session-report` — 会话报告
 
 #### 高级工作流（融合 GSD 自主/快速/讨论）
-- [ ] `/opc-autonomous [--from N] [--to N] [--only N] [--interactive]`
-- [ ] `/opc-fast` — 微任务行内执行
-- [ ] `/opc-discuss` — 纯讨论不执行
-- [ ] `/opc-explore` — 苏格拉底式探索
-- [ ] `/opc-do` — 自然语言意图路由
-- [ ] `/opc-next` — 自动检测并推进下一步
+- [x] `/opc-autonomous [--from N] [--to N] [--only N] [--interactive]`
+- [x] `/opc-fast` — 微任务行内执行
+- [x] `/opc-discuss` — 纯讨论不执行
+- [x] `/opc-explore` — 苏格拉底式探索
+- [x] `/opc-do` — 自然语言意图路由
+- [x] `/opc-next` — 自动检测并推进下一步
 
 #### 上下文线程（融合 GSD threads + seeds + backlog）
-- [ ] `/opc-thread` + `/opc-seed` + `/opc-backlog`
+- [x] `/opc-thread` + `/opc-seed` + `/opc-backlog`
 
 
 ### v0.9.0 — 质量保证体系

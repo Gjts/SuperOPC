@@ -7,6 +7,26 @@
 
 ---
 
+## [0.8.0] - 开发中
+
+### 新增
+- **会话工作流层** — `scripts/opc_workflow.py` + `scripts/opc_progress.py` + `scripts/opc_pause.py` + `scripts/opc_resume.py` + `scripts/opc_session_report.py` + `scripts/opc_next.py`
+  - 基于现有 `.opc/STATE.md` / `ROADMAP.md` / `REQUIREMENTS.md` 生成 progress、resume、report 与 next 建议
+  - 支持写入 `.opc/HANDOFF.json` 并同步更新 `STATE.md` 的会话连续性字段
+  - 聚合 `.opc/sessions/*.json` 与 `.opc/audit.log` 形成会话报告
+- **13 个 v0.8 命令** — `commands/opc/progress.md` + `pause.md` + `resume.md` + `session-report.md` + `next.md` + `autonomous.md` + `fast.md` + `discuss.md` + `explore.md` + `thread.md` + `seed.md` + `backlog.md` + `do.md`
+- **5 个 v0.8 参考/技能文档** — `references/session-management.md` + `references/workflow-modes.md` + `references/context-threads.md` + `skills/using-superopc/session-management/SKILL.md` + `skills/using-superopc/workflow-modes/SKILL.md`
+- **兼容会话参考文档** — `references/session-workflows.md` + `references/handoff-format.md`
+- **交接模板** — `templates/handoff.json`
+
+### 变更
+- 更新 `README.md` 添加 v0.8 会话命令、脚本入口、上下文线程参考，并同步技能/命令总数与命令树
+- 更新 `ROADMAP.md` 标记 v0.8.0 会话管理、高级工作流与上下文线程子项完成
+- 更新 `.claude-plugin/plugin.json` 到 `0.8.0`
+- 重新生成 `integrations/`，同步新命令与插件版本元数据
+
+---
+
 ## [0.7.0] - 开发中
 
 ### 新增

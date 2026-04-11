@@ -1,0 +1,40 @@
+{
+  "version": "0.8.0",
+  "updatedAt": "2026-04-11T00:00:00Z",
+  "project": {
+    "name": "your-project-name",
+    "root": "/absolute/path/to/project"
+  },
+  "session": {
+    "id": "optional-session-id",
+    "mode": "implementing",
+    "source": "manual-pause"
+  },
+  "location": {
+    "phase": "2/5",
+    "plan": "1/3",
+    "status": "执行中"
+  },
+  "summary": {
+    "completed": "已完成的最重要结果",
+    "stopPoint": "当前准确停留点",
+    "reasonForPause": "为什么现在暂停"
+  },
+  "nextSteps": [
+    "一个主下一步",
+    "备选下一步 A"
+  ],
+  "blockers": [
+    "阻塞项；没有则留空数组"
+  ],
+  "validationDebt": [
+    "未运行测试 / 未完成人工验证 / 未确认接线"
+  ],
+  "resumeFiles": [
+    ".opc/STATE.md",
+    "path/to/important-file"
+  ],
+  "notes": [
+    "短备注；不要复制大段日志"
+  ]
+}
