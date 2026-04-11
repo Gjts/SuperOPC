@@ -23,14 +23,14 @@ jobs:
 
       - name: Verify quality gates
         run: |
-          python -m pytest SuperOPC/tests/test_session_workflow.py
-          python SuperOPC/scripts/opc_health.py --cwd SuperOPC --target repo --json
+          python -m pytest tests/test_session_workflow.py
+          python scripts/opc_health.py --cwd . --target repo --json
 
       - name: Generate integrations
-        run: python SuperOPC/scripts/convert.py --tool all
+        run: python scripts/convert.py --tool all
 
       - name: Package release artifact
-        run: python -m zipfile -c superopc-release.zip SuperOPC
+        run: python -m zipfile -c superopc-release.zip .
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
