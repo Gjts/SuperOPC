@@ -39,7 +39,7 @@ SuperOPC v0.8.0 的会话管理工作流围绕四个命令展开：
 |------|------|----------|----------|
 | `.opc/STATE.md` | 项目活状态 | 每次 progress / pause / resume / report | 每个重要操作后 |
 | `.opc/HANDOFF.json` | 恢复快照 | resume / report | pause 时 |
-| `.opc/ROADMAP.md` | 阶段与计划位置 | progress / resume / report | 阶段推进时 |
+| `.opc/ROADMAP.md` | 阶段与计划位置 | progress / resume / report / autonomous | 阶段推进时 |
 | `.opc/REQUIREMENTS.md` | 完成度和范围检查 | progress / report | 需求变化时 |
 | `.opc/sessions/*.json` | 会话时间线 | progress / resume / report | 会话结束或检查点时 |
 | `.opc/todos/` | 会话中捕获的后续事项 | progress / report | 发现新想法时 |
@@ -117,6 +117,30 @@ SuperOPC v0.8.0 的会话管理工作流围绕四个命令展开：
 - 以当前文件系统中的最新事实为准
 - 报告冲突点
 - 必要时重写 handoff，避免下次继续漂移
+
+---
+
+## `/opc-autonomous` 何时使用
+
+适用场景：
+- 路线图边界已经明确
+- 想连续推进一段已知范围，而不是每一步都重新确认
+- 仍希望保留 blocker、validation debt 和人工检查点的停机条件
+
+推荐读取顺序：
+1. `.opc/STATE.md`
+2. `.opc/ROADMAP.md`
+3. `.opc/HANDOFF.json`（如果存在）
+4. 当前恢复文件与最新 `.opc/sessions/*.json`
+
+推荐输出：
+- 当前执行窗口（`--from` / `--to` / `--only`）
+- 当前是否适合自主推进，或应降级到 `/opc-discuss` / `/opc-progress`
+- 一个主推荐命令
+- 本轮自主推进的最小步骤序列
+- blockers / validation debt / resume files
+
+`/opc-autonomous` 不是独立状态系统；它依然依赖 `STATE.md`、`HANDOFF.json`、路线图位置和验证欠债信号来决定是否继续。
 
 ---
 

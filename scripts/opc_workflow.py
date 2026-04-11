@@ -477,29 +477,29 @@ def format_session_report(report: dict[str, Any]) -> str:
 
 
 def _derive_autonomous_window(position: dict[str, Any], *, from_index: int | None, to_index: int | None, only: int | None) -> dict[str, int | None]:
-    current_plan = None
-    plan = position.get("plan")
-    if isinstance(plan, dict):
+    current_phase = None
+    phase = position.get("phase")
+    if isinstance(phase, dict):
         try:
-            current_plan = int(str(plan.get("current", "")).strip())
+            current_phase = int(str(phase.get("current", "")).strip())
         except ValueError:
-            current_plan = None
+            current_phase = None
 
     if only is not None:
         return {
             "from": only,
             "to": only,
             "only": only,
-            "current": current_plan,
+            "current": current_phase,
         }
 
-    start = from_index if from_index is not None else current_plan
+    start = from_index if from_index is not None else current_phase
     end = to_index if to_index is not None else start
     return {
         "from": start,
         "to": end,
         "only": None,
-        "current": current_plan,
+        "current": current_phase,
     }
 
 
@@ -536,16 +536,23 @@ def collect_autonomous_plan(
         mode = "interactive"
 
     phase = state.get("phase")
+    plan = state.get("plan")
     current_phase = phase.get("name", "未记录阶段") if isinstance(phase, dict) else "未记录阶段"
-    plan_label = (
-        f"计划 {window['only']}"
+    current_plan = (
+        f"{plan.get('current', '未记录')}/{plan.get('total', '未记录')}"
+        if isinstance(plan, dict)
+        else "未记录"
+    )
+    scope_label = (
+        f"阶段 {window['only']}"
         if window["only"] is not None
-        else f"计划 {window['from'] or '当前'} → {window['to'] or window['from'] or '当前'}"
+        else f"阶段 {window['from'] or '当前'} → {window['to'] or window['from'] or '当前'}"
     )
 
     steps = [
-        f"确认当前位置：{current_phase} · {plan_label} · 状态={state['status']}",
+        f"确认当前位置：{current_phase} · 当前计划={current_plan} · 目标范围={scope_label} · 状态={state['status']}",
         "优先读取 .opc/STATE.md、.opc/ROADMAP.md 与当前恢复文件，确认边界没有漂移。",
+        "根据当前位置优先路由到 /opc-next 推荐的主动作，再进入 /opc-plan、/opc-fast、/opc-quick、/opc-build 或 /opc-review。",
         "如果所执行计划包含 checkpoint:decision 或 checkpoint:human-verify，则切换到交互式停点。",
         "逐项推进当前窗口内可自动执行的工作，并在每一项后记录最小验证结果。",
         "若出现新 blocker、范围分歧或验证欠债扩大，立即停下并退回 /opc-discuss 或 /opc-progress。",

@@ -12,7 +12,13 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from opc_context import handle_backlog, handle_seed, handle_thread  # noqa: E402
 from opc_insights import collect_project_insights  # noqa: E402
-from opc_workflow import collect_progress_snapshot, collect_session_report, pause_project, resume_project  # noqa: E402
+from opc_workflow import (  # noqa: E402
+    collect_autonomous_plan,
+    collect_progress_snapshot,
+    collect_session_report,
+    pause_project,
+    resume_project,
+)
 
 
 def create_sample_project(tmp_path: Path) -> Path:
@@ -24,7 +30,7 @@ def create_sample_project(tmp_path: Path) -> Path:
     todos_dir.mkdir(parents=True)
 
     (opc_dir / "PROJECT.md").write_text(
-        "# Sample Project\n\n## 项目参考\n\n**核心价值：** 更快恢复上下文\n",
+        "# Sample Project\n\n## 项目参考\n\n**核心价值：** 更快恢复上下文\n\n## 商业指标\n\n- MRR：¥0\n",
         encoding="utf-8",
     )
     (opc_dir / "REQUIREMENTS.md").write_text(
@@ -104,15 +110,34 @@ def test_pause_and_resume_round_trip(tmp_path: Path) -> None:
     assert "已从 HANDOFF.json 恢复上下文" in resumed_state_text
 
 
-def test_session_report_collects_handoff_sessions_and_audit(tmp_path: Path) -> None:
+def test_autonomous_plan_degrades_to_discuss_when_blocked(tmp_path: Path) -> None:
     project_root = create_sample_project(tmp_path)
-    pause_project(project_root, note="写完报告再恢复", stop_point="等待验证")
 
-    report = collect_session_report(project_root)
+    plan = collect_autonomous_plan(project_root, from_index=2, to_index=4)
 
-    assert report["handoff"]["notes"] == ["写完报告再恢复"]
-    assert len(report["recentSessions"]) == 1
-    assert report["recentAudit"] == ["[2026-04-11T00:00:00Z] python scripts/opc_progress.py"]
+    assert plan["mode"] == "blocked"
+    assert plan["recommendation"]["command"] == "/opc-discuss"
+    assert plan["window"]["from"] == 2
+    assert plan["window"]["to"] == 4
+    assert ".opc/STATE.md" in plan["resumeFiles"]
+
+
+def test_autonomous_plan_respects_only_range_and_interactive_mode(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+    state_file = project_root / ".opc" / "STATE.md"
+    state_text = state_file.read_text(encoding="utf-8")
+    state_text = state_text.replace("- 等待验证输出格式\n", "")
+    state_text = state_text.replace("- 未运行 CLI 冒烟测试\n", "")
+    state_file.write_text(state_text, encoding="utf-8")
+
+    plan = collect_autonomous_plan(project_root, only=3, interactive=True)
+
+    assert plan["mode"] == "interactive"
+    assert plan["interactive"] is True
+    assert plan["window"]["only"] == 3
+    assert plan["window"]["from"] == 3
+    assert plan["window"]["to"] == 3
+    assert plan["recommendation"]["command"] == "/opc-autonomous --interactive"
 
 
 def test_context_commands_create_thread_seed_and_backlog_entries(tmp_path: Path) -> None:
@@ -177,6 +202,7 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
     assert (out_dir / "claude-code" / "commands" / "opc" / "pause.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "resume.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "session-report.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "autonomous.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "thread.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "seed.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "backlog.md").exists()
