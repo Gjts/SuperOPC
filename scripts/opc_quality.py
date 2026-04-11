@@ -252,7 +252,7 @@ def scaffold_project_file(file_path: Path, template_name: str) -> bool:
 
 def ensure_project_handoff(project_root: Path) -> dict[str, Any]:
     return {
-        "version": "0.9.0",
+        "version": "1.0.0",
         "updatedAt": now_iso(),
         "project": {
             "name": project_root.name,
@@ -530,7 +530,7 @@ def validate_project_checks(start_dir: Path, repair: bool) -> dict[str, Any]:
                     make_check(
                         "project.config-quality-flags",
                         "warn",
-                        "workflow 配置缺少 v0.9.0 质量开关。",
+                        "workflow 配置缺少质量开关（nyquist/node_repair）。",
                         severity="warning",
                         repairable=True,
                         files=[str(config_file)],
@@ -950,7 +950,7 @@ def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
             make_check(
                 "repo.ci-workflows",
                 "fail",
-                "缺少 v0.9.0 所需 GitHub Actions workflows。",
+                "缺少所需的 GitHub Actions workflows。",
                 severity="error",
                 files=missing_workflows,
             )
@@ -959,19 +959,20 @@ def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
         checks.append(make_check("repo.ci-workflows", "pass", "GitHub Actions workflows 已就绪。"))
 
     plugin_payload = read_json(repo_root / ".claude-plugin" / "plugin.json")
-    if plugin_payload.get("version") != "0.9.0":
+    plugin_version = plugin_payload.get("version", "")
+    if not plugin_version or not re.match(r"^\d+\.\d+\.\d+", plugin_version):
         checks.append(
             make_check(
                 "repo.version",
                 "fail",
-                "插件版本尚未升级到 0.9.0。",
+                "插件版本缺失或格式无效。",
                 severity="error",
                 files=[str(repo_root / ".claude-plugin" / "plugin.json")],
-                details=[str(plugin_payload.get("version", "missing"))],
+                details=[f"当前值: {plugin_version or 'missing'}"],
             )
         )
     else:
-        checks.append(make_check("repo.version", "pass", "插件版本已升级到 0.9.0。"))
+        checks.append(make_check("repo.version", "pass", f"插件版本有效: {plugin_version}。"))
 
     summary = summarize_checks(checks)
     return {

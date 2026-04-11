@@ -412,7 +412,7 @@ def test_project_quality_report_fails_without_opc_dir(tmp_path: Path) -> None:
 
 
 def test_repo_quality_report_flags_broken_links_missing_workflows_and_version(tmp_path: Path) -> None:
-    repo_root = create_quality_repo(tmp_path, version="0.8.0", broken_link=True, add_workflows=False)
+    repo_root = create_quality_repo(tmp_path, version="invalid", broken_link=True, add_workflows=False)
 
     report = collect_repo_quality_report(repo_root)
     checks = {check["id"]: check for check in report["checks"]}
