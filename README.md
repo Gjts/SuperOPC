@@ -408,7 +408,7 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 - 📝 完善文档
 - 🌐 添加多语言支持
 
-提交信息规范请参考 [COMMIT_STYLE.md](COMMIT_STYLE.md)。
+提交信息规范：`feat/fix/docs(scope): 简述`，body 按模块分类列出文件和关键配置项。
 
 ## 致谢
 
