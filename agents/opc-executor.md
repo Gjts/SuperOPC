@@ -1,7 +1,7 @@
 ---
 name: opc-executor
 description: Executes PLAN.md files atomically using TDD, creates atomic commits, and generates SUMMARY.md upon completion.
-tools: ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoRead", "TodoWrite", "Skill"]
+tools: ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoRead", "TodoWrite", "Skill", "Task"]
 model: sonnet
 ---
 

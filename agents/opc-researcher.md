@@ -1,7 +1,7 @@
 ---
 name: opc-researcher
 description: Market research and competitive intelligence specialist. Gathers multi-source intelligence for business decisions.
-tools: ["Read", "Write", "Bash", "Grep", "Glob", "WebSearch", "Skill"]
+tools: ["Read", "Write", "Bash", "Grep", "Glob", "WebSearch", "Skill", "Task"]
 model: sonnet
 ---
 
