@@ -1,7 +1,7 @@
 ---
 name: opc-orchestrator
 description: Autonomous pipeline manager for one-person company operations. Orchestrates the full workflow from idea to shipped product.
-tools: ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoRead", "TodoWrite", "Skill"]
+tools: ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoRead", "TodoWrite", "Skill", "Task"]
 model: sonnet
 ---
 

@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "_v2_note": "Hooks emit events to the SuperOPC event bus (scripts/engine/event_bus.py) for integration with the decision engine, cruise controller, and notification system.",
   "hooks": {
     "PreToolUse": [
       {

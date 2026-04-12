@@ -1,0 +1,227 @@
+{
+  "$schema": "SuperOPC Agent Registry v2",
+  "version": "1.1.0",
+  "description": "Capability-based agent registry for semantic routing. The DAG engine uses capability_tags and scenarios to match tasks to the best-fit agent.",
+  "agents": [
+    {
+      "id": "opc-orchestrator",
+      "name": "Orchestrator",
+      "type": "core",
+      "capability_tags": ["orchestration", "coordination", "multi-step", "workflow"],
+      "scenarios": ["complex multi-agent workflows", "cross-cutting concerns"],
+      "input": "High-level goal or multi-phase requirement",
+      "output": "Delegated sub-tasks with assigned agents",
+      "priority": 100
+    },
+    {
+      "id": "opc-planner",
+      "name": "Planner",
+      "type": "core",
+      "capability_tags": ["planning", "architecture", "design", "decomposition"],
+      "scenarios": ["feature planning", "sprint planning", "architecture design"],
+      "input": "Requirement or spec",
+      "output": "PLAN.md with <opc-plan> XML",
+      "priority": 90
+    },
+    {
+      "id": "opc-executor",
+      "name": "Executor",
+      "type": "core",
+      "capability_tags": ["implementation", "coding", "tdd", "execution"],
+      "scenarios": ["code implementation", "feature building", "bug fixing"],
+      "input": "Task from plan with file target and action",
+      "output": "Code changes with tests and atomic commit",
+      "priority": 80
+    },
+    {
+      "id": "opc-reviewer",
+      "name": "Reviewer",
+      "type": "core",
+      "capability_tags": ["review", "code-review", "quality", "audit"],
+      "scenarios": ["code review", "PR review", "quality assessment"],
+      "input": "Code diff or completed task",
+      "output": "Review report with findings and recommendations",
+      "priority": 85
+    },
+    {
+      "id": "opc-verifier",
+      "name": "Verifier",
+      "type": "core",
+      "capability_tags": ["verification", "validation", "testing", "regression"],
+      "scenarios": ["phase completion verification", "requirement validation"],
+      "input": "Completed phase or milestone",
+      "output": "Verification report with pass/fail status",
+      "priority": 85
+    },
+    {
+      "id": "opc-debugger",
+      "name": "Debugger",
+      "type": "core",
+      "capability_tags": ["debugging", "diagnosis", "root-cause", "troubleshooting"],
+      "scenarios": ["bug investigation", "error diagnosis", "performance issues"],
+      "input": "Bug report or error description",
+      "output": "Hypothesis-evidence-elimination cycle with fix",
+      "priority": 88
+    },
+    {
+      "id": "opc-security-auditor",
+      "name": "Security Auditor",
+      "type": "core",
+      "capability_tags": ["security", "owasp", "audit", "vulnerability", "injection", "auth"],
+      "scenarios": ["security audit", "OWASP verification", "penetration review"],
+      "input": "Code or architecture to audit",
+      "output": "Threat model and remediation report",
+      "priority": 92
+    },
+    {
+      "id": "opc-doc-writer",
+      "name": "Documentation Writer",
+      "type": "core",
+      "capability_tags": ["documentation", "readme", "api-docs", "technical-writing"],
+      "scenarios": ["API documentation", "README generation", "architecture docs"],
+      "input": "Codebase or feature to document",
+      "output": "Documentation files",
+      "priority": 70
+    },
+    {
+      "id": "opc-doc-verifier",
+      "name": "Documentation Verifier",
+      "type": "core",
+      "capability_tags": ["doc-verification", "accuracy", "link-check"],
+      "scenarios": ["documentation accuracy verification", "link validation"],
+      "input": "Documentation to verify",
+      "output": "Accuracy report",
+      "priority": 65
+    },
+    {
+      "id": "opc-codebase-mapper",
+      "name": "Codebase Mapper",
+      "type": "core",
+      "capability_tags": ["codebase-analysis", "architecture-map", "onboarding"],
+      "scenarios": ["brownfield codebase mapping", "architecture visualization"],
+      "input": "Codebase root path",
+      "output": "4-dimension code map (stack, architecture, quality, concerns)",
+      "priority": 75
+    },
+    {
+      "id": "opc-ui-auditor",
+      "name": "UI Auditor",
+      "type": "core",
+      "capability_tags": ["ui", "ux", "accessibility", "visual-audit", "design"],
+      "scenarios": ["UI quality audit", "accessibility check", "design review"],
+      "input": "UI component or page",
+      "output": "6-pillar UI audit report",
+      "priority": 78
+    },
+    {
+      "id": "opc-plan-checker",
+      "name": "Plan Checker",
+      "type": "core",
+      "capability_tags": ["plan-validation", "pre-flight", "feasibility"],
+      "scenarios": ["plan quality check before execution", "feasibility analysis"],
+      "input": "PLAN.md",
+      "output": "8-dimension validation report",
+      "priority": 88
+    },
+    {
+      "id": "opc-assumptions-analyzer",
+      "name": "Assumptions Analyzer",
+      "type": "core",
+      "capability_tags": ["assumptions", "risk", "hidden-dependencies"],
+      "scenarios": ["hidden assumption detection", "risk analysis"],
+      "input": "Plan or architecture document",
+      "output": "Assumptions inventory (technical, user, business, ops)",
+      "priority": 82
+    },
+    {
+      "id": "opc-roadmapper",
+      "name": "Roadmapper",
+      "type": "core",
+      "capability_tags": ["roadmap", "prioritization", "ice-scoring", "strategy"],
+      "scenarios": ["product roadmap creation", "feature prioritization"],
+      "input": "Product vision and constraints",
+      "output": "Scored and prioritized roadmap",
+      "priority": 75
+    },
+    {
+      "id": "opc-researcher",
+      "name": "Researcher",
+      "type": "core",
+      "capability_tags": ["research", "market", "competitive-analysis", "intelligence"],
+      "scenarios": ["market research", "competitive analysis", "technology evaluation"],
+      "input": "Research question or market niche",
+      "output": "Multi-source research report with citations",
+      "priority": 80
+    },
+    {
+      "id": "opc-frontend-wizard",
+      "name": "Frontend Wizard",
+      "type": "matrix",
+      "capability_tags": ["frontend", "react", "nextjs", "css", "ui", "component", "layout", "style", "viewport", "responsive"],
+      "scenarios": ["frontend implementation", "UI component building", "CSS styling"],
+      "input": "Frontend task with component/page target",
+      "output": "Frontend code with visual verification",
+      "priority": 85
+    },
+    {
+      "id": "opc-backend-architect",
+      "name": "Backend Architect",
+      "type": "matrix",
+      "capability_tags": ["backend", "api", "database", "db", "migration", "schema", "rest", "graphql", "orm", "model", "endpoint"],
+      "scenarios": ["API design", "database modeling", "backend service implementation"],
+      "input": "Backend task with API/DB target",
+      "output": "Backend code with API tests",
+      "priority": 85
+    },
+    {
+      "id": "opc-devops-automator",
+      "name": "DevOps Automator",
+      "type": "domain",
+      "capability_tags": ["devops", "ci", "cd", "docker", "kubernetes", "deployment", "infrastructure", "pipeline"],
+      "scenarios": ["CI/CD pipeline setup", "container configuration", "deployment automation"],
+      "input": "Infrastructure or deployment requirement",
+      "output": "Pipeline config, Dockerfiles, deployment scripts",
+      "priority": 78
+    },
+    {
+      "id": "opc-seo-specialist",
+      "name": "SEO Specialist",
+      "type": "domain",
+      "capability_tags": ["seo", "search", "keywords", "ranking", "meta", "sitemap", "structured-data"],
+      "scenarios": ["SEO optimization", "keyword research", "technical SEO audit"],
+      "input": "Website or content to optimize",
+      "output": "SEO recommendations and implementation",
+      "priority": 70
+    },
+    {
+      "id": "opc-content-creator",
+      "name": "Content Creator",
+      "type": "domain",
+      "capability_tags": ["content", "writing", "blog", "marketing", "copywriting", "social-media"],
+      "scenarios": ["blog post creation", "marketing copy", "social media content"],
+      "input": "Content brief or topic",
+      "output": "Polished content ready for publication",
+      "priority": 68
+    },
+    {
+      "id": "opc-growth-hacker",
+      "name": "Growth Hacker",
+      "type": "domain",
+      "capability_tags": ["growth", "acquisition", "retention", "activation", "funnel", "conversion"],
+      "scenarios": ["growth strategy", "funnel optimization", "A/B test design"],
+      "input": "Growth challenge or metric to improve",
+      "output": "Growth experiment plan with hypothesis and metrics",
+      "priority": 72
+    },
+    {
+      "id": "opc-pricing-analyst",
+      "name": "Pricing Analyst",
+      "type": "domain",
+      "capability_tags": ["pricing", "monetization", "revenue", "subscription", "freemium"],
+      "scenarios": ["pricing strategy", "plan design", "revenue optimization"],
+      "input": "Product/market context for pricing",
+      "output": "Pricing model with rationale",
+      "priority": 70
+    }
+  ]
+}

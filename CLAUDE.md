@@ -2,28 +2,35 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Note:** SuperOPC v2 supports **dynamic context assembly**. For runtime-generated
+> instructions tailored to the current project phase and developer profile, see
+> `scripts/engine/context_assembler.py` which can produce a phase-aware CLAUDE.md
+> dynamically.
+
 ## What this repository is
 
-SuperOPC is a **content/plugin repository**, not an application service. The main deliverables are Claude Code instructions and workflow assets:
+SuperOPC is a **content/plugin repository** with a **Python engine layer**, not a standalone application service. The main deliverables are:
 - markdown-based **skills** in `skills/`
-- markdown-based **agents** in `agents/`
+- markdown-based **agents** in `agents/` with capability registry `agents/registry.json`
 - slash-command entrypoints in `commands/opc/`
 - quality gates in `hooks/hooks.json` + `scripts/hooks/*.py`
 - reusable engineering rules in `rules/`
 - reference docs in `references/`
 - format export tooling in `scripts/convert.py`
+- **v2 engine layer** in `scripts/engine/` — event bus, state engine, DAG orchestrator, decision engine, cruise controller, profile engine, learning store, context assembler, notification dispatcher, and scheduler
 
-Most changes in this repo are documentation and workflow changes; the main executable code is the hook scripts and the format converter.
+Most changes in this repo are documentation and workflow changes; the main executable code is the hook scripts, the format converter, and the v2 engine modules.
 
 ## Core repository guidance
 
 - Treat this repo as a **one-person company operating system** for solo founders: product, engineering, business, and market-intelligence workflows live side by side.
 - Existing repo guidance is **skill-first**: if a relevant skill exists, prefer the skill-driven workflow over ad-hoc behavior.
+- [!!CRITICAL RED FLAG!!] **Anti-Build-Trap Guardrail (Minimalist Entrepreneur):** Before executing any code generation or `brainstorming` for a new product/feature idea, you MUST force the user through the `validate-idea` and `find-community` skills. If there is no real-world proof of a paying community or validated niche, halt coding operations immediately and run `/opc-discuss`.
 - Feature work follows the documented pipeline: `brainstorming -> planning -> implementing -> reviewing -> shipping`.
 - Bug work follows: `debugging -> tdd -> implementing`.
 - TDD is a repo-level expectation for behavior-changing work; `rules/common/testing.md` sets an **80% coverage target** and documents the RED/GREEN/REFACTOR loop.
 - Commits are expected to use **Conventional Commits**; `rules/common/git-workflow.md` also forbids bypassing hooks with `--no-verify`.
-- `AGENTS.md` instructs Claude to delegate proactively to specialist agents for planning, execution, review, verification, debugging, security review, and documentation.
+- `AGENTS.md` instructs Claude to delegate proactively to specialist agents via `dag_runner.py` for planning, execution, review, verification, debugging, security review, and documentation.
 
 ## Common commands
 
@@ -70,8 +77,26 @@ python scripts/convert.py --help
 
 ## High-level architecture
 
+### 0. Engine layer (v2) — the autonomous nervous system
+`scripts/engine/` is the new runtime core that turns SuperOPC from a passive prompt collection into an active system:
+
+| Module | Purpose |
+|--------|---------|
+| `event_bus.py` | Publish/subscribe event bus — all internal communication goes through here |
+| `state_engine.py` | Structured `.opc/` state with JSON+MD dual-write and event emission |
+| `dag_engine.py` | DAG orchestrator v2 — resilient wave execution with retry/degrade/escalate |
+| `decision_engine.py` | Three-layer brain: rule engine → state machine → ICE heuristics |
+| `cruise_controller.py` | Autonomous operation with watch/assist/cruise modes |
+| `scheduler.py` | Background cron for health checks, intel refresh, session recovery |
+| `profile_engine.py` | 8-dimension developer profiling across sessions |
+| `learning_store.py` | Cross-project knowledge persistence at `~/.opc/learnings/` |
+| `context_assembler.py` | Dynamic context construction — phase-aware skill/agent/rule selection |
+| `notification.py` | Multi-channel alerts: file, webhook, desktop, email |
+
+Data flow: `Perception (events) → EventBus → DecisionEngine → DAGEngine → Agents → QualityGate → StateEngine → EventBus (loop)`
+
 ### 1. Commands are the user-facing entrypoints
-`commands/opc/*.md` defines the top-level slash commands such as `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-quick`, `/opc-review`, `/opc-research`, `/opc-dashboard`, `/opc-stats`, `/opc-progress`, `/opc-pause`, `/opc-resume`, `/opc-session-report`, `/opc-autonomous`, `/opc-fast`, `/opc-discuss`, `/opc-explore`, `/opc-thread`, `/opc-seed`, `/opc-backlog`, `/opc-next`, `/opc-health`, and `/opc-do`.
+`commands/opc/*.md` defines the top-level slash commands including `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-cruise`, `/opc-heartbeat`, `/opc-profile`, `/opc-intel`, and 20+ others.
 
 These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
 
@@ -80,16 +105,16 @@ These files are thin workflow routers. They do not contain the full logic themse
 - `skills/product/` — product delivery pipeline
 - `skills/engineering/` — TDD, debugging, git worktrees, parallel execution
 - `skills/business/` — solo-founder operating skills across validation, pricing, finance, legal, GTM, content, and interviews
-- `skills/intelligence/` — market research and builder tracking
+- `skills/intelligence/` — market research, builder tracking, and **autonomous operations**
 - `skills/learning/` — learning/evolution workflows
 - `skills/using-superopc/` — meta-skill that explains how the whole system should be used
 
 If you need to understand how SuperOPC is supposed to behave, start with the relevant skill before reading individual agents.
 
 ### 3. Agents are specialist delegates
-`agents/` contains the specialist roles used by the workflows: planner, executor, reviewer, researcher, verifier, debugger, security auditor, documentation roles, UI/codebase analysis roles, and roadmap/planning roles.
+`agents/` contains the specialist roles used by the workflows. `agents/registry.json` provides a capability-based routing registry that the DAG engine uses for semantic task-to-agent matching (replacing the v1 keyword-based routing).
 
-`AGENTS.md` defines the intended orchestration patterns, e.g. planner -> executor -> reviewer -> verifier, plus dedicated debugging and security-review flows.
+`AGENTS.md` defines the intended orchestration patterns, e.g. planner -> executor -> reviewer -> verifier, plus dedicated debugging, security-review, and autonomous operation flows.
 
 ### 4. Rules and references are the quality system
 - `rules/common/` applies across the repo
@@ -154,11 +179,42 @@ If you are changing these workflows, make sure command docs, relevant skills, an
 - If you add or rename commands, agents, or skills, check whether `README.md`, `AGENTS.md`, `.claude-plugin/plugin.json`, or generated integrations also need updates.
 - When editing repo policy, prefer updating the single authoritative location (for example `rules/common/testing.md` for testing policy or `hooks/hooks.json` for hook wiring) instead of duplicating the same rule in many places.
 
+## SuperOPC Behavior Protocol (v2)
+
+These rules are internalized from 9 upstream projects and enforced by the decision engine:
+
+1. **[Superpowers] SKILL-FIRST** — If a relevant skill exists, invoke it, even with 1% applicability.
+2. **[GSD] CONTEXT-DECAY-DEFENSE** — Monitor context budget; degrade gracefully at 80% usage.
+3. **[ECC] CONTINUOUS-LEARNING** — After every session, capture insights to `~/.opc/learnings/`.
+4. **[Minimalist Entrepreneur] ANTI-BUILD-TRAP** — No code generation without `validate-idea` + `find-community` evidence.
+5. **[Superpowers] TDD-IRON-LAW** — No production code without a failing test first.
+6. **[GSD] WAVE-EXECUTION** — Parallelize independent tasks; serialize dependent ones.
+7. **[Agency-Agents] NEXUS-PROTOCOL** — Consult specialist agents for domain-specific work.
+8. **[Follow Builders] BUILDER-INTEL** — Check builder feeds before market validation.
+9. **[skill-from-masters] METHODOLOGY-FIRST** — Align with proven expert methodologies before creating new skills.
+10. **[last30days] MULTI-SOURCE** — Use multiple data sources for market assessment.
+11. **[Claude Code Best Practice] ATOMIC-COMMITS** — One task = one commit.
+
+## Autonomous operations (v2)
+
+SuperOPC can operate in three autonomous modes via `/opc-cruise`:
+- **Watch**: Monitor only, alert on anomalies
+- **Assist**: Execute GREEN zone tasks (health, tests, docs, intel), pause on YELLOW/RED
+- **Cruise**: Execute GREEN + YELLOW tasks, pause only on RED zone (deploy, migrations, security, payments)
+
+The decision engine (`scripts/engine/decision_engine.py`) determines actions through three layers:
+1. Rule engine (deterministic patterns)
+2. State machine (phase-aware flow)
+3. ICE heuristics (prioritized scoring)
+
 ## Files worth reading first
 
 - `README.md` — product positioning, install flow, and top-level architecture
 - `AGENTS.md` — orchestration rules and specialist-agent usage
+- `agents/registry.json` — capability-based agent routing registry
 - `skills/using-superopc/SKILL.md` — meta-skill for how the system expects Claude to operate
+- `skills/intelligence/autonomous-ops/SKILL.md` — autonomous operation permission zones
 - `hooks/hooks.json` — actual hook registrations
 - `rules/common/testing.md` and `rules/common/git-workflow.md` — repo-level quality and git expectations
-- `scripts/convert.py` — the main executable path in the repo
+- `scripts/engine/` — v2 engine layer (event bus, decision engine, cruise controller, etc.)
+- `scripts/convert.py` — the multi-runtime export path

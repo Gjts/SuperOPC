@@ -1,4 +1,15 @@
-# SuperOPC — Agent Orchestration
+# SuperOPC — Agent Orchestration (v2)
+
+## Agent Registry
+
+All agents are registered in `agents/registry.json` with capability tags, scenarios,
+input/output contracts, and priority weights.  The DAG engine (`scripts/engine/dag_engine.py`)
+uses this registry for **semantic task-to-agent routing** instead of keyword matching.
+
+Agent types:
+- **core** (15): Built-in specialists always available
+- **matrix** (2): Specialized execution agents (frontend-wizard, backend-architect)
+- **domain** (5+): Extended specialists activated on demand (devops, seo, content, growth, pricing)
 
 ## 代理编排规则
 
@@ -19,6 +30,13 @@
 | UI 审查 | **opc-ui-auditor** |
 | 隐藏假设分析 | **opc-assumptions-analyzer** |
 | 产品路线图 | **opc-roadmapper** |
+| 前端实现 | **opc-frontend-wizard** (自动路由) |
+| 后端/API/DB | **opc-backend-architect** (自动路由) |
+| CI/CD/部署 | **opc-devops-automator** (领域代理) |
+| SEO 优化 | **opc-seo-specialist** (领域代理) |
+| 内容创作 | **opc-content-creator** (领域代理) |
+| 增长策略 | **opc-growth-hacker** (领域代理) |
+| 定价策略 | **opc-pricing-analyst** (领域代理) |
 
 ## 代理协作模式
 
@@ -56,6 +74,28 @@ Bug 报告 → opc-debugger (假设-证据-排除) → opc-executor (修复) →
 ```
 需求 → opc-planner → opc-plan-checker (8维度) → opc-assumptions-analyzer → opc-executor (波次执行)
 ```
+
+### 自主运营流水线 (v2)
+```
+事件触发 → decision_engine (三层决策) → dag_engine (波次编排) → agent_registry (语义路由) → 执行 → quality_gate → state_engine (状态更新) → event_bus (循环)
+```
+
+### 巡航模式流水线 (v2)
+```
+cruise_controller → heartbeat → state_engine.load → decision_engine.decide → zone_check → execute/escalate → notify → persist
+```
+
+## 代理矩阵路由协议 (v2)
+
+DAG 引擎通过以下流程匹配任务到最佳代理：
+
+1. 检查任务是否显式指定了代理 → 直接使用
+2. 读取 `agents/registry.json` 中所有代理的 `capability_tags`
+3. 将任务标题+动作与标签做语义匹配，计算得分
+4. 选择最高得分的代理
+5. 若无匹配（得分为0），使用关键词回退路由
+6. 若执行失败 3 次，尝试降级到 `opc-executor`
+7. 若降级也失败，发出 `decision.required` 事件，等待人工介入
 
 ## 安全准则
 
