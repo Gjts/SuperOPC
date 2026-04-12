@@ -12,4 +12,5 @@ Modules:
   learning_store     — Cross-project knowledge persistence
   context_assembler  — Dynamic phase-aware context construction
   notification       — Multi-channel notification dispatcher
+  intel_engine       — Codebase intelligence (queryable JSON index)
 """

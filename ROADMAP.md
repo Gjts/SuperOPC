@@ -249,18 +249,31 @@
 **目标：** AI从每次交互中学习，个性化适应开发者
 
 #### 开发者画像（融合 GSD 8维度 profiling）
-- [ ] `/opc-profile [--questionnaire] [--refresh]`
-- [ ] 8维度：沟通风格、决策模式、调试方式、UX偏好、技术选择、摩擦触发、学习风格、解释深度
-- [ ] 生成 USER-PROFILE.md + CLAUDE.md 配置段
+- [x] `/opc-profile [--questionnaire] [--refresh]`
+- [x] 8维度：沟通风格、决策模式、调试方式、UX偏好、技术选择、摩擦触发、学习风格、解释深度
+- [x] 生成 USER-PROFILE.md + CLAUDE.md 配置段
+- [x] 6问快速问卷系统 + 行为推断引擎
+- [x] `skills/using-superopc/developer-profile/SKILL.md` — 画像技能文档
 
-#### 全局学习存储（融合 GSD 功能89）
-- [ ] 跨会话跨项目学习持久化
-- [ ] 阶段完成时自动复制洞察到全局存储
-- [ ] 计划器启动时注入相关历史学习
+#### 全局学习存储（融合 GSD 功能89 + ECC Continuous Learning v2）
+- [x] 跨会话跨项目学习持久化
+- [x] 阶段完成时自动复制洞察到全局存储
+- [x] 计划器启动时注入相关历史学习
+- [x] 观察管道：PostToolUse 钩子 → JSONL → 模式检测 → 本能演化
+- [x] `scripts/hooks/observe.py` — 工具使用观察钩子
+- [x] `learning_store.detect_patterns()` + `evolve_instincts()` + `prune_observations()`
+
+#### 子代理双阶段审查（融合 Superpowers subagent-driven-development）
+- [x] `skills/engineering/subagent-driven-development/SKILL.md` — 主技能
+- [x] 实现者 / 规格审查 / 代码质量审查三个子代理提示模板
+- [x] AGENTS.md 子代理驱动开发流水线
+- [x] parallel-agents 交叉引用
 
 #### 可查询代码库智能（融合 GSD 功能90）
-- [ ] `/opc-intel [query|status|diff|refresh]`
-- [ ] .opc/intel/ JSON索引：stack, api-map, dependency-graph, file-roles, arch-decisions
+- [x] `/opc-intel [query|status|diff|refresh]`
+- [x] .opc/intel/ JSON索引：stack, api-map, dependency-graph, file-roles, arch-decisions
+- [x] `scripts/engine/intel_engine.py` — 核心引擎（query/status/diff/write/snapshot/validate）
+- [x] `agents/opc-intel-updater.md` — 代码库分析代理（7步探索流程 + 输出预算 + 上下文分级）
 
 ---
 

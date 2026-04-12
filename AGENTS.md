@@ -32,6 +32,7 @@ Agent types:
 | 产品路线图 | **opc-roadmapper** |
 | 前端实现 | **opc-frontend-wizard** (自动路由) |
 | 后端/API/DB | **opc-backend-architect** (自动路由) |
+| 代码库索引刷新 | **opc-intel-updater** (由 /opc-intel refresh 派发) |
 | CI/CD/部署 | **opc-devops-automator** (领域代理) |
 | SEO 优化 | **opc-seo-specialist** (领域代理) |
 | 内容创作 | **opc-content-creator** (领域代理) |
@@ -78,6 +79,11 @@ Bug 报告 → opc-debugger (假设-证据-排除) → opc-executor (修复) →
 ### 自主运营流水线 (v2)
 ```
 事件触发 → decision_engine (三层决策) → dag_engine (波次编排) → agent_registry (语义路由) → 执行 → quality_gate → state_engine (状态更新) → event_bus (循环)
+```
+
+### 子代理驱动开发流水线 (v1.1)
+```
+计划 → 提取任务 → [每任务: 派发实现者(fresh) → 规格审查 → 代码质量审查 → 标记完成] → 最终全局审查 → 分支完成
 ```
 
 ### 巡航模式流水线 (v2)
