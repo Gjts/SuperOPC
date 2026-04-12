@@ -115,6 +115,19 @@
         ],
         "description": "Remind to review changes before git push",
         "id": "post:bash:git-push-reminder"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/hooks/observe.py\"",
+            "async": true,
+            "timeout": 3
+          }
+        ],
+        "description": "Continuous Learning: capture tool-use observations to ~/.opc/learnings/observations.jsonl for pattern detection and instinct evolution",
+        "id": "post:all:observe"
       }
     ],
     "Notification": [

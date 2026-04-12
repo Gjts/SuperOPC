@@ -25,6 +25,10 @@ from typing import Any
 from event_bus import EventBus, get_event_bus
 
 
+def _now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
 # ---------------------------------------------------------------------------
 # Learning model
 # ---------------------------------------------------------------------------
@@ -161,14 +165,130 @@ class LearningStore:
 
         return captured
 
+    # ------------------------------------------------------------------
+    # Observation pipeline (inspired by ECC Continuous Learning v2)
+    # ------------------------------------------------------------------
+
+    def record_observation(self, *, tool: str, action: str, context: str = "", project: str = "", metadata: dict[str, Any] | None = None) -> None:
+        """Append a raw tool-use observation to the JSONL observation log."""
+        obs_file = self._dir / "observations.jsonl"
+        self._dir.mkdir(parents=True, exist_ok=True)
+        record = {
+            "ts": _now(),
+            "tool": tool,
+            "action": action,
+            "context": context[:200],
+            "project": project,
+            "meta": metadata or {},
+        }
+        with open(obs_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    def detect_patterns(self, *, min_occurrences: int = 3) -> list[dict[str, Any]]:
+        """Analyze observations.jsonl to detect recurring tool-use patterns."""
+        obs_file = self._dir / "observations.jsonl"
+        if not obs_file.exists():
+            return []
+
+        action_counts: dict[str, int] = {}
+        tool_counts: dict[str, int] = {}
+        tool_action_pairs: dict[str, int] = {}
+
+        for line in obs_file.read_text(encoding="utf-8").strip().splitlines():
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            tool = rec.get("tool", "")
+            action = rec.get("action", "")
+            if tool:
+                tool_counts[tool] = tool_counts.get(tool, 0) + 1
+            if action:
+                action_counts[action] = action_counts.get(action, 0) + 1
+            pair_key = f"{tool}:{action}"
+            tool_action_pairs[pair_key] = tool_action_pairs.get(pair_key, 0) + 1
+
+        patterns: list[dict[str, Any]] = []
+        for pair, count in sorted(tool_action_pairs.items(), key=lambda x: -x[1]):
+            if count >= min_occurrences:
+                tool_name, action_name = pair.split(":", 1) if ":" in pair else (pair, "")
+                patterns.append({
+                    "type": "tool_action_pattern",
+                    "tool": tool_name,
+                    "action": action_name,
+                    "count": count,
+                    "strength": min(1.0, count / 20.0),
+                })
+        return patterns
+
+    def evolve_instincts(self) -> list[Learning]:
+        """Promote detected patterns into instincts (Learning entries with high confidence)."""
+        patterns = self.detect_patterns(min_occurrences=5)
+        instincts: list[Learning] = []
+        for pattern in patterns:
+            existing = self.query(
+                category=LearningCategory.TECHNICAL,
+                keyword=f"instinct:{pattern['tool']}:{pattern['action']}",
+                limit=1,
+            )
+            if existing:
+                continue
+            instinct = self.capture(
+                category=LearningCategory.TECHNICAL,
+                title=f"instinct:{pattern['tool']}:{pattern['action']}",
+                content=f"Recurring pattern detected: {pattern['tool']} used for '{pattern['action']}' "
+                        f"({pattern['count']} occurrences). Consider creating a dedicated skill or command.",
+                tags=["instinct", "auto-detected", pattern["tool"]],
+                confidence=pattern["strength"],
+            )
+            instincts.append(instinct)
+        if instincts:
+            self._bus.publish(
+                "learning.instincts_evolved",
+                {"count": len(instincts), "patterns": len(patterns)},
+                source="learning_store",
+            )
+        return instincts
+
+    def prune_observations(self, *, max_age_days: int = 30) -> int:
+        """Remove observations older than max_age_days. Returns count of pruned records."""
+        obs_file = self._dir / "observations.jsonl"
+        if not obs_file.exists():
+            return 0
+        cutoff = datetime.now(timezone.utc).replace(microsecond=0)
+        kept: list[str] = []
+        pruned = 0
+        for line in obs_file.read_text(encoding="utf-8").strip().splitlines():
+            try:
+                rec = json.loads(line)
+                ts_str = rec.get("ts", "")
+                if ts_str:
+                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                    age = (cutoff - ts).days
+                    if age > max_age_days:
+                        pruned += 1
+                        continue
+            except (json.JSONDecodeError, ValueError):
+                pass
+            kept.append(line)
+        obs_file.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        return pruned
+
     def stats(self) -> dict[str, Any]:
         self._ensure_loaded()
         by_category: dict[str, int] = {}
         for learning in self._index.values():
             by_category[learning.category] = by_category.get(learning.category, 0) + 1
+
+        obs_count = 0
+        obs_file = self._dir / "observations.jsonl"
+        if obs_file.exists():
+            obs_count = sum(1 for _ in obs_file.read_text(encoding="utf-8").strip().splitlines() if _)
+
         return {
             "total": len(self._index),
             "by_category": by_category,
+            "observations": obs_count,
             "store_dir": str(self._dir),
         }
 
@@ -176,7 +296,7 @@ class LearningStore:
         cat_dir = self._dir / learning.category
         cat_dir.mkdir(parents=True, exist_ok=True)
         filepath = cat_dir / f"{learning.id}.json"
-        learning.updated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        learning.updated_at = _now()
         filepath.write_text(json.dumps(asdict(learning), ensure_ascii=False, indent=2), encoding="utf-8")
 
     @staticmethod

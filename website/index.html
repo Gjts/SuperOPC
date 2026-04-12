@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SuperOPC — The AI Operating System for One-Person Companies</title>
+  <meta name="description" content="24 skills, 15+ agents, 20+ commands. Build, ship, and grow your product solo — with AI that actually thinks like a founder." />
+  <meta property="og:title" content="SuperOPC — AI OS for One-Person Companies" />
+  <meta property="og:description" content="24 skills, 15+ agents, works with Claude, Cursor, Windsurf, Copilot and 7 more. Free & open source." />
+  <meta property="og:image" content="https://github.com/Gjts/SuperOPC/raw/main/site/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>" />
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --border: #2a2a3a;
+      --text: #e8e8f0;
+      --muted: #8888aa;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --accent-glow: rgba(99,102,241,0.15);
+      --green: #22c55e;
+      --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; width: 100%; z-index: 100;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.02em; }
+    .nav-logo span { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: white; padding: 0.45rem 1rem;
+      border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 120px 2rem 4rem;
+      position: relative; overflow: hidden;
+    }
+    .hero-glow {
+      position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--accent-glow); border: 1px solid rgba(99,102,241,0.3);
+      padding: 0.3rem 0.9rem; border-radius: 100px;
+      font-size: 0.8rem; color: var(--accent2); font-weight: 500; margin-bottom: 1.5rem;
+    }
+    .hero-badge .dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 800; line-height: 1.1;
+      letter-spacing: -0.03em; margin-bottom: 1.2rem;
+    }
+    h1 .gradient { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--muted); max-width: 600px; margin: 0 auto 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--accent); color: white;
+      padding: 0.75rem 1.75rem; border-radius: 8px;
+      font-weight: 600; font-size: 1rem; text-decoration: none;
+      transition: transform 0.2s, opacity 0.2s; box-shadow: 0 0 20px rgba(99,102,241,0.4);
+    }
+    .btn-primary:hover { transform: translateY(-1px); opacity: 0.9; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--surface); color: var(--text);
+      padding: 0.75rem 1.75rem; border-radius: 8px;
+      font-weight: 600; font-size: 1rem; text-decoration: none;
+      border: 1px solid var(--border); transition: border-color 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .hero-code {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem 1.5rem;
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem;
+      color: var(--muted); text-align: left; display: inline-block;
+    }
+    .hero-code .prompt { color: var(--accent2); }
+    .hero-code .cmd { color: var(--green); }
+
+    /* RUNTIME BADGES */
+    .runtime-strip {
+      padding: 2rem; text-align: center;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .runtime-strip p { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
+    .badge {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.3rem 0.7rem;
+      font-size: 0.8rem; color: var(--muted); font-weight: 500;
+    }
+
+    /* SECTIONS */
+    section { padding: 6rem 2rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--accent2); font-weight: 600; margin-bottom: 0.75rem;
+    }
+    h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700; letter-spacing: -0.02em; margin-bottom: 1rem; line-height: 1.2;
+    }
+    .section-sub { color: var(--muted); font-size: 1.1rem; max-width: 580px; }
+
+    /* PROBLEM */
+    .problem-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .problem-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem;
+    }
+    .problem-card .x { color: #ef4444; font-size: 1.2rem; margin-bottom: 0.75rem; }
+    .problem-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .problem-card p { color: var(--muted); font-size: 0.9rem; }
+
+    /* SKILLS GRID */
+    .skills-tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap;
+    }
+    .tab {
+      padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.85rem;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); cursor: pointer; transition: all 0.2s;
+    }
+    .tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .skills-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .skill-chip {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.6rem 0.9rem;
+      font-size: 0.85rem; color: var(--text); font-family: 'SF Mono', monospace;
+    }
+    .skill-chip .icon { font-size: 0.9rem; }
+
+    /* PIPELINE */
+    .pipeline {
+      display: flex; align-items: center; gap: 0; margin-top: 3rem;
+      overflow-x: auto; padding-bottom: 1rem;
+    }
+    .pipeline-step {
+      flex-shrink: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.2rem 1.5rem; text-align: center; min-width: 160px;
+    }
+    .pipeline-step .agent { font-size: 0.7rem; color: var(--accent2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+    .pipeline-step .action { font-size: 0.9rem; font-weight: 600; }
+    .pipeline-arrow { color: var(--muted); padding: 0 0.5rem; font-size: 1.2rem; flex-shrink: 0; }
+
+    /* FEATURES */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.75rem; position: relative; overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--gradient); opacity: 0;  transition: opacity 0.2s;
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 1rem; }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-card p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+    .feature-tag {
+      display: inline-block; margin-top: 0.75rem;
+      background: var(--accent-glow); border: 1px solid rgba(99,102,241,0.2);
+      color: var(--accent2); font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 4px;
+    }
+
+    /* INSTALL */
+    .install-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin-top: 3rem;
+    }
+    .install-tabs { display: flex; border-bottom: 1px solid var(--border); }
+    .install-tab {
+      padding: 0.75rem 1.25rem; font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; border: none; background: transparent; color: var(--muted);
+      transition: color 0.2s;
+    }
+    .install-tab.active { color: var(--accent2); border-bottom: 2px solid var(--accent); }
+    .install-content { padding: 1.5rem; }
+    pre {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem;
+      color: var(--text); line-height: 1.8; overflow-x: auto;
+    }
+    pre .comment { color: var(--muted); }
+    pre .string { color: #86efac; }
+    pre .cmd { color: var(--accent2); }
+
+    /* STATS */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem; text-align: center;
+    }
+    .stat-number {
+      font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em;
+      background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label { color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; }
+
+    /* PRINCIPLES */
+    .principles { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .principles-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2rem; margin-top: 3rem;
+    }
+    .principle { display: flex; gap: 1rem; }
+    .principle-num {
+      flex-shrink: 0; width: 32px; height: 32px;
+      background: var(--accent-glow); border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; color: var(--accent2);
+    }
+    .principle h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .principle p { color: var(--muted); font-size: 0.85rem; }
+
+    /* CTA */
+    .cta-section {
+      text-align: center; padding: 8rem 2rem;
+      background: radial-gradient(ellipse at center, rgba(99,102,241,0.1) 0%, transparent 70%);
+    }
+    .cta-section h2 { margin-bottom: 1rem; }
+    .cta-section p { color: var(--muted); font-size: 1.1rem; margin-bottom: 2.5rem; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border); padding: 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    footer .copy { color: var(--muted); font-size: 0.85rem; }
+    footer .links { display: flex; gap: 1.5rem; }
+    footer .links a { color: var(--muted); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+    footer .links a:hover { color: var(--text); }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 1rem; }
+      .nav-links { display: none; }
+      section { padding: 4rem 1.25rem; }
+      .pipeline { flex-direction: column; }
+      .pipeline-arrow { transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span>SuperOPC</span></div>
+  <div class="nav-links">
+    <a href="#skills">Skills</a>
+    <a href="#agents">Agents</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/Gjts/SuperOPC" target="_blank">GitHub</a>
+    <a href="https://github.com/Gjts/SuperOPC" target="_blank" class="nav-cta">⭐ Star on GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-badge">
+    <span class="dot"></span>
+    v1.1.0 — Open Source · MIT License
+  </div>
+  <h1>
+    The AI OS for<br/>
+    <span class="gradient">One-Person Companies</span>
+  </h1>
+  <p class="hero-sub">
+    24 skills, 15+ agents, 20+ commands. Your AI tools finally have a spine —
+    from idea validation to shipping, with business thinking built in.
+  </p>
+  <div class="hero-actions">
+    <a href="https://github.com/Gjts/SuperOPC" target="_blank" class="btn-primary">
+      ⭐ Star on GitHub
+    </a>
+    <a href="#install" class="btn-secondary">
+      ⚡ Quick Install
+    </a>
+  </div>
+  <div class="hero-code">
+    <div><span class="prompt">$</span> git clone https://github.com/gjts/superopc.git</div>
+    <div><span class="prompt">$</span> python scripts/convert.py --tool <span class="cmd">cursor</span>  <span style="color:#4a4a6a"># or claude-code, windsurf...</span></div>
+    <div style="margin-top:0.5rem;color:#4a4a6a"># 5 minutes. Works with 11 AI tools.</div>
+  </div>
+</section>
+
+<!-- RUNTIME STRIP -->
+<div class="runtime-strip">
+  <p>Works with your existing AI tools</p>
+  <div class="badges">
+    <span class="badge">Claude Code</span>
+    <span class="badge">Cursor</span>
+    <span class="badge">Windsurf</span>
+    <span class="badge">Copilot</span>
+    <span class="badge">Gemini CLI</span>
+    <span class="badge">OpenCode</span>
+    <span class="badge">Codex</span>
+    <span class="badge">Trae</span>
+    <span class="badge">Cline</span>
+    <span class="badge">Augment</span>
+    <span class="badge">OpenClaw</span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section>
+  <div class="container">
+    <div class="section-label">The Problem</div>
+    <h2>AI tools are powerful.<br/>But they're not a system.</h2>
+    <p class="section-sub">Solo founders end up with great AI tools and no coherent workflow. SuperOPC is the OS layer that fixes this.</p>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="x">✗</div>
+        <h3>No business thinking</h3>
+        <p>Claude writes code beautifully. But it won't stop you from building something nobody wants. You need validate-idea before any line of code.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">✗</div>
+        <h3>Context dies every session</h3>
+        <p>Every new chat, your AI forgets who you are, what you're building, and how you like to work. You re-explain from scratch every time.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">✗</div>
+        <h3>Rules files grow into chaos</h3>
+        <p>Your .cursorrules start clean and become a 500-line mess. No structure, no skill system, no way to evolve systematically.</p>
+      </div>
+      <div class="problem-card">
+        <div class="x">✗</div>
+        <h3>Engineering with no quality gates</h3>
+        <p>Vibe coding ships fast but breaks faster. No TDD, no security review, no verification. Technical debt compounds silently.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section id="skills" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="container">
+    <div class="section-label">24 Skills</div>
+    <h2>Every role you play,<br/>one skill at a time.</h2>
+    <p class="section-sub">From idea validation to investor materials. Business and engineering live side by side.</p>
+
+    <div style="margin-top: 3rem;">
+      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem;">🏢 Business Skills</p>
+      <div class="skills-grid">
+        <div class="skill-chip"><span class="icon">🎯</span>validate-idea</div>
+        <div class="skill-chip"><span class="icon">👥</span>find-community</div>
+        <div class="skill-chip"><span class="icon">🚀</span>mvp</div>
+        <div class="skill-chip"><span class="icon">💰</span>pricing</div>
+        <div class="skill-chip"><span class="icon">🎯</span>first-customers</div>
+        <div class="skill-chip"><span class="icon">📣</span>marketing-plan</div>
+        <div class="skill-chip"><span class="icon">🎤</span>user-interview</div>
+        <div class="skill-chip"><span class="icon">🔍</span>seo</div>
+        <div class="skill-chip"><span class="icon">✍️</span>content-engine</div>
+        <div class="skill-chip"><span class="icon">🎨</span>brand-voice</div>
+        <div class="skill-chip"><span class="icon">⚖️</span>legal-basics</div>
+        <div class="skill-chip"><span class="icon">📊</span>finance-ops</div>
+        <div class="skill-chip"><span class="icon">📈</span>investor-materials</div>
+        <div class="skill-chip"><span class="icon">🔭</span>product-lens</div>
+      </div>
+
+      <p style="color: var(--muted); font-size: 0.85rem; margin: 2rem 0 1.5rem;">⚙️ Engineering Skills</p>
+      <div class="skills-grid">
+        <div class="skill-chip"><span class="icon">🧪</span>tdd</div>
+        <div class="skill-chip"><span class="icon">🐛</span>debugging</div>
+        <div class="skill-chip"><span class="icon">🔐</span>security-review</div>
+        <div class="skill-chip"><span class="icon">⚡</span>parallel-agents</div>
+        <div class="skill-chip"><span class="icon">🤖</span>subagent-dev</div>
+        <div class="skill-chip"><span class="icon">🌿</span>git-worktrees</div>
+      </div>
+
+      <p style="color: var(--muted); font-size: 0.85rem; margin: 2rem 0 1.5rem;">🔍 Intelligence Skills</p>
+      <div class="skills-grid">
+        <div class="skill-chip"><span class="icon">📡</span>market-research</div>
+        <div class="skill-chip"><span class="icon">👁️</span>follow-builders</div>
+        <div class="skill-chip"><span class="icon">🛸</span>autonomous-ops</div>
+        <div class="skill-chip"><span class="icon">👤</span>developer-profile</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AGENTS -->
+<section id="agents">
+  <div class="container">
+    <div class="section-label">15+ Agents</div>
+    <h2>Specialist AI agents<br/>that actually collaborate.</h2>
+    <p class="section-sub">Each agent has a focused role. The DAG engine routes tasks semantically — the right agent for the right job, automatically.</p>
+
+    <div class="features-grid" style="margin-top: 3rem;">
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>opc-planner</h3>
+        <p>Breaks complex features into wave-executable tasks with dependency analysis and ICE scoring.</p>
+        <span class="feature-tag">planning</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>opc-executor</h3>
+        <p>Executes tasks atomically with TDD iron law. One task, one commit, no context bleed.</p>
+        <span class="feature-tag">execution</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3>opc-reviewer</h3>
+        <p>Quality reviewer with 3 depth levels: quick scan, standard review, deep architecture audit.</p>
+        <span class="feature-tag">quality</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🐛</div>
+        <h3>opc-debugger</h3>
+        <p>Scientific debugging: hypothesis → evidence → elimination → fix. Persists debug state across sessions.</p>
+        <span class="feature-tag">debugging</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>opc-security-auditor</h3>
+        <p>OWASP ASVS threat model scanning. Catches injection, auth gaps, and secret leaks before they ship.</p>
+        <span class="feature-tag">security</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>opc-roadmapper</h3>
+        <p>North star navigation with ICE-scored feature prioritization and milestone tracking.</p>
+        <span class="feature-tag">strategy</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 3rem;">
+      <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem;">The full development pipeline:</p>
+      <div class="pipeline">
+        <div class="pipeline-step">
+          <div class="agent">Validate</div>
+          <div class="action">validate-idea</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="agent">Plan</div>
+          <div class="action">opc-planner</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="agent">Build</div>
+          <div class="action">opc-executor</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="agent">Review</div>
+          <div class="action">opc-reviewer</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="agent">Verify</div>
+          <div class="action">opc-verifier</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="agent">Ship</div>
+          <div class="action">/opc-ship</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div class="container" style="text-align: center;">
+    <div class="section-label">By the numbers</div>
+    <h2>Built from 9 open source projects.<br/>Fused into one.</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">24</div>
+        <div class="stat-label">Skills across 4 domains</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">15+</div>
+        <div class="stat-label">Specialist agents</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">20+</div>
+        <div class="stat-label">Slash commands</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">11</div>
+        <div class="stat-label">AI runtime exports</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">9</div>
+        <div class="stat-label">Source projects fused</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">MIT</div>
+        <div class="stat-label">Free forever</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="container">
+    <div class="section-label">Install</div>
+    <h2>5-minute setup.<br/>Any AI tool you use.</h2>
+    <p class="section-sub">Clone once, export to your tool. Works with your existing setup — no subscriptions, no lock-in.</p>
+    <div class="install-block">
+      <div class="install-tabs">
+        <button class="install-tab active">Cursor</button>
+        <button class="install-tab">Claude Code</button>
+        <button class="install-tab">Windsurf</button>
+        <button class="install-tab">All tools</button>
+      </div>
+      <div class="install-content">
+        <pre><span class="comment"># 1. Clone SuperOPC</span>
+git clone https://github.com/gjts/superopc.git
+cd superopc
+
+<span class="comment"># 2. Export for Cursor</span>
+python scripts/convert.py --tool cursor
+
+<span class="comment"># 3. Copy to your project</span>
+cp -r integrations/cursor/.cursor /your-project/
+
+<span class="comment"># 4. Open your project in Cursor — done.</span>
+<span class="comment"># SuperOPC skills and agents are now active.</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section class="principles">
+  <div class="container">
+    <div class="section-label">Design Principles</div>
+    <h2>Built for one person<br/>doing the work of ten.</h2>
+    <div class="principles-grid">
+      <div class="principle">
+        <div class="principle-num">1</div>
+        <div>
+          <h3>Sell before you build</h3>
+          <p>Every workflow runs validate-idea first. No code without a real-world signal.</p>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">2</div>
+        <div>
+          <h3>Skill-first execution</h3>
+          <p>If a skill exists, use it. Skills encode methodology, not just prompts.</p>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">3</div>
+        <div>
+          <h3>TDD is non-negotiable</h3>
+          <p>No production code without a failing test first. Quality is not optional.</p>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">4</div>
+        <div>
+          <h3>Eat your own dog food</h3>
+          <p>SuperOPC is built with SuperOPC. Every feature is self-validated.</p>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">5</div>
+        <div>
+          <h3>State persists, context survives</h3>
+          <p>The .opc/ directory gives your AI memory that survives across sessions.</p>
+        </div>
+      </div>
+      <div class="principle">
+        <div class="principle-num">6</div>
+        <div>
+          <h3>Advisory over blocking</h3>
+          <p>Guardrails warn, they don't lock you out. You're always in control.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <div class="section-label">Get Started</div>
+    <h2>Your one-person company<br/>deserves an operating system.</h2>
+    <p>Free, open source, 5-minute setup. Works with the AI tools you already use.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/Gjts/SuperOPC" target="_blank" class="btn-primary">
+        ⭐ Star on GitHub
+      </a>
+      <a href="https://github.com/Gjts/SuperOPC/discussions" target="_blank" class="btn-secondary">
+        💬 Join Discussion
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="copy">© 2026 SuperOPC · MIT License · Built in public</div>
+  <div class="links">
+    <a href="https://github.com/Gjts/SuperOPC" target="_blank">GitHub</a>
+    <a href="https://github.com/Gjts/SuperOPC/blob/main/README.md" target="_blank">Docs</a>
+    <a href="https://github.com/Gjts/SuperOPC/blob/main/CHANGELOG.md" target="_blank">Changelog</a>
+    <a href="https://github.com/Gjts/SuperOPC/blob/main/CONTRIBUTING.md" target="_blank">Contribute</a>
+  </div>
+</footer>
+
+<script>
+  // Tab switching for install section
+  document.querySelectorAll('.install-tab').forEach((tab, i) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const cmds = [
+        `<span class="comment"># 1. Clone SuperOPC</span>\ngit clone https://github.com/gjts/superopc.git\ncd superopc\n\n<span class="comment"># 2. Export for Cursor</span>\npython scripts/convert.py --tool cursor\n\n<span class="comment"># 3. Copy to your project</span>\ncp -r integrations/cursor/.cursor /your-project/\n\n<span class="comment"># 4. Open your project in Cursor — done.</span>`,
+        `<span class="comment"># 1. Clone SuperOPC</span>\ngit clone https://github.com/gjts/superopc.git\n\n<span class="comment"># 2. Use as Claude Code plugin source</span>\n<span class="comment"># Copy skills/, agents/, commands/ to your project</span>\npython scripts/convert.py --tool claude-code\n\n<span class="comment"># Skills and agents become active immediately.</span>`,
+        `<span class="comment"># 1. Clone SuperOPC</span>\ngit clone https://github.com/gjts/superopc.git\ncd superopc\n\n<span class="comment"># 2. Export for Windsurf</span>\npython scripts/convert.py --tool windsurf\n\n<span class="comment"># 3. Copy to your project</span>\ncp -r integrations/windsurf/ /your-project/\n\n<span class="comment"># 4. Open in Windsurf — done.</span>`,
+        `<span class="comment"># Export for ALL 11 supported tools at once</span>\ngit clone https://github.com/gjts/superopc.git\ncd superopc\npython scripts/convert.py --tool all\n\n<span class="comment"># Output in integrations/</span>\n<span class="comment"># cursor/ windsurf/ claude-code/ copilot/</span>\n<span class="comment"># gemini-cli/ opencode/ codex/ trae/ cline/ augment/ openclaw/</span>`
+      ];
+      document.querySelector('.install-content pre').innerHTML = cmds[i];
+    });
+  });
+</script>
+</body>
+</html>

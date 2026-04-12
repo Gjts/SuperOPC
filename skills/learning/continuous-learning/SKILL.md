@@ -43,13 +43,51 @@ description: Use when you want to improve the SuperOPC system itself based on pa
 | [模式] | 工作流优化 | [优化描述] | 高/中/低 |
 ```
 
+## 自动化观察管道 (v1.1)
+
+SuperOPC 通过 PostToolUse 钩子自动捕获工具使用模式，无需手动记录。
+
+### 数据流
+
+```
+工具调用 → observe.py (PostToolUse钩子)
+  → ~/.opc/learnings/observations.jsonl (原始记录)
+  → learning_store.detect_patterns() (模式检测)
+  → learning_store.evolve_instincts() (本能生成)
+  → context_assembler.py (注入相关本能到会话)
+```
+
+### 观察记录格式
+
+每次工具调用自动记录：
+- **工具名** — Edit/Bash/Read/Write/Task 等
+- **行动类型** — git-commit/edit-test/shell/subagent 等
+- **上下文** — 文件路径或命令片段
+- **项目** — 当前工作的项目名
+- **时间戳**
+
+### 本能演化
+
+当某个模式重复出现 ≥5 次时，自动创建「本能」（instinct）：
+- 本能 = 一条高置信度的学习记录
+- 本能会被注入到后续会话的上下文中
+- 本能积累到一定量后，建议升级为技能/命令/代理
+
+### 维护命令
+
+- **模式检测**: `learning_store.detect_patterns()` — 分析观察日志
+- **本能演化**: `learning_store.evolve_instincts()` — 将模式升级为本能
+- **观察清理**: `learning_store.prune_observations(max_age_days=30)` — 清理过期记录
+
 ## 知识沉淀位置
 
 | 类型 | 存储位置 |
 |------|---------|
+| 原始观察 | `~/.opc/learnings/observations.jsonl` |
+| 本能/洞察 | `~/.opc/learnings/{category}/{id}.json` |
 | 项目特定知识 | 项目的 docs/ 目录 |
 | 通用工作流改进 | SuperOPC skills/ 更新 |
-| 个人偏好和习惯 | CLAUDE.md 更新 |
+| 个人偏好和习惯 | `~/.opc/USER-PROFILE.json` |
 | 技术决策记录 | ADR (Architecture Decision Records) |
 
 ## 一人公司学习原则

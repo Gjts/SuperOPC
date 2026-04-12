@@ -103,3 +103,8 @@ for each wave in waves:
 ### 使用技能后的纠正
 - 先拆依赖、分波次，再并行派发独立任务。
 
+## 关联技能
+
+- **subagent-driven-development** — 单会话串行执行 + 双阶段审查，适合需要审查质量保证的场景
+- **tdd** — 每个子代理实现时应遵循 TDD
+

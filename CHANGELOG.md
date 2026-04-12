@@ -7,6 +7,56 @@
 
 ---
 
+## [1.1.0] - 智能进化：画像 + 学习 + 子代理审查
+
+### 新增
+- **子代理驱动开发技能** — `skills/engineering/subagent-driven-development/`
+  - `SKILL.md` — 每任务派发新鲜子代理 + 双阶段审查（规格合规 → 代码质量）
+  - `implementer-prompt.md` — 实现者子代理提示模板（含 4 状态汇报协议）
+  - `spec-reviewer-prompt.md` — 规格合规审查模板（独立验证，不信任汇报）
+  - `code-quality-reviewer-prompt.md` — 代码质量审查模板（职责分离 + 测试质量）
+- **开发者画像技能** — `skills/using-superopc/developer-profile/SKILL.md`
+  - 8 维度模型：沟通风格/决策模式/调试方式/UX偏好/技术栈/摩擦触发/学习风格/解释深度
+  - 6 问快速问卷系统 + 持续行为推断
+- **观察钩子** — `scripts/hooks/observe.py`
+  - PostToolUse 全局钩子，异步捕获工具使用元数据到 `~/.opc/learnings/observations.jsonl`
+  - 自动提取工具名、行动类型、上下文、项目信息
+- **代码库智能系统** — `/opc-intel` + `scripts/engine/intel_engine.py`
+  - 4 种操作模式：query（关键词搜索）/ status（新鲜度检查）/ diff（快照对比）/ refresh（重建索引）
+  - 5 个索引文件：stack.json / file-roles.json / api-map.json / dependency-graph.json / arch-decisions.json
+  - `intel_engine.py` — 核心引擎（query/status/diff/write_intel/take_snapshot/validate）
+  - `agents/opc-intel-updater.md` — 代码库分析代理（7步探索 + 输出预算 + 上下文质量分级）
+- **融合蓝图** — `docs/FUSION-PLAN.md`
+  - 9 大来源项目能力矩阵（56 项能力，34 已融合，22 未融合，61% 完成度）
+  - P0/P1/P2 三级优先级排序 + v1.1.0 详细实施方案
+
+### 增强
+- **profile_engine.py** — 从骨架升级为可用
+  - `generate_questionnaire()` — 6 问快速画像问卷
+  - `apply_questionnaire_answers()` — 应用问卷结果
+  - `export_markdown()` — 人可读 USER-PROFILE.md 输出
+  - `save_markdown()` — 画像文档持久化
+  - 维度描述映射（中文）
+- **learning_store.py** — 新增观察管道（ECC Continuous Learning v2）
+  - `record_observation()` — JSONL 原始观察写入
+  - `detect_patterns()` — 工具使用模式检测（频率阈值）
+  - `evolve_instincts()` — 模式自动升级为本能（高置信度学习条目）
+  - `prune_observations()` — 过期观察清理（默认 30 天 TTL）
+  - `stats()` — 新增观察计数
+- **hooks.json** — 注册 `post:all:observe` 观察钩子
+- **AGENTS.md** — 新增子代理驱动开发流水线 + opc-intel-updater 代理路由
+- **parallel-agents/SKILL.md** — 新增与 subagent-driven-development 的交叉引用
+- **continuous-learning/SKILL.md** — 新增自动化观察管道文档（数据流 + 本能演化 + 维护命令）
+- **commands/opc/intel.md** — 从市场情报重构为代码库智能（query/status/diff/refresh）
+- **scripts/engine/__init__.py** — 新增 intel_engine 模块声明
+
+### 来源融合
+- **Superpowers** → 子代理双阶段审查协议（implementer/spec-reviewer/code-quality-reviewer）
+- **GSD** → 8 维度开发者画像 + 全局学习存储 + 代码库智能索引（功能90）
+- **ECC** → 持续学习 v2 观察管道（observe → cluster → evolve）
+
+---
+
 ## [1.0.0] - 正式发布
 
 ### 新增
