@@ -8,6 +8,7 @@ import json
 import sys
 
 from common import ensure_dir, read_stdin_json, session_id
+from bridge import emit_hook_event
 
 
 def _read_json(file_path: Path) -> dict:
@@ -70,6 +71,13 @@ def main() -> int:
         session_file.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     except OSError:
         pass
+
+    emit_hook_event("session.summary", {
+        "tool": summary.get("tool_name", ""),
+        "session_id": summary.get("session_id", ""),
+        "status": state.get("状态", ""),
+        "focus": state.get("当前焦点", ""),
+    })
 
     return 0
 

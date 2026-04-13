@@ -30,7 +30,7 @@ Most changes in this repo are documentation and workflow changes; the main execu
 - Bug work follows: `debugging -> tdd -> implementing`.
 - TDD is a repo-level expectation for behavior-changing work; `rules/common/testing.md` sets an **80% coverage target** and documents the RED/GREEN/REFACTOR loop.
 - Commits are expected to use **Conventional Commits**; `rules/common/git-workflow.md` also forbids bypassing hooks with `--no-verify`.
-- `AGENTS.md` instructs Claude to delegate proactively to specialist agents via `dag_runner.py` for planning, execution, review, verification, debugging, security review, and documentation.
+- `AGENTS.md` instructs Claude to delegate proactively to specialist agents via `dag_engine.py` (v2) for planning, execution, review, verification, debugging, security review, and documentation.
 
 ## Common commands
 

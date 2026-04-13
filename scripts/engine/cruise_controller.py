@@ -19,6 +19,8 @@ The controller runs a heartbeat loop that:
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import threading
 import time
 from dataclasses import asdict, dataclass, field
@@ -29,8 +31,13 @@ from typing import Any
 
 from event_bus import EventBus, get_event_bus
 from state_engine import StateEngine, get_state_engine
-from decision_engine import ActionZone, Decision, DecisionEngine
+from decision_engine import ActionType, ActionZone, Decision, DecisionEngine
 from notification import NotificationDispatcher
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+SCRIPTS_DIR = REPO_ROOT / "scripts"
+
+EXECUTION_TIMEOUT_SECONDS = 120
 
 
 # ---------------------------------------------------------------------------
@@ -191,6 +198,103 @@ class CruiseController:
 
     def _execute_decision(self, decision: Decision) -> None:
         self._log_decision(decision, executed=True)
+        result = self._dispatch_command(decision)
+
+        self._bus.publish("cruise.executed", {
+            "command": decision.command,
+            "zone": decision.zone.value,
+            "action": decision.action.value,
+            "success": result.get("success", False),
+            "heartbeat": self._status.heartbeat_count,
+        }, source="cruise_controller")
+
+        if decision.zone == ActionZone.YELLOW:
+            self._notifier.notify(
+                f"[YELLOW] Executed: {decision.command}",
+                f"Reason: {decision.reason}\nResult: {'ok' if result.get('success') else 'failed'}",
+                level="info",
+                metadata=result,
+            )
+
+    def _dispatch_command(self, decision: Decision) -> dict[str, Any]:
+        """Route a decision to the appropriate Python function or script."""
+        action = decision.action
+        command = decision.command
+
+        dispatch_map: dict[ActionType, str] = {
+            ActionType.HEALTH_CHECK: "health",
+            ActionType.COLLECT_INTEL: "intel",
+            ActionType.RUN_TESTS: "test",
+            ActionType.PLAN: "plan",
+            ActionType.BUILD: "build",
+            ActionType.REVIEW: "review",
+            ActionType.RESUME: "resume",
+            ActionType.PAUSE: "pause",
+        }
+
+        if action in (ActionType.WAIT, ActionType.DISCUSS):
+            return {"success": True, "action": "noop", "reason": "No executable action for wait/discuss"}
+
+        script_mode = dispatch_map.get(action)
+        if script_mode:
+            return self._run_opc_script(script_mode, command)
+
+        if action == ActionType.GENERATE_DOCS:
+            return self._run_python_script(SCRIPTS_DIR / "opc_health.py", ["--cwd", str(self._opc_dir.parent), "--target", "repo"])
+
+        return self._run_opc_fallback(command)
+
+    def _run_opc_script(self, mode: str, command: str) -> dict[str, Any]:
+        """Run an opc_* script via Python subprocess."""
+        script_map = {
+            "health": (SCRIPTS_DIR / "opc_health.py", ["--cwd", str(self._opc_dir.parent), "--target", "all"]),
+            "intel": (SCRIPTS_DIR / "opc_dashboard.py", ["--cwd", str(self._opc_dir.parent), "--json"]),
+            "test": (SCRIPTS_DIR / "opc_quality.py", ["--cwd", str(self._opc_dir.parent)]),
+            "plan": (SCRIPTS_DIR / "opc_workflow.py", ["progress", "--cwd", str(self._opc_dir.parent), "--json"]),
+            "build": (SCRIPTS_DIR / "opc_workflow.py", ["progress", "--cwd", str(self._opc_dir.parent), "--json"]),
+            "review": (SCRIPTS_DIR / "opc_workflow.py", ["progress", "--cwd", str(self._opc_dir.parent), "--json"]),
+            "resume": (SCRIPTS_DIR / "opc_workflow.py", ["resume", "--cwd", str(self._opc_dir.parent), "--json"]),
+            "pause": (SCRIPTS_DIR / "opc_workflow.py", ["pause", "--cwd", str(self._opc_dir.parent), "--json"]),
+        }
+
+        entry = script_map.get(mode)
+        if not entry:
+            return {"success": False, "error": f"Unknown mode: {mode}"}
+
+        script_path, args = entry
+        return self._run_python_script(script_path, args)
+
+    def _run_python_script(self, script: Path, args: list[str]) -> dict[str, Any]:
+        """Execute a Python script and capture its output."""
+        if not script.exists():
+            return {"success": False, "error": f"Script not found: {script}"}
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(script)] + args,
+                capture_output=True,
+                text=True,
+                timeout=EXECUTION_TIMEOUT_SECONDS,
+                cwd=str(self._opc_dir.parent),
+            )
+            return {
+                "success": proc.returncode == 0,
+                "returncode": proc.returncode,
+                "stdout": proc.stdout[:2000] if proc.stdout else "",
+                "stderr": proc.stderr[:500] if proc.stderr else "",
+            }
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": f"Timeout after {EXECUTION_TIMEOUT_SECONDS}s"}
+        except Exception as exc:
+            return {"success": False, "error": str(exc)[:200]}
+
+    def _run_opc_fallback(self, command: str) -> dict[str, Any]:
+        """Fallback: log that the command couldn't be dispatched."""
+        return {
+            "success": False,
+            "action": "unhandled",
+            "command": command,
+            "reason": "No dispatch mapping for this command. Manual intervention required.",
+        }
 
     def _emergency_stop(self, error: str) -> None:
         self._notifier.notify(
@@ -209,6 +313,15 @@ class CruiseController:
         intel_dir = self._opc_dir / "intelligence"
         if intel_dir.exists():
             ctx["has_intel"] = True
+
+        state_json = self._opc_dir / "state.json"
+        if state_json.exists():
+            try:
+                data = json.loads(state_json.read_text(encoding="utf-8"))
+                if data.get("validation_debt"):
+                    ctx["quality_violations"] = data["validation_debt"]
+            except (json.JSONDecodeError, OSError):
+                pass
 
         return ctx
 

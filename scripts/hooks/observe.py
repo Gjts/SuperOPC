@@ -15,6 +15,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+HOOKS_DIR = Path(__file__).resolve().parent
+if str(HOOKS_DIR) not in sys.path:
+    sys.path.insert(0, str(HOOKS_DIR))
+
+from bridge import emit_hook_event  # noqa: E402
 
 LEARNINGS_DIR = Path.home() / ".opc" / "learnings"
 OBS_FILE = LEARNINGS_DIR / "observations.jsonl"
@@ -54,6 +59,12 @@ def main() -> None:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
     except OSError:
         pass
+
+    emit_hook_event("learning.observed", {
+        "tool": tool_name,
+        "action": action,
+        "project": project,
+    })
 
 
 def _extract_action(tool: str, inp: dict) -> str:

@@ -6,6 +6,7 @@ import re
 import sys
 
 from common import get_tool_input, read_stdin_json, write_message
+from bridge import emit_hook_event
 
 
 CONVENTIONAL_PATTERN = re.compile(
@@ -37,10 +38,14 @@ def main() -> int:
             )
         if any(pattern.search(message) for pattern in SECRET_PATTERNS):
             write_message("SuperOPC: Potential secret detected in commit message. Review before committing.")
+            emit_hook_event("hook.commit_quality", {"status": "blocked", "reason": "secret_detected"})
             return 2
 
     if warnings:
         write_message("SuperOPC commit quality:\n" + "\n".join(f"  - {item}" for item in warnings))
+        emit_hook_event("hook.commit_quality", {"status": "warn", "warnings": warnings})
+    else:
+        emit_hook_event("git.commit", {"status": "ok", "message": match.group(1) if match else ""})
 
     return 0
 
