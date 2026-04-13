@@ -281,11 +281,20 @@
 
 **目标：** SuperOPC CLI — 代理和工作流的程序化基础
 
-#### opc-tools CLI（融合 GSD gsd-tools.cjs 19模块）
-- [ ] `bin/opc-tools.cjs` — 核心CLI
-- [ ] 域模块：state, phase, roadmap, config, verify, template, init, security, model-profiles, workstream
-- [ ] `--raw` 机器可读输出 + `--cwd` 沙箱操作
-- [ ] Windows 路径规范化
+#### opc-tools CLI（融合 GSD gsd-tools.cjs 19模块 → Python实现）
+- [x] `bin/opc-tools` — 核心CLI入口点（Python，兼容现有引擎层）
+- [x] `scripts/cli/router.py` — 主路由器（命令分发 + 全局标志解析）
+- [x] `scripts/cli/core.py` — 共享基础设施（output/error/路径/配置/Git/Markdown助手）
+- [x] `scripts/cli/state.py` — 状态域（load/get/update/patch/json/begin-phase/advance-plan/record-metric/add-decision/add-blocker/resolve-blocker/record-session）
+- [x] `scripts/cli/config.py` — 配置域（get/set/list/defaults/build-new-project + 24个有效键）
+- [x] `scripts/cli/phase.py` — 阶段域（list/next-decimal/add/complete/find/status）
+- [x] `scripts/cli/roadmap.py` — 路线图域（get-phase/analyze/update-progress）
+- [x] `scripts/cli/verify.py` — 验证域（summary/plan-structure/phase-completeness/consistency/health/commits/references）
+- [x] `scripts/cli/template.py` — 模板域（fill plan/summary/verification + select）
+- [x] `scripts/cli/init.py` — 复合初始化（execute-phase/plan-phase/new-project/quick/resume/verify-work/progress/todos）
+- [x] `scripts/cli/security.py` — 安全域（validate-path/scan-injection/validate-field/safe-json-parse + 8种注入模式 + Unicode检测）
+- [x] `--raw` 机器可读JSON输出 + `--cwd` 沙箱操作 + `--pick` 字段提取
+- [x] Windows 路径规范化（pathlib统一）
 
 ---
 
