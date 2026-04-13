@@ -81,7 +81,7 @@ class InsightGenerator:
 
         reddit_mentions = data.get("reddit_mentions", [])
         for item in reddit_mentions:
-            if "error" in item:
+            if "_error" in item or "error" in item:
                 continue
             ups = item.get("ups", 0)
             relevance = min(1.0, ups / 500) if ups else 0.05
@@ -90,9 +90,27 @@ class InsightGenerator:
                 source="reddit",
                 category="market_signal",
                 title=f"Discussion: {item.get('title', 'unknown')[:80]}",
-                summary=f"Upvotes: {ups} | URL: {item.get('url', '')}",
+                summary=f"Upvotes: {ups} | Comments: {item.get('comments', 0)} | r/{item.get('subreddit', '')}",
                 relevance_score=relevance,
                 action_items=self._derive_reddit_actions(item, niche),
+                raw_data_ref=str(feed_path),
+            )
+            insights.append(insight)
+
+        hn_stories = data.get("hackernews_stories", [])
+        for item in hn_stories:
+            if "_error" in item:
+                continue
+            points = item.get("points", 0)
+            relevance = min(1.0, points / 300) if points else 0.05
+            insight = Insight(
+                id=f"hn-{hash(item.get('title', '')):#010x}",
+                source="hackernews",
+                category="technical_signal",
+                title=f"HN: {item.get('title', 'unknown')[:80]}",
+                summary=f"Points: {points} | Comments: {item.get('comments', 0)} | by {item.get('author', '')}",
+                relevance_score=relevance,
+                action_items=self._derive_hn_actions(item, niche),
                 raw_data_ref=str(feed_path),
             )
             insights.append(insight)
@@ -139,6 +157,17 @@ class InsightGenerator:
         if ups > 100:
             actions.append(f"Analyze discussion sentiment for {niche} market validation")
         actions.append("Extract pain points mentioned in community discussions")
+        return actions
+
+    @staticmethod
+    def _derive_hn_actions(item: dict[str, Any], niche: str) -> list[str]:
+        actions = []
+        points = item.get("points", 0)
+        if points > 100:
+            actions.append(f"High-signal HN discussion — analyze for {niche} technical trends")
+        if item.get("comments", 0) > 50:
+            actions.append("Extract expert opinions and counter-arguments from comments")
+        actions.append(f"Evaluate relevance to {niche} product direction")
         return actions
 
     def _persist_insights(self, insights: list[Insight]) -> None:

@@ -13,4 +13,5 @@ Modules:
   context_assembler  — Dynamic phase-aware context construction
   notification       — Multi-channel notification dispatcher
   intel_engine       — Codebase intelligence (queryable JSON index)
+  instinct_generator — Observation-to-rule pipeline (closes the learning loop)
 """
