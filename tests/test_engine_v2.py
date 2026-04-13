@@ -609,3 +609,149 @@ class TestContextAssembler:
     def test_budget_profiles_and_phase_map(self):
         assert len(BUDGET_PROFILES) == 4
         assert len(PHASE_SKILL_PRIORITY) == 7
+
+    def test_personal_rules_loaded_when_present(self, tmp_path: Path):
+        bus = EventBus()
+        se = StateEngine(tmp_path, bus)
+        se.load()
+        se.transition(ProjectPhase.EXECUTING)
+        repo_fake = tmp_path / "repo"
+        personal = repo_fake / "rules" / "personal"
+        personal.mkdir(parents=True)
+        (personal / "workflow.md").write_text("# auto rule", encoding="utf-8")
+        assembler = ContextAssembler(
+            repo_root=repo_fake,
+            state_engine=se,
+            profile_engine=ProfileEngine(profile_dir=tmp_path / "p"),
+            learning_store=LearningStore(store_dir=tmp_path / "l"),
+        )
+        ctx = assembler.assemble()
+        assert any("personal/" in r for r in ctx["rules"])
+
+
+# ========================================================================== #
+# InstinctGenerator
+# ========================================================================== #
+
+class TestInstinctGenerator:
+    def test_no_patterns_returns_empty(self, tmp_path: Path):
+        from instinct_generator import InstinctGenerator
+        store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
+        gen = InstinctGenerator(repo_root=tmp_path, store=store, bus=EventBus())
+        result = gen.run(min_occurrences=3)
+        assert result == []
+
+    def test_generates_instincts_from_observations(self, tmp_path: Path):
+        from instinct_generator import InstinctGenerator
+        store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
+        obs_file = tmp_path / "learn" / "observations.jsonl"
+        obs_file.parent.mkdir(parents=True, exist_ok=True)
+        lines = []
+        for i in range(20):
+            lines.append(json.dumps({"ts": "2026-04-01T10:00:00Z", "tool": "Bash", "action": "shell", "context": f"cmd-{i}", "project": "test"}))
+        obs_file.write_text("\n".join(lines), encoding="utf-8")
+
+        gen = InstinctGenerator(repo_root=tmp_path, store=store, bus=EventBus())
+        result = gen.run(min_occurrences=5)
+        assert len(result) > 0
+        rules_dir = tmp_path / "rules" / "personal"
+        assert rules_dir.is_dir()
+        assert any(rules_dir.glob("*.md"))
+        assert (rules_dir / "instinct-index.json").exists()
+
+    def test_dry_run_writes_no_files(self, tmp_path: Path):
+        from instinct_generator import InstinctGenerator
+        store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
+        obs_file = tmp_path / "learn" / "observations.jsonl"
+        obs_file.parent.mkdir(parents=True, exist_ok=True)
+        lines = [json.dumps({"ts": "2026-04-01T10:00:00Z", "tool": "Grep", "action": "search", "context": "", "project": "t"}) for _ in range(20)]
+        obs_file.write_text("\n".join(lines), encoding="utf-8")
+
+        gen = InstinctGenerator(repo_root=tmp_path, store=store, bus=EventBus())
+        result = gen.run(min_occurrences=5, dry_run=True)
+        assert len(result) > 0
+        assert not (tmp_path / "rules" / "personal").exists()
+
+    def test_tdd_ratio_detection(self, tmp_path: Path):
+        from instinct_generator import InstinctGenerator
+        store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
+        obs_file = tmp_path / "learn" / "observations.jsonl"
+        obs_file.parent.mkdir(parents=True, exist_ok=True)
+        lines = []
+        for _ in range(15):
+            lines.append(json.dumps({"ts": "2026-04-01T10:00:00Z", "tool": "Edit", "action": "edit-test", "context": "", "project": "t"}))
+        for _ in range(10):
+            lines.append(json.dumps({"ts": "2026-04-01T10:00:00Z", "tool": "Edit", "action": "edit-code", "context": "", "project": "t"}))
+        obs_file.write_text("\n".join(lines), encoding="utf-8")
+
+        gen = InstinctGenerator(repo_root=tmp_path, store=store, bus=EventBus())
+        result = gen.run(min_occurrences=5)
+        ids = [i.id for i in result]
+        assert "testing-tdd-ratio" in ids
+
+
+# ========================================================================== #
+# MethodologyDatabase
+# ========================================================================== #
+
+class TestMethodologyDatabase:
+    def test_builtin_methodologies_loaded(self):
+        import sys
+        sys.path.insert(0, str(REPO_ROOT / "scripts" / "intelligence"))
+        from methodology_database import MethodologyDatabase
+        db = MethodologyDatabase()
+        domains = db.list_domains()
+        assert len(domains) >= 5
+        assert "validation" in domains
+        assert "engineering" in domains
+
+    def test_query_by_domain(self):
+        from methodology_database import MethodologyDatabase
+        db = MethodologyDatabase()
+        results = db.query(domain="validation")
+        assert len(results) >= 2
+        names = [m.name for m in results]
+        assert "The Mom Test" in names
+
+    def test_query_by_keyword(self):
+        from methodology_database import MethodologyDatabase
+        db = MethodologyDatabase()
+        results = db.query(keyword="pyramid")
+        assert len(results) >= 1
+        assert results[0].id == "minto-pyramid"
+
+    def test_get_by_id(self):
+        from methodology_database import MethodologyDatabase
+        db = MethodologyDatabase()
+        m = db.get("tdd-kent-beck")
+        assert m is not None
+        assert m.author == "Kent Beck"
+        assert len(m.steps) >= 4
+
+    def test_context_injection(self):
+        from methodology_database import MethodologyDatabase
+        db = MethodologyDatabase()
+        injection = db.get_context_injection(domain="growth", limit=2)
+        assert len(injection) >= 1
+        assert "name" in injection[0]
+        assert "one_liner" in injection[0]
+
+    def test_add_custom_methodology(self, tmp_path: Path):
+        from methodology_database import Methodology, MethodologyDatabase
+        db = MethodologyDatabase(db_dir=tmp_path / "methods")
+        custom = Methodology(
+            id="custom-test",
+            name="Test Method",
+            author="Test Author",
+            domain="testing",
+            one_liner="A test methodology",
+            core_principles=["principle 1"],
+            steps=["step 1"],
+            when_to_use=["testing"],
+            common_mistakes=["mistake 1"],
+        )
+        db.add(custom)
+        assert (tmp_path / "methods" / "custom-test.json").exists()
+        retrieved = db.get("custom-test")
+        assert retrieved is not None
+        assert retrieved.name == "Test Method"

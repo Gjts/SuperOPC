@@ -192,6 +192,23 @@ def _make_session_recovery(opc_dir: Path) -> Callable[[], None]:
     return _run
 
 
+def _make_instinct_evolution(opc_dir: Path) -> Callable[[], None]:
+    def _run() -> None:
+        bus = get_event_bus()
+        try:
+            from instinct_generator import InstinctGenerator
+            repo_root = opc_dir.parent
+            gen = InstinctGenerator(repo_root=repo_root, bus=bus)
+            instincts = gen.run(min_occurrences=5)
+            if instincts:
+                bus.publish("learning.instincts_scheduled", {
+                    "count": len(instincts),
+                }, source="scheduler.instinct")
+        except Exception as exc:
+            bus.publish("learning.instinct_error", {"error": str(exc)}, source="scheduler.instinct")
+    return _run
+
+
 def create_default_scheduler(opc_dir: Path, *, market_query: str = "") -> Scheduler:
     bus = get_event_bus(opc_dir / "events")
     scheduler = Scheduler(bus=bus)
@@ -200,5 +217,6 @@ def create_default_scheduler(opc_dir: Path, *, market_query: str = "") -> Schedu
     if market_query:
         scheduler.add_job("market_intel", interval_seconds=604800, callback=_make_market_intel(opc_dir, market_query))
     scheduler.add_job("session_recovery", interval_seconds=3600, callback=_make_session_recovery(opc_dir))
+    scheduler.add_job("instinct_evolution", interval_seconds=86400, callback=_make_instinct_evolution(opc_dir))
 
     return scheduler

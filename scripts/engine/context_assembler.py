@@ -221,7 +221,12 @@ class ContextAssembler:
         return PHASE_AGENT_PRIORITY.get(phase, ["opc-orchestrator"])[:6]
 
     def _select_rules(self, phase: ProjectPhase) -> list[str]:
-        return PHASE_RULES_PRIORITY.get(phase, ["coding-style", "git-workflow"])
+        rules = list(PHASE_RULES_PRIORITY.get(phase, ["coding-style", "git-workflow"]))
+        personal_dir = self._root / "rules" / "personal"
+        if personal_dir.is_dir():
+            for md_file in sorted(personal_dir.glob("*.md")):
+                rules.append(f"personal/{md_file.stem}")
+        return rules
 
     def _select_references(self, phase: ProjectPhase) -> list[str]:
         refs = ["gates", "anti-patterns", "context-budget"]
