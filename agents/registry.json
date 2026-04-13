@@ -222,6 +222,16 @@
       "input": "Product/market context for pricing",
       "output": "Pricing model with rationale",
       "priority": 70
+    },
+    {
+      "id": "opc-intel-updater",
+      "name": "Intel Updater",
+      "type": "core",
+      "capability_tags": ["intel", "codebase-index", "analysis", "dependency-graph", "stack-detection", "file-roles", "api-map"],
+      "scenarios": ["codebase intelligence refresh", "dependency graph update", "stack detection", "API surface mapping", "architecture decision extraction"],
+      "input": "Codebase root path or refresh trigger",
+      "output": "Updated .opc/intel/ JSON indices (stack, api-map, dependency-graph, file-roles, arch-decisions)",
+      "priority": 75
     }
   ]
 }

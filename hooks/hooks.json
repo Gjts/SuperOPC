@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "_v2_note": "Hooks emit events to the SuperOPC event bus (scripts/engine/event_bus.py) for integration with the decision engine, cruise controller, and notification system.",
+  "_v2_bridge": "Active: hooks use scripts/hooks/bridge.py to emit events to the v2 event bus (scripts/engine/event_bus.py). Events flow to: decision engine, cruise controller, notification system. Bridge hooks: commit_quality -> git.commit | hook.commit_quality, session_summary -> session.summary, observe -> learning.observed.",
   "hooks": {
     "PreToolUse": [
       {

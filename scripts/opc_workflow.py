@@ -5,11 +5,26 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+ENGINE_DIR = Path(__file__).resolve().parent / "engine"
+if str(ENGINE_DIR) not in sys.path:
+    sys.path.insert(0, str(ENGINE_DIR))
+
 from opc_insights import collect_project_insights
+
+# v2 engine imports — graceful fallback if engine modules are unavailable
+try:
+    from event_bus import EventBus, get_event_bus
+    from state_engine import StateEngine, get_state_engine
+    from decision_engine import DecisionEngine, ActionType
+
+    _V2_AVAILABLE = True
+except ImportError:
+    _V2_AVAILABLE = False
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -51,7 +66,75 @@ def read_recent_audit_lines(audit_log: Path, limit: int = 10) -> list[str]:
         return []
 
 
+def _get_v2_bus(project_root: Path | None = None) -> Any:
+    """Get the v2 event bus if available, None otherwise."""
+    if not _V2_AVAILABLE:
+        return None
+    try:
+        opc_dir = _find_opc_dir(project_root or Path.cwd())
+        journal_dir = opc_dir / "events" if opc_dir else None
+        if journal_dir:
+            journal_dir.mkdir(parents=True, exist_ok=True)
+        return get_event_bus(journal_dir=journal_dir)
+    except Exception:
+        return None
+
+
+def _find_opc_dir(start: Path) -> Path | None:
+    """Walk up from start to find .opc/ directory."""
+    for candidate in [start] + list(start.parents):
+        opc = candidate / ".opc"
+        if opc.is_dir():
+            return opc
+    return None
+
+
+def _v2_decision_recommendation(insights: dict[str, Any]) -> dict[str, str] | None:
+    """Try to get a recommendation from the v2 decision engine."""
+    if not _V2_AVAILABLE:
+        return None
+    try:
+        project_root = Path(insights.get("projectRoot", "."))
+        opc_dir = _find_opc_dir(project_root)
+        if not opc_dir:
+            return None
+
+        bus = get_event_bus()
+        se = get_state_engine(opc_dir, bus)
+        se.load()
+
+        debt = insights.get("debt", {})
+        blocker_items = debt.get("blockerItems", [])
+        if blocker_items and not se.state.blockers:
+            for b in blocker_items:
+                se.state.blockers.append(b)
+
+        de = DecisionEngine(se, bus)
+
+        context: dict[str, Any] = {}
+        handoff_file = opc_dir / "HANDOFF.json"
+        if handoff_file.exists():
+            context["handoff_exists"] = True
+        if insights.get("validationDebt"):
+            context["quality_violations"] = insights["validationDebt"]
+
+        decision = de.decide(context)
+        return {
+            "command": decision.command,
+            "reason": decision.reason,
+            "zone": decision.zone.value,
+            "confidence": str(decision.confidence),
+            "source": "v2_decision_engine",
+        }
+    except Exception:
+        return None
+
+
 def recommendation_from_insights(insights: dict[str, Any]) -> dict[str, str]:
+    v2_result = _v2_decision_recommendation(insights)
+    if v2_result:
+        return v2_result
+
     state = insights["state"]
     roadmap = insights["roadmap"]
     debt = insights["debt"]
@@ -333,6 +416,15 @@ def pause_project(start_dir: Path, note: str = "", stop_point: str = "") -> dict
         recent_activity=f"{payload['updatedAt']} — 已写入 HANDOFF.json",
     )
     payload["handoffFile"] = str(handoff_file)
+
+    bus = _get_v2_bus(start_dir)
+    if bus:
+        bus.publish("session.pause", {
+            "project": payload.get("project", {}).get("name", ""),
+            "stop_point": stop_point or payload["summary"].get("stopPoint", ""),
+            "note": note,
+        }, source="opc_workflow")
+
     return payload
 
 
@@ -365,7 +457,7 @@ def resume_project(start_dir: Path) -> dict[str, Any]:
     )
 
     refreshed_snapshot = collect_progress_snapshot(start_dir)
-    return {
+    result = {
         "project": refreshed_snapshot["project"],
         "handoff": handoff,
         "progress": refreshed_snapshot,
@@ -373,6 +465,16 @@ def resume_project(start_dir: Path) -> dict[str, Any]:
         "conflicts": conflicts,
         "recommendedAction": recommendation_from_insights(collect_project_insights(start_dir)),
     }
+
+    bus = _get_v2_bus(start_dir)
+    if bus:
+        bus.publish("session.resume", {
+            "project": result["project"].get("name", ""),
+            "conflicts": len(conflicts),
+            "recommendation": result["recommendedAction"].get("command", ""),
+        }, source="opc_workflow")
+
+    return result
 
 
 def format_resume(payload: dict[str, Any]) -> str:

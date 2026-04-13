@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """
-dag_runner.py — The core subagent wave dispatcher for SuperOPC.
-Inspired by Get Shit Done (GSD).
+dag_runner.py — DEPRECATED: Use dag_engine.py instead.
 
-Reads an XML-formatted opc-plan, extracts waves and tasks, and spawns
-isolated clean-context subagents (using Claude Code CLI) in parallel
-per wave.
+This is the v1 wave dispatcher retained for backward compatibility only.
+All new code should import from dag_engine (v2) which provides:
+  - Semantic agent routing via registry.json
+  - Resilient execution with retry/degrade/escalate
+  - Event bus integration
+  - Execution history persistence
+
+See dag_engine.py for the replacement.
 """
 
 from __future__ import annotations

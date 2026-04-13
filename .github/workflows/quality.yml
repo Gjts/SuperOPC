@@ -22,7 +22,7 @@ jobs:
         run: python -m pip install --upgrade pip pytest
 
       - name: Run pytest
-        run: python -m pytest tests/test_session_workflow.py
+        run: python -m pytest tests/test_session_workflow.py tests/test_engine_v2.py -v
 
       - name: Run repo health check
         run: python scripts/opc_health.py --cwd . --target repo --json
