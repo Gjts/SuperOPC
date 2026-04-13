@@ -7,6 +7,72 @@
 
 ---
 
+## [1.2.0] - CLI 工具层：opc-tools 程序化基础
+
+### 新增
+- **opc-tools CLI 入口点** — `bin/opc-tools`
+  - Python 实现，直接复用现有 `scripts/engine/` 引擎层
+  - 全局标志：`--raw`（机器可读 JSON）、`--cwd`（沙箱操作）、`--pick`（字段提取）
+  - `help` 命令输出完整命令文档
+- **CLI 核心基础设施** — `scripts/cli/core.py`
+  - `output()` / `error()` — 统一输出格式化（JSON 或人类可读）
+  - `find_opc_dir()` / `opc_root()` / `opc_paths()` — .opc/ 目录定位和标准路径
+  - `load_config()` — 配置加载（默认值 + 用户覆盖 + 嵌套合并）
+  - `exec_git()` — Git 命令封装
+  - `extract_field()` / `safe_read()` — Markdown 字段提取
+  - `normalize_phase_name()` / `generate_slug()` / `find_phase_dir()` — 阶段助手
+  - Windows 路径规范化（pathlib 统一）
+- **CLI 主路由器** — `scripts/cli/router.py`
+  - 10 个顶级命令域路由 + 4 个内联工具命令
+  - `consume_cwd()` — 支持 `--cwd=<path>` 和 `--cwd <path>` 两种形式
+  - 懒加载域模块以保持启动速度
+- **状态域模块** — `scripts/cli/state.py`
+  - 12 个子命令：load / get / update / patch / json / begin-phase / advance-plan / record-metric / add-decision / add-blocker / resolve-blocker / record-session
+  - `cmd_list_todos()` — 待办事项枚举（支持 area 过滤）
+- **配置域模块** — `scripts/cli/config.py`
+  - 5 个子命令：get / set / list / defaults / build-new-project
+  - 24 个有效配置键 + 拼写建议（typo suggestion）
+  - 支持 dotted path（如 `workflow.research`）读写
+  - 自动类型解析（bool/int/float/string/null）
+- **阶段域模块** — `scripts/cli/phase.py`
+  - 6 个子命令：list / next-decimal / add / complete / find / status
+  - 阶段状态推断（Pending → Planned → In Progress → Executed → Complete）
+  - 数值排序、文件清点、ROADMAP.md 同步
+- **路线图域模块** — `scripts/cli/roadmap.py`
+  - 3 个子命令：get-phase / analyze / update-progress
+  - 完整路线图解析：提取目标、成功标准、需求引用
+  - 磁盘状态与路线图交叉验证
+- **验证域模块** — `scripts/cli/verify.py`
+  - 7 个子命令：summary / plan-structure / phase-completeness / consistency / health / commits / references
+  - `health --repair` 模式自动修复缺失目录和配置
+  - 文件引用解析、Git 提交验证、自检报告解析
+- **模板域模块** — `scripts/cli/template.py`
+  - 2 个子命令：fill（plan/summary/verification）/ select
+  - 预填充 frontmatter + 中文模板（任务清单、验收标准、验证检查表）
+  - 自动创建阶段目录
+- **复合初始化模块** — `scripts/cli/init.py`
+  - 8 个工作流初始化：execute-phase / plan-phase / new-project / quick / resume / verify-work / progress / todos
+  - `_with_project_root()` — 自动注入项目根目录 + 代理安装状态 + 响应语言
+  - HANDOFF.json 解析（next_steps / resume_files）
+- **安全域模块** — `scripts/cli/security.py`
+  - 4 个子命令：validate-path / scan-injection / validate-field / safe-json-parse
+  - 路径遍历检测（`..` 阻断 + 项目边界验证）
+  - 8 种提示注入模式检测 + Unicode 不可见字符扫描 + Base64 编码混淆检查
+  - 字段名白名单验证（防止 STATE.md 注入）
+
+### 来源融合
+- **GSD** → gsd-tools.cjs 19 模块架构（state/phase/roadmap/config/verify/template/init/security/commands）→ Python 重实现
+- **GSD** → `--raw` 机器可读输出 + `--cwd` 沙箱操作 + Windows 路径规范化
+- **GSD** → 复合 init 命令一次性加载工作流所需全部上下文
+- **ECC** → 安全检测（注入扫描 + Unicode 检测 + 路径遍历防护）
+
+### 技术决策
+- 选择 Python 而非 CJS，与现有 `scripts/engine/` 引擎层保持语言一致
+- 域模块懒加载，CLI 启动时只导入 `cli.core` 和 `cli.router`
+- 所有路径操作使用 `pathlib.Path`，原生 Windows 兼容
+
+---
+
 ## [1.1.0] - 智能进化：画像 + 学习 + 子代理审查
 
 ### 新增
