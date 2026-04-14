@@ -547,6 +547,45 @@ class TestScheduler:
 
 
 # =========================================================================
+# IntelEngine
+# =========================================================================
+
+class TestIntelEngine:
+    def test_refresh_rebuilds_indexes_and_snapshot(self, tmp_path: Path):
+        from intel_engine import IntelEngine
+
+        project_root = tmp_path / "repo"
+        (project_root / ".opc").mkdir(parents=True)
+        (project_root / "commands" / "opc").mkdir(parents=True)
+        (project_root / "agents").mkdir(parents=True)
+        (project_root / "skills" / "demo").mkdir(parents=True)
+        (project_root / "scripts" / "cli").mkdir(parents=True)
+        (project_root / "commands" / "opc" / "demo.md").write_text("---\nname: demo\ndescription: Demo\n---\n", encoding="utf-8")
+        (project_root / "agents" / "demo.md").write_text("---\nname: demo-agent\ndescription: Demo\n---\n", encoding="utf-8")
+        (project_root / "skills" / "demo" / "SKILL.md").write_text("---\nname: demo-skill\ndescription: Demo\n---\n", encoding="utf-8")
+        (project_root / "scripts" / "cli" / "router.py").write_text(
+            "elif command == \"demo\":\n    pass\nrouter.get(\"/health\")\n",
+            encoding="utf-8",
+        )
+        (project_root / "requirements.txt").write_text("pytest\nrequests>=2\n", encoding="utf-8")
+
+        engine = IntelEngine(project_dir=project_root, bus=EventBus())
+        result = engine.refresh()
+
+        assert result["ok"] is True
+        assert (project_root / ".opc" / "intel" / "stack.json").exists()
+        assert (project_root / ".opc" / "intel" / "file-roles.json").exists()
+        assert (project_root / ".opc" / "intel" / "api-map.json").exists()
+        assert (project_root / ".opc" / "intel" / "dependency-graph.json").exists()
+        assert (project_root / ".opc" / "intel" / "arch-decisions.json").exists()
+        assert (project_root / ".opc" / "intel" / ".last-refresh.json").exists()
+
+        api_map = json.loads((project_root / ".opc" / "intel" / "api-map.json").read_text(encoding="utf-8"))
+        assert "CLI demo" in api_map["entries"]
+        assert "GET /health" in api_map["entries"]
+
+
+# =========================================================================
 # ContextAssembler
 # =========================================================================
 
@@ -627,6 +666,107 @@ class TestContextAssembler:
         )
         ctx = assembler.assemble()
         assert any("personal/" in r for r in ctx["rules"])
+
+    def test_methodologies_injected_into_context(self, tmp_path: Path):
+        bus = EventBus()
+        se = StateEngine(tmp_path, bus)
+        se.load()
+        se.transition(ProjectPhase.PLANNING, reason="test")
+        repo_fake = tmp_path / "repo"
+        repo_fake.mkdir(parents=True)
+        assembler = ContextAssembler(
+            repo_root=repo_fake,
+            state_engine=se,
+            profile_engine=ProfileEngine(profile_dir=tmp_path / "p2"),
+            learning_store=LearningStore(store_dir=tmp_path / "l2"),
+        )
+        ctx = assembler.assemble(task_hint="pricing experiment")
+        assert "methodologies" in ctx
+        assert len(ctx["methodologies"]) > 0
+        assert any(m["domain"] in {"pricing", "product"} for m in ctx["methodologies"])
+
+    def test_extracted_skills_injected_into_context(self, tmp_path: Path):
+        bus = EventBus()
+        se = StateEngine(tmp_path, bus)
+        se.load()
+        se.update(current_focus="event-driven API planning")
+        repo_fake = tmp_path / "repo"
+        skills_dir = repo_fake / ".opc" / "intelligence" / "extracted-skills"
+        skills_dir.mkdir(parents=True)
+        (skills_dir / "acme--event-core.json").write_text(
+            json.dumps(
+                {
+                    "repo": "acme/event-core",
+                    "description": "Event-driven API reference project",
+                    "tech_stack": ["Python", "FastAPI"],
+                    "architecture_hints": ["event-driven", "hexagonal"],
+                    "testing_patterns": ["pytest"],
+                    "ci_patterns": ["github-actions"],
+                    "lessons": ["Prefer event contracts over implicit payload shapes"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        assembler = ContextAssembler(
+            repo_root=repo_fake,
+            state_engine=se,
+            profile_engine=ProfileEngine(profile_dir=tmp_path / "p3"),
+            learning_store=LearningStore(store_dir=tmp_path / "l3"),
+        )
+        ctx = assembler.assemble(task_hint="event-driven api")
+        assert "extracted_skills" in ctx
+        assert len(ctx["extracted_skills"]) == 1
+        assert ctx["extracted_skills"][0]["repo"] == "acme/event-core"
+        assert "event-driven" in ctx["extracted_skills"][0]["architecture_hints"]
+
+    def test_project_scoped_extracted_skills_are_preferred_over_repo_root(self, tmp_path: Path):
+        bus = EventBus()
+        se = StateEngine(tmp_path, bus)
+        se.load()
+        se.update(current_focus="event-driven API planning")
+        repo_fake = tmp_path / "repo"
+        project_skills_dir = repo_fake / ".opc" / "intelligence" / "extracted-skills"
+        project_skills_dir.mkdir(parents=True)
+        (project_skills_dir / "project-skill.json").write_text(
+            json.dumps(
+                {
+                    "repo": "project/source",
+                    "description": "Project-local pattern",
+                    "architecture_hints": ["event-driven"],
+                    "lessons": ["Use project-scoped artifacts"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        root_skills_dir = repo_fake / "intelligence" / "extracted-skills"
+        root_skills_dir.mkdir(parents=True)
+        (root_skills_dir / "root-skill.json").write_text(
+            json.dumps(
+                {
+                    "repo": "wrong/location",
+                    "description": "Should not be selected",
+                    "architecture_hints": ["event-driven"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        assembler = ContextAssembler(
+            repo_root=repo_fake,
+            state_engine=se,
+            profile_engine=ProfileEngine(profile_dir=tmp_path / "p4"),
+            learning_store=LearningStore(store_dir=tmp_path / "l4"),
+        )
+        ctx = assembler.assemble(task_hint="event-driven api")
+
+        assert len(ctx["extracted_skills"]) == 1
+        assert ctx["extracted_skills"][0]["repo"] == "project/source"
 
 
 # ========================================================================== #

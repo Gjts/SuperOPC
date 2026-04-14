@@ -14,6 +14,8 @@ profiles, and historical learnings based on:
 from __future__ import annotations
 
 import json
+import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -22,6 +24,14 @@ from event_bus import EventBus, get_event_bus
 from state_engine import ProjectPhase, ProjectState, StateEngine
 from profile_engine import ProfileEngine
 from learning_store import LearningStore
+
+try:
+    from intelligence.methodology_database import MethodologyDatabase
+except ImportError:
+    scripts_dir = str(Path(__file__).resolve().parent.parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    from intelligence.methodology_database import MethodologyDatabase
 
 
 # ---------------------------------------------------------------------------
@@ -113,12 +123,16 @@ class ContextAssembler:
         state_engine: StateEngine,
         profile_engine: ProfileEngine | None = None,
         learning_store: LearningStore | None = None,
+        methodology_db: MethodologyDatabase | None = None,
         bus: EventBus | None = None,
     ):
         self._root = repo_root
         self._state = state_engine
         self._profile = profile_engine or ProfileEngine()
         self._learnings = learning_store or LearningStore()
+        self._methodologies = methodology_db or MethodologyDatabase(
+            db_dir=repo_root / ".opc" / "intelligence" / "methodologies"
+        )
         self._bus = bus or get_event_bus()
 
     def assemble(self, *, budget_profile: str = "standard", task_hint: str = "") -> dict[str, Any]:
@@ -141,6 +155,8 @@ class ContextAssembler:
             "rules": self._select_rules(phase),
             "references": self._select_references(phase),
             "learnings": self._select_learnings(state, task_hint),
+            "methodologies": self._select_methodologies(phase, state, task_hint),
+            "extracted_skills": self._select_extracted_skills(state, task_hint),
             "developer_profile": self._profile.get_context_injection(),
             "state_summary": self._state_summary(state),
             "behavior_protocol": self._behavior_protocol(phase),
@@ -185,6 +201,22 @@ class ContextAssembler:
             sections.append("## Relevant Learnings\n")
             for learning in ctx["learnings"]:
                 sections.append(f"- [{learning['category']}] {learning['title']}: {learning['content'][:100]}...")
+            sections.append("")
+
+        if ctx["methodologies"]:
+            sections.append("## Relevant Methodologies\n")
+            for methodology in ctx["methodologies"]:
+                sections.append(
+                    f"- {methodology['name']} ({methodology['domain']}): {methodology['one_liner']}"
+                )
+            sections.append("")
+
+        if ctx["extracted_skills"]:
+            sections.append("## External Pattern Learnings\n")
+            for skill in ctx["extracted_skills"]:
+                lessons = "; ".join(skill.get("lessons", [])[:2])
+                summary = lessons or ", ".join(skill.get("architecture_hints", [])[:2]) or "stored pattern"
+                sections.append(f"- {skill['repo']}: {summary}")
             sections.append("")
 
         dev = ctx.get("developer_profile", {}).get("developer_profile", {})
@@ -242,6 +274,44 @@ class ContextAssembler:
             tags.extend(task_hint.lower().split())
         return self._learnings.get_context_injection(tags=tags or None, limit=5)
 
+    def _select_methodologies(
+        self,
+        phase: ProjectPhase,
+        state: ProjectState,
+        task_hint: str,
+    ) -> list[dict[str, Any]]:
+        terms = self._context_terms(state.current_focus, task_hint)
+        if terms:
+            tagged = self._methodologies.get_context_injection(tags=terms[:5], limit=3)
+            if tagged:
+                return tagged
+
+        domain = self._preferred_methodology_domain(phase, task_hint)
+        if domain:
+            by_domain = self._methodologies.get_context_injection(domain=domain, limit=3)
+            if by_domain:
+                return by_domain
+
+        return self._methodologies.get_context_injection(limit=3)
+
+    def _select_extracted_skills(self, state: ProjectState, task_hint: str) -> list[dict[str, Any]]:
+        output_dir = self._root / ".opc" / "intelligence" / "extracted-skills"
+        if not output_dir.is_dir():
+            return []
+
+        terms = self._context_terms(state.current_focus, task_hint)
+        candidates: list[tuple[int, float, dict[str, Any]]] = []
+        for json_file in output_dir.glob("*.json"):
+            try:
+                payload = json.loads(json_file.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            score = self._score_extracted_skill(payload, terms)
+            candidates.append((score, json_file.stat().st_mtime, payload))
+
+        candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        return [self._summarize_extracted_skill(payload) for _, _, payload in candidates[:3]]
+
     def _state_summary(self, state: ProjectState) -> dict[str, Any]:
         return {
             "phase": state.status.value,
@@ -283,3 +353,59 @@ class ContextAssembler:
         if item in lst:
             lst.remove(item)
         lst.insert(0, item)
+
+    @staticmethod
+    def _context_terms(*texts: str) -> list[str]:
+        terms: list[str] = []
+        for text in texts:
+            if not text:
+                continue
+            for token in re.findall(r"[a-z0-9][a-z0-9+._-]{2,}", text.lower()):
+                terms.append(token)
+        return list(dict.fromkeys(terms))
+
+    @staticmethod
+    def _preferred_methodology_domain(phase: ProjectPhase, task_hint: str) -> str:
+        hint = task_hint.lower()
+        if "pricing" in hint or "price" in hint:
+            return "pricing"
+        if "growth" in hint or "seo" in hint or "launch" in hint:
+            return "growth"
+        if "test" in hint or "tdd" in hint or "refactor" in hint or "api" in hint:
+            return "engineering"
+        if phase in (ProjectPhase.IDLE, ProjectPhase.DISCUSSING):
+            return "validation"
+        if phase == ProjectPhase.PLANNING:
+            return "product"
+        if phase == ProjectPhase.EXECUTING:
+            return "engineering"
+        if phase == ProjectPhase.SHIPPING:
+            return "growth"
+        return ""
+
+    @staticmethod
+    def _score_extracted_skill(payload: dict[str, Any], terms: list[str]) -> int:
+        if not terms:
+            return 0
+        haystack = " ".join(
+            [
+                payload.get("repo", ""),
+                payload.get("description", ""),
+                " ".join(payload.get("tech_stack", [])),
+                " ".join(payload.get("architecture_hints", [])),
+                " ".join(payload.get("testing_patterns", [])),
+                " ".join(payload.get("lessons", [])),
+            ]
+        ).lower()
+        return sum(1 for term in terms if term in haystack)
+
+    @staticmethod
+    def _summarize_extracted_skill(payload: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "repo": payload.get("repo", ""),
+            "tech_stack": payload.get("tech_stack", [])[:5],
+            "architecture_hints": payload.get("architecture_hints", [])[:5],
+            "testing_patterns": payload.get("testing_patterns", [])[:4],
+            "ci_patterns": payload.get("ci_patterns", [])[:4],
+            "lessons": payload.get("lessons", [])[:3],
+        }

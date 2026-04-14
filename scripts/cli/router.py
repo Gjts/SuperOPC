@@ -109,6 +109,26 @@ Verify Operations:
   verify consistency                  Check phase numbering, disk/roadmap sync
   verify health [--repair]            Check .opc/ integrity, optionally repair
 
+Profile Operations:
+  profile show [--injection]          Show developer profile (or context injection)
+  profile export [--dir <path>]       Export USER-PROFILE.md
+  profile record --command <cmd>      Record an interaction (optional --project, --signals JSON)
+
+Research Operations:
+  research feed --query <topic>       Fetch multi-source feed into .opc/
+  research insights [--feed <path>]   Generate structured insights JSON from feed
+  research methods list               Query built-in methodology database
+  research methods show <id>          Show methodology details
+  research run --query <topic>        Run full pipeline and write .opc/research report
+
+Intel Operations:
+  intel status                        Intel file freshness status
+  intel query <term>                  Search across .opc/intel/*.json
+  intel validate                       Validate intel file schema
+  intel snapshot                       Record snapshot for future diff
+  intel diff                           Diff against last snapshot
+  intel refresh                        Rebuild intel indexes and snapshot
+
 Template Operations:
   template fill summary --phase N     Create pre-filled SUMMARY.md
   template fill plan --phase N        Create pre-filled PLAN.md
@@ -204,6 +224,18 @@ def _dispatch(command: str, args: list[str], cwd: Path, raw: bool, pick: str | N
     elif command == "security":
         from cli.security import dispatch_security
         dispatch_security(args, cwd, raw)
+
+    elif command == "profile":
+        from cli.profile import dispatch_profile
+        dispatch_profile(args, cwd, raw)
+
+    elif command == "research":
+        from cli.research import dispatch_research
+        dispatch_research(args, cwd, raw)
+
+    elif command == "intel":
+        from cli.intel import dispatch_intel
+        dispatch_intel(args, cwd, raw)
 
     elif command == "generate-slug":
         from cli.core import generate_slug, output

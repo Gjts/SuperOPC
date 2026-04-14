@@ -10,6 +10,7 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+from cli import verify as verify_cli  # noqa: E402
 from opc_quality import (  # noqa: E402
     collect_project_quality_report,
     collect_quality_report,
@@ -129,10 +130,12 @@ def create_quality_repo(
     for relative in required_dirs:
         (repo_root / relative).mkdir(parents=True, exist_ok=True)
 
+    (repo_root / "agents").mkdir(parents=True, exist_ok=True)
     (repo_root / "agents" / "example.md").write_text(
         "---\nname: example-agent\ndescription: Example agent\n---\n\n# Agent\n",
         encoding="utf-8",
     )
+    (repo_root / "agents" / "domain").mkdir(parents=True, exist_ok=True)
     (repo_root / "commands" / "opc" / "example.md").write_text(
         "---\nname: example-command\ndescription: Example command\n---\n\n# Command\n",
         encoding="utf-8",
@@ -483,7 +486,32 @@ def test_repo_quality_report_fails_on_invalid_plugin_manifest_reference(tmp_path
     assert any("missing referenced path ./agents/missing.md" in detail for detail in checks["repo.plugin-manifest"]["details"])
 
 
-def test_opc_health_cli_returns_nonzero_json_for_failing_project(tmp_path: Path) -> None:
+def test_repo_quality_report_fails_on_missing_frontmatter_in_domain_agent(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    bad_agent = repo_root / "agents" / "domain" / "bad-agent.md"
+    bad_agent.write_text("# Missing frontmatter\n", encoding="utf-8")
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["repo.frontmatter"]["status"] == "fail"
+    assert any("agents/domain/bad-agent.md: missing frontmatter" in detail.replace("\\", "/") for detail in checks["repo.frontmatter"]["details"])
+
+
+def test_repo_quality_report_fails_on_missing_description_in_domain_agent(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    bad_agent = repo_root / "agents" / "domain" / "bad-agent.md"
+    bad_agent.write_text("---\nname: bad-agent\n---\n\n# Agent\n", encoding="utf-8")
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["repo.frontmatter"]["status"] == "fail"
+    assert any("agents/domain/bad-agent.md: missing description" in detail.replace("\\", "/") for detail in checks["repo.frontmatter"]["details"])
+
+
     project_root = tmp_path / "cli-fail-project"
     project_root.mkdir()
 
@@ -557,3 +585,108 @@ def test_opc_health_cli_repair_scaffolds_project_but_keeps_semantic_failures(tmp
     assert payload["results"][0]["summary"]["fixed"] >= 3
     assert (project_root / ".opc" / "HANDOFF.json").exists()
     assert any(check["id"] == "project.requirements-coverage" and check["status"] == "fail" for check in payload["results"][0]["checks"])
+
+
+def test_verify_plan_structure_passes_for_gate_approved_plan(tmp_path: Path, monkeypatch) -> None:
+    project_root = create_quality_project(tmp_path)
+    plan_file = project_root / "PLAN.md"
+    plan_file.write_text(
+        """# Demo Plan
+
+**Goal:** Ship the feature safely
+
+## Task 1
+- [ ] Implement feature
+- [ ] Add tests
+
+<opc-plan>
+<metadata><goal>Ship the feature safely</goal></metadata>
+<waves>
+  <wave id="1" description="Initial wave">
+    <task id="1.1"><title>Implement</title><file>app.py</file><action>Add feature</action></task>
+  </wave>
+</waves>
+</opc-plan>
+
+## OPC Plan Check
+### 判决: APPROVED
+
+## OPC Assumptions Analysis
+### 🟢 已验证假设
+- API shape confirmed
+
+## OPC Pre-flight Gate
+
+- plan-check: APPROVED
+- assumptions: PASS
+- ready-for-build: true
+""",
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_output(data, raw=False, text=None):
+        captured["data"] = data
+        captured["raw"] = raw
+        captured["text"] = text
+        raise SystemExit(0)
+
+    monkeypatch.setattr(verify_cli, "output", fake_output)
+
+    try:
+        verify_cli.cmd_verify_plan_structure(project_root, "PLAN.md", raw=True)
+    except SystemExit:
+        pass
+
+    payload = captured["data"]
+    assert isinstance(payload, dict)
+    assert payload["valid"] is True
+    assert payload["has_plan_check"] is True
+    assert payload["has_assumptions_analysis"] is True
+    assert payload["preflight_gate"]["ready-for-build"] == "true"
+
+
+def test_verify_plan_structure_fails_when_preflight_gate_missing(tmp_path: Path, monkeypatch) -> None:
+    project_root = create_quality_project(tmp_path)
+    plan_file = project_root / "PLAN.md"
+    plan_file.write_text(
+        """# Demo Plan
+
+**Goal:** Ship the feature safely
+
+## Task 1
+- [ ] Implement feature
+- [ ] Add tests
+
+<opc-plan>
+<metadata><goal>Ship the feature safely</goal></metadata>
+<waves>
+  <wave id="1" description="Initial wave">
+    <task id="1.1"><title>Implement</title><file>app.py</file><action>Add feature</action></task>
+  </wave>
+</waves>
+</opc-plan>
+""",
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_output(data, raw=False, text=None):
+        captured["data"] = data
+        raise SystemExit(0)
+
+    monkeypatch.setattr(verify_cli, "output", fake_output)
+
+    try:
+        verify_cli.cmd_verify_plan_structure(project_root, "PLAN.md", raw=True)
+    except SystemExit:
+        pass
+
+    payload = captured["data"]
+    assert isinstance(payload, dict)
+    assert payload["valid"] is False
+    assert "Missing ## OPC Plan Check section" in payload["errors"]
+    assert "Missing ## OPC Assumptions Analysis section" in payload["errors"]
+    assert "Missing ## OPC Pre-flight Gate section" in payload["errors"]

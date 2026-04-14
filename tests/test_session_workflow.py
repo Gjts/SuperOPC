@@ -207,5 +207,19 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
     assert (out_dir / "claude-code" / "commands" / "opc" / "thread.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "seed.md").exists()
     assert (out_dir / "claude-code" / "commands" / "opc" / "backlog.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "profile.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "research.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "intel.md").exists()
+    assert (out_dir / "claude-code" / "commands" / "opc" / "plan.md").exists()
+
+    profile_cmd = (out_dir / "claude-code" / "commands" / "opc" / "profile.md").read_text(encoding="utf-8")
+    research_cmd = (out_dir / "claude-code" / "commands" / "opc" / "research.md").read_text(encoding="utf-8")
+    intel_cmd = (out_dir / "claude-code" / "commands" / "opc" / "intel.md").read_text(encoding="utf-8")
+    plan_cmd = (out_dir / "claude-code" / "commands" / "opc" / "plan.md").read_text(encoding="utf-8")
+
+    assert "python bin/opc-tools profile show" in profile_cmd
+    assert "feed -> insights -> methodology -> report -> extracted-skills" in research_cmd
+    assert "IntelEngine.refresh()" in intel_cmd
+    assert "opc-plan-checker" in plan_cmd
 
 
