@@ -172,7 +172,7 @@ def _make_market_intel(opc_dir: Path, query: str) -> Callable[[], None]:
             import sys
             sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "intelligence"))
             from feed_scraper import compose_intelligence_report
-            compose_intelligence_report(query)
+            compose_intelligence_report(query, opc_dir=opc_dir)
             bus.publish("market.update", {"query": query, "status": "complete"}, source="scheduler.intel")
         except Exception as exc:
             bus.publish("market.update", {"query": query, "error": str(exc)}, source="scheduler.intel")
