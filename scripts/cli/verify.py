@@ -143,6 +143,7 @@ def cmd_verify_plan_structure(cwd: Path, plan_path: str, raw: bool) -> None:
 
     # Check frontmatter
     has_frontmatter = content.startswith("---")
+    has_opc_plan_block = bool(re.search(r"<opc-plan>[\s\S]*?</opc-plan>", content, re.IGNORECASE))
 
     # Check for task markers
     task_pattern = re.compile(r"(?:^|\n)#+\s*(?:Task|Step|任务)\s+\d", re.IGNORECASE)
@@ -151,18 +152,56 @@ def cmd_verify_plan_structure(cwd: Path, plan_path: str, raw: bool) -> None:
 
     # Check for goal/objective
     has_goal = bool(re.search(r"\*\*(?:Goal|Objective|目标)(?::\*\*|\*\*:)", content, re.IGNORECASE))
+    has_plan_check = bool(re.search(r"^##\s+OPC Plan Check\b", content, re.IGNORECASE | re.MULTILINE))
+    has_assumptions_analysis = bool(re.search(r"^##\s+OPC Assumptions Analysis\b", content, re.IGNORECASE | re.MULTILINE))
+
+    gate_block = re.search(
+        r"^##\s+OPC Pre-flight Gate\b(?P<body>[\s\S]*?)(?:\n##\s+|\Z)",
+        content,
+        re.IGNORECASE | re.MULTILINE,
+    )
+    gate_values: dict[str, str | None] = {
+        "plan-check": None,
+        "assumptions": None,
+        "ready-for-build": None,
+    }
+    if gate_block:
+        body = gate_block.group("body")
+        for key in gate_values:
+            match = re.search(rf"^-\s*{re.escape(key)}:\s*(.+)$", body, re.IGNORECASE | re.MULTILINE)
+            if match:
+                gate_values[key] = match.group(1).strip()
 
     if not tasks_found:
         errors.append("No task markers found (expected ## Task N or - [ ] checkboxes)")
     if not has_goal:
         errors.append("No Goal/Objective section found")
+    if not has_opc_plan_block:
+        errors.append("No <opc-plan> block found")
+    if not has_plan_check:
+        errors.append("Missing ## OPC Plan Check section")
+    if not has_assumptions_analysis:
+        errors.append("Missing ## OPC Assumptions Analysis section")
+    if gate_block is None:
+        errors.append("Missing ## OPC Pre-flight Gate section")
+    else:
+        if (gate_values["plan-check"] or "").upper() != "APPROVED":
+            errors.append("Pre-flight gate requires plan-check: APPROVED")
+        if (gate_values["assumptions"] or "").upper() != "PASS":
+            errors.append("Pre-flight gate requires assumptions: PASS")
+        if (gate_values["ready-for-build"] or "").lower() != "true":
+            errors.append("Pre-flight gate requires ready-for-build: true")
 
     valid = not errors
     output({
         "valid": valid,
         "has_frontmatter": has_frontmatter,
+        "has_opc_plan_block": has_opc_plan_block,
         "tasks_found": tasks_found,
         "has_goal": has_goal,
+        "has_plan_check": has_plan_check,
+        "has_assumptions_analysis": has_assumptions_analysis,
+        "preflight_gate": gate_values,
         "errors": errors,
     }, raw, "valid" if valid else "invalid")
 

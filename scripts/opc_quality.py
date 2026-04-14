@@ -50,6 +50,7 @@ REPO_REQUIRED_PATHS = [
 
 SOURCE_MARKDOWN_GLOBS = [
     "agents/*.md",
+    "agents/domain/*.md",
     "commands/opc/*.md",
     "skills/**/SKILL.md",
 ]
@@ -63,6 +64,7 @@ LINK_CHECK_GLOBS = [
     "AGENTS.md",
     "CLAUDE.md",
     "agents/*.md",
+    "agents/domain/*.md",
     "commands/opc/*.md",
     "references/*.md",
     "rules/**/*.md",

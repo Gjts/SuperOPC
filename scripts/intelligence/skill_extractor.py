@@ -111,11 +111,16 @@ ARCHITECTURE_KEYWORDS = [
 class SkillExtractor:
     """Extracts architectural patterns and skills from GitHub repositories."""
 
-    def __init__(self, output_dir: Path | None = None):
+    def __init__(self, output_dir: Path | None = None, *, verbose: bool = True):
         self._output_dir = output_dir or OUTPUT_DIR
+        self._verbose = verbose
+
+    def _log(self, message: str) -> None:
+        if self._verbose:
+            print(message)
 
     def extract_from_repo(self, owner_repo: str) -> ExtractedSkill:
-        print(f"\n🔍 Analyzing {owner_repo}...")
+        self._log(f"\n🔍 Analyzing {owner_repo}...")
 
         repo_data = self._fetch_repo_metadata(owner_repo)
         tree = self._fetch_repo_tree(owner_repo)
@@ -141,14 +146,14 @@ class SkillExtractor:
         return skill
 
     def search_and_extract(self, query: str, *, limit: int = 5, min_stars: int = 1000) -> list[ExtractedSkill]:
-        print(f"🔎 Searching GitHub for '{query}' (min {min_stars} stars)...")
+        self._log(f"🔎 Searching GitHub for '{query}' (min {min_stars} stars)...")
         safe_q = urllib.parse.quote(f"{query} stars:>{min_stars}")
         url = f"https://api.github.com/search/repositories?q={safe_q}&sort=stars&order=desc&per_page={limit}"
 
         try:
             data = _fetch_json(url)
         except (urllib.error.URLError, json.JSONDecodeError) as e:
-            print(f"  ⚠️ Search failed: {e}")
+            self._log(f"  ⚠️ Search failed: {e}")
             return []
 
         results: list[ExtractedSkill] = []
@@ -158,7 +163,7 @@ class SkillExtractor:
                 skill = self.extract_from_repo(full_name)
                 results.append(skill)
             except Exception as e:
-                print(f"  ⚠️ Failed to analyze {full_name}: {e}")
+                self._log(f"  ⚠️ Failed to analyze {full_name}: {e}")
 
         return results
 
@@ -343,7 +348,7 @@ class SkillExtractor:
             json.dumps(asdict(skill), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-        print(f"  ✅ Saved to {filepath}")
+        self._log(f"  ✅ Saved to {filepath}")
 
 
 def main() -> None:

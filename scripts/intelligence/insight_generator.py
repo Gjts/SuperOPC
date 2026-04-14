@@ -63,7 +63,7 @@ class InsightGenerator:
 
         github_trends = data.get("github_trends", [])
         for item in github_trends:
-            if "error" in item:
+            if "_error" in item or "error" in item:
                 continue
             stars = item.get("stars", 0)
             relevance = min(1.0, stars / 10000) if stars else 0.1

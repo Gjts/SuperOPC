@@ -33,10 +33,29 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
         pass
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-FEED_DEST = REPO_ROOT / ".opc" / "market_feed_latest.json"
-FEED_HISTORY_DIR = REPO_ROOT / ".opc" / "market_feeds"
+_DEFAULT_OPC = REPO_ROOT / ".opc"
+FEED_DEST = _DEFAULT_OPC / "market_feed_latest.json"
+FEED_HISTORY_DIR = _DEFAULT_OPC / "market_feeds"
 
 REQUEST_TIMEOUT = 10
+
+
+def resolve_opc_dir(cwd: Path | None) -> Path:
+    """Locate `.opc/` for feed storage; falls back to SuperOPC repo `.opc` if none found."""
+    if cwd is None:
+        return _DEFAULT_OPC
+    start = cwd.resolve()
+    for candidate in [start, *start.parents]:
+        opc = candidate / ".opc"
+        if opc.is_dir():
+            return opc
+    return _DEFAULT_OPC
+
+
+def feed_paths(opc_dir: Path | None) -> tuple[Path, Path]:
+    """Return (market_feed_latest.json path, market_feeds history directory)."""
+    base = opc_dir if opc_dir is not None else _DEFAULT_OPC
+    return base / "market_feed_latest.json", base / "market_feeds"
 USER_AGENT = "SuperOPC-Intelligence-Agent/2.0"
 
 
@@ -143,7 +162,10 @@ def compose_intelligence_report(
     days: int = 30,
     subreddit: str = "",
     sources: list[str] | None = None,
+    opc_dir: Path | None = None,
 ) -> dict[str, Any]:
+    """Write feeds under *opc_dir* (default: SuperOPC repo `.opc/`). Pass user project's `.opc` from CLI."""
+    feed_dest, feed_history_dir = feed_paths(opc_dir)
     active_sources = sources or ["github", "reddit", "hackernews", "producthunt"]
 
     report: dict[str, Any] = {
@@ -182,35 +204,36 @@ def compose_intelligence_report(
         "READY_FOR_EVALUATION" if report["sources_succeeded"] else "PARTIAL_DATA"
     )
 
-    FEED_DEST.parent.mkdir(parents=True, exist_ok=True)
-    with open(FEED_DEST, "w", encoding="utf-8") as f:
+    feed_dest.parent.mkdir(parents=True, exist_ok=True)
+    with open(feed_dest, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
-    FEED_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    feed_history_dir.mkdir(parents=True, exist_ok=True)
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    history_file = FEED_HISTORY_DIR / f"feed-{date_str}.json"
+    history_file = feed_history_dir / f"feed-{date_str}.json"
     with open(history_file, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
     succeeded = len(report["sources_succeeded"])
     total = len(active_sources)
     print(f"\n✅ Intelligence report saved ({succeeded}/{total} sources)")
-    print(f"   Latest: {FEED_DEST}")
+    print(f"   Latest: {feed_dest}")
     print(f"   History: {history_file}")
     print("=> opc-researcher and Minimalist Entrepreneur pipeline may now proceed.")
 
     return report
 
 
-def trend_summary(*, days: int = 30) -> dict[str, Any]:
+def trend_summary(*, days: int = 30, opc_dir: Path | None = None) -> dict[str, Any]:
     """Aggregate historical feeds within the window into a trend summary."""
-    FEED_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    _, feed_history_dir = feed_paths(opc_dir)
+    feed_history_dir.mkdir(parents=True, exist_ok=True)
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     all_repos: list[dict] = []
     all_reddit: list[dict] = []
     all_hn: list[dict] = []
 
-    for fpath in sorted(FEED_HISTORY_DIR.glob("feed-*.json")):
+    for fpath in sorted(feed_history_dir.glob("feed-*.json")):
         try:
             date_part = fpath.stem.replace("feed-", "")
             file_date = datetime.strptime(date_part, "%Y-%m-%d").replace(tzinfo=timezone.utc)
@@ -236,7 +259,7 @@ def trend_summary(*, days: int = 30) -> dict[str, Any]:
     return {
         "window_days": days,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-        "feeds_analyzed": len(list(FEED_HISTORY_DIR.glob("feed-*.json"))),
+        "feeds_analyzed": len(list(feed_history_dir.glob("feed-*.json"))),
         "top_github": top_repos,
         "top_reddit": top_reddit,
         "top_hackernews": top_hn,
@@ -250,10 +273,13 @@ if __name__ == "__main__":
     parser.add_argument("--subreddit", type=str, default="", help="Specific subreddit to search")
     parser.add_argument("--sources", type=str, default="", help="Comma-separated sources (github,reddit,hackernews,producthunt)")
     parser.add_argument("--summary", action="store_true", help="Show trend summary from historical feeds")
+    parser.add_argument("--cwd", type=str, default=".", help="Project directory (feeds written to its .opc/)")
     args = parser.parse_args()
 
+    opc_d = resolve_opc_dir(Path(args.cwd))
+
     if args.summary:
-        summary = trend_summary(days=args.days)
+        summary = trend_summary(days=args.days, opc_dir=opc_d)
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     else:
         sources = [s.strip() for s in args.sources.split(",") if s.strip()] if args.sources else None
@@ -262,4 +288,5 @@ if __name__ == "__main__":
             days=args.days,
             subreddit=args.subreddit,
             sources=sources,
+            opc_dir=opc_d,
         )

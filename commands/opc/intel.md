@@ -1,6 +1,6 @@
 ---
 name: opc-intel
-description: Query, inspect, or refresh codebase intelligence. Maintains a queryable JSON index of project structure, APIs, dependencies, and architecture.
+description: Query, validate, diff, snapshot, or refresh codebase intelligence using the shipped IntelEngine runtime.
 ---
 
 # /opc-intel
@@ -15,75 +15,30 @@ description: Query, inspect, or refresh codebase intelligence. Maintains a query
 
 | 模式 | 用途 |
 |------|------|
-| `query <term>` | 搜索代码库索引 |
+| `query <term>` | 搜索 `.opc/intel/*.json` 索引 |
 | `status` | 查看索引文件新鲜度 |
+| `validate` | 校验索引结构 |
+| `snapshot` | 记录当前快照 |
 | `diff` | 与上次快照对比变更 |
-| `refresh` | 重建全部索引文件 |
+| `refresh` | 使用 `IntelEngine.refresh()` 重建索引并记录快照 |
 
-## Behavior
+## 流程
 
-### Step 0 — 横幅
+1. **走当前 CLI 合同**
+   - `/opc-intel` 对应 `python bin/opc-tools intel ...`
+   - `status/query/validate/snapshot/diff/refresh` 都是本地 runtime 行为
+   - `refresh` 当前由 `scripts/engine/intel_engine.py` 内联执行，不再依赖额外代理接线才能工作
 
-执行前显示：
-```
-SuperOPC > INTEL
-```
+2. **查询与诊断**
+   - `status` 检查 `stack.json`、`file-roles.json`、`api-map.json`、`dependency-graph.json`、`arch-decisions.json`
+   - `query <term>` 在 key/value 中大小写不敏感搜索
+   - `validate` 检查 `_meta` 与 `entries` 结构
+   - `diff` 读取 `.opc/intel/.last-refresh.json`
 
-### Step 1 — 模式解析
-
-解析 `$ARGUMENTS` 确定操作模式。无参数时显示用法说明。
-
-### query \<term\>
-
-在 `.opc/intel/` 下所有索引文件中搜索关键词（不区分大小写）。
-
-搜索范围：JSON 文件的 key 和 value + arch-decisions.json 全文。
-
-显示匹配条目，按来源文件分组。
-
-**结束后 STOP。不派发代理。**
-
-### status
-
-检查每个索引文件的状态：
-- 文件名
-- 最后更新时间（`_meta.updated_at`）
-- STALE（>24小时）或 FRESH 状态
-
-**结束后 STOP。不派发代理。**
-
-### diff
-
-与上次快照对比（`.opc/intel/.last-refresh.json`）：
-- 新增条目
-- 删除条目
-- 变更条目
-
-如无快照，建议先运行 `refresh`。
-
-**结束后 STOP。不派发代理。**
-
-### refresh
-
-派发 `opc-intel-updater` 代理分析代码库并写入/更新索引文件：
-
-```
-显示：SuperOPC > 正在派发 intel-updater 代理分析代码库...
-
-Task(
-  description="刷新代码库智能索引",
-  prompt="你是 opc-intel-updater 代理。分析代码库并写入结构化索引到 .opc/intel/。
-  
-  项目根目录: ${CWD}
-  
-  参考代理定义: agents/opc-intel-updater.md
-  
-  完成后输出: ## INTEL UPDATE COMPLETE
-  失败时输出: ## INTEL UPDATE FAILED"
-)
-```
-
-代理完成后显示更新摘要。
+3. **刷新索引**
+   - `refresh` 会扫描当前项目、重写全部 5 个索引文件，并更新 `.last-refresh.json`
+   - 输出包含写入路径和验证结果
+   - 目标是提供一个稳定的最小闭环，而不是等待另一个编排层
 
 ## 索引文件
 
@@ -91,13 +46,22 @@ Task(
 
 | 文件 | 内容 |
 |------|------|
-| `stack.json` | 技术栈检测（语言/框架/工具/构建系统） |
-| `file-roles.json` | 文件图谱（导出/导入/角色类型） |
-| `api-map.json` | API 表面（路由/端点/命令） |
-| `dependency-graph.json` | 依赖链（生产/开发/对等） |
-| `arch-decisions.json` | 架构决策和模式 |
+| `stack.json` | 技术栈、框架、工具、构建系统摘要 |
+| `file-roles.json` | 文件角色、导入/导出、入口类型 |
+| `api-map.json` | 路由和 CLI 暴露面 |
+| `dependency-graph.json` | package / requirements / pyproject 依赖摘要 |
+| `arch-decisions.json` | 从当前代码结构归纳出的架构决策 |
+| `.last-refresh.json` | 上次刷新快照哈希 |
 
-每个 JSON 文件包含 `_meta: { updated_at, version }` 元数据。
+## 推荐实现
+
+```bash
+python bin/opc-tools intel status --cwd /path/to/project
+python bin/opc-tools intel query profile --cwd /path/to/project --raw
+python bin/opc-tools intel validate --cwd /path/to/project --raw
+python bin/opc-tools intel refresh --cwd /path/to/project --raw
+python bin/opc-tools intel diff --cwd /path/to/project --raw
+```
 
 ## 引擎
 
@@ -106,20 +70,24 @@ Task(
 提供方法：
 - `query(term)` — 关键词搜索
 - `status()` — 新鲜度检查
-- `diff()` — 快照对比
-- `write_intel(key, data)` — 写入索引
-- `take_snapshot()` — 创建快照
 - `validate()` — 结构验证
+- `take_snapshot()` — 创建快照
+- `diff()` — 与最近快照比对
+- `refresh()` — 重建索引并快照
 
 ## 反模式
 
-1. 不要为 query/status/diff 操作派发代理 — 这些是内联操作
-2. 不要直接修改索引文件 — 代理在 refresh 时处理写入
-3. 不要在索引中包含密钥/凭据
-4. 不要猜测 — 基于实际文件内容生成索引
+1. 不要手改 `.opc/intel/*.json` 作为常规流程
+2. 不要把 `refresh` 继续描述成“仅代理派发”——现在已有本地 runtime
+3. 不要把秘密、凭据或生成目录噪音写入索引
+4. 不要把 `diff` 当作刷新——它依赖已有快照
+
+## 参数
+
+- `$ARGUMENTS` — 传递 `status`、`query <term>`、`validate`、`snapshot`、`diff` 或 `refresh`
 
 ## Related
 
-- `/opc-research` — 市场研究工作流（市场情报方向）
-- `/opc-dashboard` — 项目仪表盘（引用 intel 数据）
-- `/opc-health` — 项目健康检查
+- `/opc-research` — 产出可被上下文层复用的 intelligence 工件
+- `/opc-dashboard` — 可引用 intel 数据
+- `/opc-health` — 检查仓库/项目健康
