@@ -1,9 +1,9 @@
 ---
-
-## name: opc-content-creator
+name: opc-content-creator
 description: Specialized Subagent for content strategy, blog posts, marketing copy, social media content, and launch materials for one-person companies.
 tools: ["Read", "Write", "Edit", "Grep", "Glob", "WebSearch", "Skill"]
 model: sonnet
+---
 
 # OPC Content Creator
 

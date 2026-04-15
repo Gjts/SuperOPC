@@ -1,9 +1,9 @@
 ---
-
-## name: opc-devops-automator
+name: opc-devops-automator
 description: Specialized Subagent for CI/CD pipelines, containerization, deployment automation, and infrastructure as code.
 tools: ["Read", "Write", "Edit", "Grep", "Glob", "Bash", "TodoRead", "Skill"]
 model: sonnet
+---
 
 # OPC DevOps Automator
 

@@ -7,10 +7,23 @@ description: Execute a PLAN.md with TDD enforcement and subagent-driven developm
 
 ## 流程
 
-1. **查找最新的 PLAN.md**
+1. **查找最新的已通过 gate 的 PLAN.md**
    - 检查 `docs/plans/` 目录
    - 如果有多个计划，让用户选择
    - 如果没有计划，建议先用 `/opc-plan`
+   - 必须确认计划中存在 `## OPC Plan Check`
+   - 必须确认计划中存在 `## OPC Assumptions Analysis`
+   - 必须确认计划中存在如下门控摘要：
+
+```markdown
+## OPC Pre-flight Gate
+
+- plan-check: APPROVED
+- assumptions: PASS
+- ready-for-build: true
+```
+
+   - 任一项缺失都必须停止执行，并回到 `/opc-plan` 修订
 
 2. **调用 implementing 技能**
    - 逐任务执行
