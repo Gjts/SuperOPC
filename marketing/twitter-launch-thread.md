@@ -12,6 +12,7 @@
 ---
 
 **Tweet 1 (Hook)**
+
 ```
 I spent months merging the best AI coding workflows into one system.
 
@@ -25,6 +26,7 @@ Here's what it can do 🧵
 ---
 
 **Tweet 2 (The Problem)**
+
 ```
 Solo founders using AI tools face a real problem:
 
@@ -38,6 +40,7 @@ You end up with AI-generated code and no product.
 ---
 
 **Tweet 3 (The Solution)**
+
 ```
 SuperOPC gives your AI a complete operating system:
 
@@ -50,6 +53,7 @@ SuperOPC gives your AI a complete operating system:
 ---
 
 **Tweet 4 (Business Skills)**
+
 ```
 The part most AI tools skip: business skills.
 
@@ -66,6 +70,7 @@ SuperOPC has 18 solo-founder skills built in:
 ---
 
 **Tweet 5 (Engineering Quality)**
+
 ```
 And the engineering side is serious:
 
@@ -81,6 +86,7 @@ Your AI gets smarter every time you use it.
 ---
 
 **Tweet 6 (Multi-Runtime)**
+
 ```
 Works with 11 AI tools out of the box:
 
@@ -95,6 +101,7 @@ python scripts/convert.py --tool all
 ---
 
 **Tweet 7 (Autonomous Mode)**
+
 ```
 New in v1.1.0: Autonomous Operations
 
@@ -109,6 +116,7 @@ Your one-person company runs while you sleep.
 ---
 
 **Tweet 8 (Origin Story)**
+
 ```
 I built this because I was frustrated.
 
@@ -124,6 +132,7 @@ Dogfooding it right now to ship products faster.
 ---
 
 **Tweet 9 (Social Proof / Open Source)**
+
 ```
 SuperOPC is open source (MIT).
 
@@ -141,6 +150,7 @@ One system > 9 separate configs
 ---
 
 **Tweet 10 (CTA)**
+
 ```
 If you're building alone with AI tools, this is for you.
 
@@ -158,6 +168,7 @@ Drop a comment if you build something with it 👇
 ---
 
 ## 📌 Pinned Reply (after thread goes live)
+
 ```
 TL;DR for SuperOPC:
 
@@ -173,7 +184,9 @@ github.com/Gjts/SuperOPC
 ---
 
 ## 📅 Posting Strategy
+
 - Post the full thread on a Tuesday/Wednesday morning (9-11am EST)
 - Reply to every comment within 2 hours
 - Follow up with a short demo video/GIF within 24h
 - Cross-post individual tweets as standalone posts the following week
+
