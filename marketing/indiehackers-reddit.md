@@ -5,11 +5,13 @@
 ## 一、IndieHackers — 产品发布帖
 
 ### 标题
+
 ```
 I merged 9 open-source AI projects into one operating system for solo founders
 ```
 
 ### 正文
+
 ```
 Hey IH 👋
 
@@ -92,11 +94,13 @@ Thanks for reading 🙏
 ## 二、Reddit — r/ClaudeAI
 
 ### 标题
+
 ```
 I built an operating system for Claude Code — 24 skills, 15 agents, works in 5 minutes
 ```
 
 ### 正文
+
 ```
 Hey r/ClaudeAI,
 
@@ -134,9 +138,10 @@ git clone https://github.com/gjts/superopc.git
 
 Also exports to Cursor, Windsurf, Copilot, and 8 more tools.
 
-MIT, free. Full repo: https://github.com/Gjts/SuperOPC
+MIT, free. Full repo: [https://github.com/Gjts/SuperOPC](https://github.com/Gjts/SuperOPC)
 
 Happy to answer any questions about the architecture or skill design.
+
 ```
 
 ---
@@ -145,11 +150,14 @@ Happy to answer any questions about the architecture or skill design.
 
 ### 标题
 ```
+
 SuperOPC: Turn your Cursor .cursorrules into a structured 24-skill operating system
+
 ```
 
 ### 正文
 ```
+
 Hey everyone,
 
 If your .cursorrules file has grown into an unmanageable mess (mine had),
@@ -159,6 +167,7 @@ SuperOPC is an operating system layer for solo founders. It exports a
 structured skill/agent system directly into Cursor:
 
 **Setup:**
+
 ```bash
 git clone https://github.com/gjts/superopc.git
 cd superopc
@@ -167,6 +176,7 @@ cp -r integrations/cursor/.cursor /your-project/
 ```
 
 **What you get in Cursor:**
+
 - 24 structured skills (not just rules — methodologies)
 - 15+ specialist agents with clear roles
 - Business skills alongside engineering (validate ideas, pricing, etc.)
@@ -180,9 +190,10 @@ process before touching code.
 
 Also works with Claude Code, Windsurf, Copilot, and 8 more tools.
 
-GitHub: https://github.com/Gjts/SuperOPC
+GitHub: [https://github.com/Gjts/SuperOPC](https://github.com/Gjts/SuperOPC)
 
 Questions welcome!
+
 ```
 
 ---
@@ -191,11 +202,14 @@ Questions welcome!
 
 ### 标题
 ```
+
 Show HN/IH: After 9 months building solo, I made an AI operating system for one-person companies
+
 ```
 
 ### 正文
 ```
+
 Built this because I needed it.
 
 **The problem:** I had Claude, Cursor, random Notion prompts, scattered
@@ -206,6 +220,7 @@ from building features nobody wanted.
 of any AI coding tool.
 
 **What's inside:**
+
 - 24 skills (business + engineering + market intelligence)
 - 15+ specialist agents
 - State management across sessions
@@ -213,18 +228,21 @@ of any AI coding tool.
 - Works with 11 AI tools
 
 **What I'm proud of:**
+
 1. Business skills are first-class (validate-idea runs BEFORE any code)
 2. It's a fusion of 9 community projects — not invented from scratch
 3. I'm using it to build itself (true dogfooding)
 
 **Current status:**
+
 - v1.1.0 shipped today
 - MIT, free forever
 - Looking for early users and feedback
 
-**GitHub:** https://github.com/Gjts/SuperOPC
+**GitHub:** [https://github.com/Gjts/SuperOPC](https://github.com/Gjts/SuperOPC)
 
 What would make this most useful for your solo projects?
+
 ```
 
 ---
@@ -233,11 +251,14 @@ What would make this most useful for your solo projects?
 
 ### 标题
 ```
+
 Show HN: SuperOPC – AI operating system for one-person companies
+
 ```
 
 ### 正文
 ```
+
 I merged 9 open-source AI workflow projects into a unified operating system
 for solo founders.
 
@@ -248,30 +269,29 @@ Crucially, nothing prevents you from building before you validate.
 SuperOPC is a content/plugin layer (not a service) that provides:
 
 1. 24 skills spanning business and engineering:
-   - Business: validate-idea, pricing, MVP, user-interview, SEO, legal
-   - Engineering: TDD, debugging, security-review, parallel agents
-   - Intelligence: market-research, autonomous-ops
-
+  - Business: validate-idea, pricing, MVP, user-interview, SEO, legal
+  - Engineering: TDD, debugging, security-review, parallel agents
+  - Intelligence: market-research, autonomous-ops
 2. 15+ specialist agents with a semantic DAG router:
-   opc-planner → opc-executor → opc-reviewer → opc-verifier
-
+  opc-planner → opc-executor → opc-reviewer → opc-verifier
 3. Cross-session state via .opc/ directory (persists context between
-   Claude/Cursor sessions)
-
+  Claude/Cursor sessions)
 4. Developer profiling: 8-dimension model that evolves from usage patterns
-
 5. Export to 11 AI tools: Claude Code, Cursor, Windsurf, Copilot, Gemini
-   CLI, OpenCode, Codex, Trae, Cline, Augment, OpenClaw
+  CLI, OpenCode, Codex, Trae, Cline, Augment, OpenClaw
 
 Source projects fused:
+
 - Superpowers (obra) — skill system + TDD
 - Get Shit Done — command system + wave execution
 - Minimalist Entrepreneur Skills — 10 business skills
 - Everything Claude Code — continuous learning + agent delegation
 - Agency-Agents — 192 specialist agent definitions
-+ 4 more
+
+- 4 more
 
 Interesting technical decisions:
+
 - Skills are methodologies (not just prompts) with pressure-test scenarios
 - Business skills are first-class, not an afterthought
 - The validate-idea guardrail is enforced before any code generation
@@ -282,5 +302,9 @@ The repo itself is built using SuperOPC (dogfooding throughout).
 MIT license. Feedback welcome, especially on the skill design and agent
 routing architecture.
 
-https://github.com/Gjts/SuperOPC
+[https://github.com/Gjts/SuperOPC](https://github.com/Gjts/SuperOPC)
+
 ```
+
+```
+

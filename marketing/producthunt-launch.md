@@ -9,16 +9,19 @@
 ## 📝 Product Listing
 
 ### Name
+
 ```
 SuperOPC
 ```
 
 ### Tagline (60 chars max)
+
 ```
 The AI Operating System for One-Person Companies
 ```
 
 ### Alternative taglines
+
 ```
 24 skills + 15 agents. From idea to ship, solo.
 Your AI tools finally have a backbone.
@@ -30,11 +33,13 @@ The missing OS for solo founders using Claude/Cursor.
 ### Description (260 chars for short, full for detail)
 
 **Short (260 chars)**
+
 ```
 SuperOPC turns your AI coding tools into a complete one-person company OS. 24 skills (validate idea, pricing, TDD, security), 15+ agents, works with Claude, Cursor, Windsurf, Copilot and 7 more. Open source. MIT.
 ```
 
 **Full Description**
+
 ```
 Solo founders wear every hat: CEO, CTO, designer, marketer, support.
 
@@ -86,7 +91,7 @@ Setup takes 5 minutes.
 
 ## 🔗 Links
 
-- **GitHub**: https://github.com/Gjts/SuperOPC
+- **GitHub**: [https://github.com/Gjts/SuperOPC](https://github.com/Gjts/SuperOPC)
 - **Demo GIF**: (create with asciinema or Loom)
 - **Website**: (optional — could use GitHub Pages)
 
@@ -123,41 +128,46 @@ Happy to answer any questions 🙏
 ## 📅 Launch Day Checklist
 
 ### 1 week before
-- [ ] Create Product Hunt account (if not done)
-- [ ] Get 10 hunter friends to upvote on launch day
-- [ ] Prepare demo GIF/video (30-60 seconds)
-- [ ] Create hero image and screenshots
-- [ ] Post teaser on Twitter: "Launching on Product Hunt Tuesday..."
+
+- Create Product Hunt account (if not done)
+- Get 10 hunter friends to upvote on launch day
+- Prepare demo GIF/video (30-60 seconds)
+- Create hero image and screenshots
+- Post teaser on Twitter: "Launching on Product Hunt Tuesday..."
 
 ### Launch day (12:01am PST)
-- [ ] Submit product to Product Hunt
-- [ ] Post Twitter thread (marketing/twitter-launch-thread.md)
-- [ ] Notify communities: r/ClaudeAI, r/cursor, IndieHackers
-- [ ] Post on 即刻, 知乎 (marketing/chinese-community-posts.md)
-- [ ] Reply to every PH comment within 1 hour
-- [ ] DM personal network to upvote
+
+- Submit product to Product Hunt
+- Post Twitter thread (marketing/twitter-launch-thread.md)
+- Notify communities: r/ClaudeAI, r/cursor, IndieHackers
+- Post on 即刻, 知乎 (marketing/chinese-community-posts.md)
+- Reply to every PH comment within 1 hour
+- DM personal network to upvote
 
 ### After launch
-- [ ] Thank everyone who upvoted
-- [ ] Write a "launch day recap" post
-- [ ] Follow up with anyone who commented
-- [ ] Start collecting emails for future announcements
+
+- Thank everyone who upvoted
+- Write a "launch day recap" post
+- Follow up with anyone who commented
+- Start collecting emails for future announcements
 
 ---
 
 ## 🎯 Target Communities to Notify
 
-| Community | Platform | Message Type |
-|-----------|---------|-------------|
-| r/ClaudeAI | Reddit | Feature post |
-| r/cursor | Reddit | Cursor integration highlight |
-| r/SideProject | Reddit | Launch announcement |
-| IndieHackers | Web | Product launch |
-| Hacker News | Show HN | "Show HN: SuperOPC – AI OS for solo founders" |
-| Claude Discord | Discord | Plugin announcement |
-| 即刻 | Chinese | 产品发布 |
-| 知乎 | Chinese | 深度好文 |
-| V2EX | Chinese | 技术分享 |
+
+| Community      | Platform | Message Type                                  |
+| -------------- | -------- | --------------------------------------------- |
+| r/ClaudeAI     | Reddit   | Feature post                                  |
+| r/cursor       | Reddit   | Cursor integration highlight                  |
+| r/SideProject  | Reddit   | Launch announcement                           |
+| IndieHackers   | Web      | Product launch                                |
+| Hacker News    | Show HN  | "Show HN: SuperOPC – AI OS for solo founders" |
+| Claude Discord | Discord  | Plugin announcement                           |
+| 即刻             | Chinese  | 产品发布                                          |
+| 知乎             | Chinese  | 深度好文                                          |
+| V2EX           | Chinese  | 技术分享                                          |
+
 
 ---
 
@@ -188,3 +198,4 @@ What I think is different:
 
 MIT licensed. Feedback welcome.
 ```
+
