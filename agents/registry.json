@@ -242,6 +242,16 @@
       "input": "Feature branch that has passed opc-reviewer PASS verdict",
       "output": "Test verification result + one of 4 options (merge/PR/keep/discard) + worktree cleanup status",
       "priority": 72
+    },
+    {
+      "id": "opc-business-advisor",
+      "name": "Business Advisor",
+      "type": "core",
+      "capability_tags": ["business", "advisory", "validate-idea", "mvp", "first-customers", "find-community", "pricing", "seo", "content", "marketing", "growth", "legal", "finance", "user-interview", "investor", "company-values", "product-lens", "minimalist-review", "anti-build-trap"],
+      "scenarios": ["one-person-company advisory", "pricing strategy routing", "go-to-market planning", "idea validation with anti-build-trap gate", "business sub-activity dispatch"],
+      "input": "Natural-language business question or one-person-company request",
+      "output": "Sub-activity identification + domain agent delegation or reference-backed decision",
+      "priority": 75
     }
   ]
 }
