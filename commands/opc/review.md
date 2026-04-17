@@ -1,24 +1,18 @@
 ---
 name: opc-review
-description: Trigger a comprehensive code review on recent changes
+description: Trigger a 5-dimension code review — dispatches reviewing skill which owns the workflow
 ---
 
-# /opc-review — 代码审查
+# /opc-review — 审查入口
 
-## 流程
+用户显式触发代码审查。等价于自然语言 "审查一下"。
 
-1. **确定审查范围**
-   ```bash
-   git diff main --name-only
-   ```
+## 动作
 
-2. **派发 opc-reviewer 代理**
-   - 五维度审查
-   - 输出审查报告
+调用 `reviewing` skill，传入 `$ARGUMENTS`（可选的审查范围）。
 
-3. **根据结果行动**
-   - 有严重问题 → 修复
-   - 全部通过 → 建议 `/opc-ship`
+reviewing skill 会派发 `opc-reviewer` agent 按 `references/review-rubric.md` 执行五维度审查。
 
 ## 参数
-- `$ARGUMENTS` — 可选，指定审查范围（文件或分支）
+
+- `$ARGUMENTS` — 可选，指定审查范围（文件、分支、或基础分支如 `main`）；缺省时审查 `git diff main`

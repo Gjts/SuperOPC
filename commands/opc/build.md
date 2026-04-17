@@ -1,40 +1,22 @@
 ---
 name: opc-build
-description: Execute a PLAN.md with TDD enforcement and subagent-driven development
+description: Execute an approved PLAN.md — dispatches implementing skill which owns the workflow
 ---
 
-# /opc-build — 执行开发
+# /opc-build — 执行入口
 
-## 流程
+用户显式触发实现流程。等价于自然语言 "执行计划"。
 
-1. **查找最新的已通过 gate 的 PLAN.md**
-   - 检查 `docs/plans/` 目录
-   - 如果有多个计划，让用户选择
-   - 如果没有计划，建议先用 `/opc-plan`
-   - 必须确认计划中存在 `## OPC Plan Check`
-   - 必须确认计划中存在 `## OPC Assumptions Analysis`
-   - 必须确认计划中存在如下门控摘要：
+## 动作
 
-```markdown
-## OPC Pre-flight Gate
+调用 `implementing` skill，传入 `$ARGUMENTS`（可选的 PLAN.md 路径）。
 
-- plan-check: APPROVED
-- assumptions: PASS
-- ready-for-build: true
-```
+implementing skill 会派发 `opc-executor` agent 执行完整流程（入口门控 → 波次执行 → 双阶段审查 → 原子提交 → SUMMARY.md）。
 
-   - 任一项缺失都必须停止执行，并回到 `/opc-plan` 修订
+## 入口要求
 
-2. **调用 implementing 技能**
-   - 逐任务执行
-   - 每任务 TDD
-   - 双阶段审查
-   - 原子提交
-
-3. **执行完成后**
-   - 调用 reviewing 技能
-   - 生成 SUMMARY.md
-   - 建议 `/opc-ship` 发布
+目标 PLAN.md 必须包含 `## OPC Pre-flight Gate` 且 `ready-for-build: true`。
 
 ## 参数
-- `$ARGUMENTS` — 可选，指定要执行的 PLAN.md 路径
+
+- `$ARGUMENTS` — 可选，指定要执行的 PLAN.md 路径；缺省时查找最新

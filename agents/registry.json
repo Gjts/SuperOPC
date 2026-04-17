@@ -232,6 +232,16 @@
       "input": "Codebase root path or refresh trigger",
       "output": "Updated .opc/intel/ JSON indices (stack, api-map, dependency-graph, file-roles, arch-decisions)",
       "priority": 75
+    },
+    {
+      "id": "opc-shipper",
+      "name": "Shipper",
+      "type": "core",
+      "capability_tags": ["shipping", "release", "merge", "pr", "pull-request", "deploy", "ship", "publish", "worktree-cleanup"],
+      "scenarios": ["branch completion", "pull request creation", "local merge", "release checklist", "worktree cleanup"],
+      "input": "Feature branch that has passed opc-reviewer PASS verdict",
+      "output": "Test verification result + one of 4 options (merge/PR/keep/discard) + worktree cleanup status",
+      "priority": 72
     }
   ]
 }

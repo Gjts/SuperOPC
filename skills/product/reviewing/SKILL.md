@@ -1,81 +1,29 @@
 ---
 name: reviewing
-description: Use after code is written or modified. Performs comprehensive code review covering spec compliance, code quality, security, and one-person-company maintainability.
+description: Use after code is written or modified. Dispatches opc-reviewer agent which owns the 5-dimension review workflow (spec compliance / code quality / security / one-person-company maintainability / test coverage).
 ---
 
-## 代码审查
+# reviewing — 审查派发器
 
-**宣布：** "我正在使用 reviewing 技能，对代码进行全面审查。"
+**触发条件：** 代码已经完成或修改，需要质量审查。适用于 "审查一下"、"看看有没有问题"、"code review"、"质量检查" 等场景。
 
-## 审查维度
+**宣布：** "我调用 reviewing 技能，派发给 opc-reviewer 持有完整审查 workflow。"
 
-### 1. 规格合规性
-- 所有需求点是否实现
-- 测试是否覆盖所有规格要求
-- 边界情况和错误路径是否处理
+## 派发
 
-### 2. 代码质量
-- 函数 < 50 行，文件 < 800 行
-- 嵌套 < 5 层
-- 命名清晰、语义化
-- 无硬编码值（魔法数字、字符串）
-- DRY — 无重复逻辑
-- 错误处理完整
+使用 Task 工具派发 `opc-reviewer` agent：
 
-### 3. 安全性
-- 无硬编码密钥/密码
-- 用户输入已验证
-- SQL 注入防护
-- XSS 防护
-- 敏感数据不在日志中暴露
+- **输入：** 变更范围（git diff / 文件列表 / 分支名）
+- **输出：** 标准 `## OPC Code Review` 报告 + 判决（PASS / NEEDS FIX / REJECT）
 
-### 4. 一人公司可维护性（特有维度）
-- **这段代码 6 个月后还能理解吗？** 没有团队成员帮你回忆上下文
-- **依赖是否最小化？** 每个依赖都是维护负担
-- **运行成本是否可控？** 检查 API 调用、存储、计算成本
-- **是否有自动化监控/告警？** 一人公司没人 24/7 盯着
+## 边界
 
-### 5. 测试覆盖
-- 覆盖率 ≥ 80%
-- 关键路径有集成测试
-- 边界情况有单元测试
+- 本 skill **不内联**五维度细则或评分表 —— 在 `references/review-rubric.md`
+- **不执行**审查逻辑 —— 在 `opc-reviewer` agent
 
-## 审查输出格式
+## 关联
 
-```markdown
-## 代码审查报告
-
-### 🔴 严重问题（必须修复）
-- [问题描述] — [文件:行号] — [修复建议]
-
-### 🟡 改进建议（建议修复）
-- [问题描述] — [文件:行号] — [修复建议]
-
-### 🟢 良好实践
-- [值得保留的好代码/模式]
-
-### 📊 指标
-- 规格合规: ✅/❌
-- 代码质量: [分数]/10
-- 安全性: ✅/❌
-- 可维护性: [分数]/10
-- 测试覆盖: [百分比]%
-```
-
-## 审查后行动
-
-- **有 🔴 严重问题** → 必须修复后才能继续
-- **只有 🟡 建议** → 可以选择修复或记录为技术债务
-- **全部 🟢** → 继续到 shipping 技能
-
-## 压力测试
-
-### 高压场景
-- 实现完成后，想凭直觉快速看一眼就合并。
-
-### 常见偏差
-- 只看代码风格，不看需求和回归影响。
-
-### 使用技能后的纠正
-- 按正确性、测试、风险和范围逐项审查。
-
+- **上游：** `implementing` skill 完成后可自动触发
+- **下游：** 判决 PASS → `shipping` skill；REJECT → 回 `implementing` 修复
+- **相关 agent：** opc-reviewer
+- **评分表：** `references/review-rubric.md`

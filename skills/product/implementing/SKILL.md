@@ -1,109 +1,37 @@
 ---
 name: implementing
-description: Use when executing an approved implementation plan. Dispatches fresh subagents per task with TDD enforcement and two-stage review (spec compliance + code quality).
+description: Use when executing an approved PLAN.md with ready-for-build flag. Dispatches opc-executor agent which owns subagent dispatch, two-stage review, TDD enforcement, and atomic commits.
 ---
 
-## 子代理驱动开发
+# implementing — 实现派发器
 
-**前提：** 有一个通过 planning 技能创建的 PLAN.md 文件。
+**触发条件：** 存在已通过 pre-flight gate 的 PLAN.md（含 `ready-for-build: true`），需要逐任务落成代码。适用于 "执行计划"、"开始实现"、"按 PLAN.md 做" 等场景。
 
-**宣布：** "我正在使用 implementing 技能，按计划逐任务执行开发。"
+**宣布：** "我调用 implementing 技能，派发给 opc-executor 持有完整实现 workflow。"
 
-## 核心模式
+## 派发
 
-**每个任务 = 一个新子代理 + 双阶段审查**
+使用 Task 工具派发 `opc-executor` agent：
 
-为什么用子代理：
-- 每个子代理获得干净的上下文，不受之前任务污染
-- 专注单一任务，减少错误
-- 编排器保持轻量，只管协调
+- **输入：** PLAN.md 路径（必须含 `ready-for-build: true`）
+- **输出：**
+  - 每任务一个原子 commit
+  - `docs/plans/<plan>.SUMMARY.md` 执行摘要
+  - 最终全局代码审查判决
 
-## 执行流程
+## 入口契约
 
-```dot
-digraph execution {
-    "读取计划，提取所有任务" [shape=box];
-    "创建 TodoWrite 待办" [shape=box];
-    "还有未完成任务?" [shape=diamond];
-    "派发实现者子代理" [shape=box];
-    "实现者执行: 实现+测试+提交+自审" [shape=box];
-    "规格审查通过?" [shape=diamond];
-    "代码质量审查通过?" [shape=diamond];
-    "标记任务完成" [shape=box];
-    "最终审查" [shape=box];
-    "调用 shipping 技能" [shape=box style=filled fillcolor=lightgreen];
+- **接受**：`## OPC Pre-flight Gate` 中 `ready-for-build: true`
+- **拒绝**：缺失 gate 或 `ready-for-build: false` → 回退到 `planning` skill
 
-    "读取计划，提取所有任务" -> "创建 TodoWrite 待办";
-    "创建 TodoWrite 待办" -> "还有未完成任务?";
-    "还有未完成任务?" -> "派发实现者子代理" [label="是"];
-    "派发实现者子代理" -> "实现者执行: 实现+测试+提交+自审";
-    "实现者执行: 实现+测试+提交+自审" -> "规格审查通过?";
-    "规格审查通过?" -> "实现者修复" [label="否"];
-    "实现者修复" -> "规格审查通过?";
-    "规格审查通过?" -> "代码质量审查通过?" [label="是"];
-    "代码质量审查通过?" -> "实现者修复质量问题" [label="否"];
-    "实现者修复质量问题" -> "代码质量审查通过?";
-    "代码质量审查通过?" -> "标记任务完成" [label="是"];
-    "标记任务完成" -> "还有未完成任务?";
-    "还有未完成任务?" -> "最终审查" [label="否"];
-    "最终审查" -> "调用 shipping 技能";
-}
-```
+## 边界
 
-## 子代理指令模板
+- 本 skill **不执行** 任务提取、子代理派发、审查 —— 全部由 opc-executor 处理
+- **不内联** TDD 细则（在 `tdd` skill）或派发协议（在 `agent-dispatch` skill）
 
-### 实现者子代理
-```
-你的任务：[任务描述]
-文件：[文件路径]
-上下文：[必要的项目上下文]
+## 关联
 
-要求：
-1. 使用 TDD — 先写失败测试，再写最小实现
-2. 完成后创建原子提交：git add -A && git commit -m "[类型]: [描述]"
-3. 自审代码：检查边界情况、错误处理、命名
-```
-
-### 规格审查子代理
-```
-任务规格：[从计划中提取]
-请验证实现是否匹配规格要求。检查：
-- 所有功能点是否实现
-- 测试是否覆盖规格要求
-- 边界情况是否处理
-```
-
-### 代码质量审查子代理
-```
-请审查代码质量：
-- 函数 < 50 行，文件 < 800 行
-- 嵌套 < 5 层
-- 错误处理完整
-- 命名清晰
-- 无硬编码值
-```
-
-## 原子提交策略
-
-每个任务完成后立即提交：
-```bash
-git add -A
-git commit -m "<type>: <task-description>"
-```
-
-## 集成要求
-
-- 子代理**必须**使用 `superopc:tdd` 技能
-- 所有任务完成后，调用 `superopc:shipping` 技能
-
-## 压力测试
-
-### 高压场景
-- 计划已定，但执行时想顺手改需求。
-
-### 常见偏差
-- 边做边重新设计，导致范围漂移。
-
-### 使用技能后的纠正
-- 严格按计划逐任务执行，只在必要时显式回到规划。
-
+- **上游：** `planning` skill 产出 PLAN.md
+- **下游：** 实现完成后走 `reviewing` skill（如需额外审查）或 `shipping` skill 发布
+- **相关 agent：** opc-executor / opc-reviewer
+- **相关 skill：** tdd（原子技术）/ agent-dispatch（原子技术）

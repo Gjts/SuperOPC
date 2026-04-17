@@ -1,18 +1,23 @@
 ---
 name: opc-ship
-description: Complete development branch — verify tests, merge/PR, cleanup
+description: Complete development branch — dispatches shipping skill which owns the workflow
 ---
 
-# /opc-ship — 发布
+# /opc-ship — 发布入口
 
-## 流程
+用户显式触发发布流程。等价于自然语言 "发布"。
 
-1. **调用 shipping 技能**
-   - 验证所有测试通过
-   - 显示变更概要
-   - 呈现 4 个选项（合并/PR/保持/丢弃）
-   - 执行用户选择
-   - 清理 worktree（如适用）
+## 动作
+
+调用 `shipping` skill。
+
+shipping skill 会派发 `opc-shipper` agent 执行完整流程（测试验证 → 一人公司发布清单 → 4 选项 → 执行 → worktree 清理）。
+
+## 入口要求
+
+- 已通过 `opc-reviewer` 审查判决 PASS
+- 工作树干净（或由 shipper 给出警告）
 
 ## 参数
+
 - 无（自动检测当前分支状态）
