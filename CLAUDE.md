@@ -100,21 +100,38 @@ Data flow: `Perception (events) → EventBus → DecisionEngine → DAGEngine �
 
 These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
 
-### 2. Skills are the main behavior layer
-`skills/` is the core of the system and is organized by operating domain:
-- `skills/product/` — product delivery pipeline
-- `skills/engineering/` — TDD, debugging, git worktrees, parallel execution
-- `skills/business/` — solo-founder operating skills across validation, pricing, finance, legal, GTM, content, and interviews
-- `skills/intelligence/` — market research, builder tracking, and **autonomous operations**
-- `skills/learning/` — learning/evolution workflows
-- `skills/using-superopc/` — meta-skill that explains how the whole system should be used
+### 2. Skills are the discovery + atomic-technique layer (v1.3 dispatcher pattern)
 
-If you need to understand how SuperOPC is supposed to behave, start with the relevant skill before reading individual agents.
+Starting in v1.3, SuperOPC adopts a **skill-dispatcher / agent-workflow** architecture. Skills are split into two kinds:
 
-### 3. Agents are specialist delegates
-`agents/` contains the specialist roles used by the workflows. `agents/registry.json` provides a capability-based routing registry that the DAG engine uses for semantic task-to-agent matching (replacing the v1 keyword-based routing).
+**Dispatcher skills** (≤ 30 lines each) — auto-trigger entries that delegate to an agent. They own the `description` that Claude's auto-discovery matches, and their job is to `Task()` the corresponding agent. They do NOT contain workflow steps, review rubrics, or templates.
 
-`AGENTS.md` defines the intended orchestration patterns, e.g. planner -> executor -> reviewer -> verifier, plus dedicated debugging, security-review, and autonomous operation flows.
+- `skills/product/brainstorming/` → dispatches `opc-planner` Phase 0-1
+- `skills/product/planning/` → dispatches `opc-planner` (full workflow)
+- `skills/product/implementing/` → dispatches `opc-executor`
+- `skills/product/reviewing/` → dispatches `opc-reviewer`
+- `skills/product/shipping/` → dispatches `opc-shipper`
+- `skills/using-superopc/workflow-modes/` → dispatches `opc-orchestrator` for 7-mode routing
+
+**Atomic skills** — self-contained reusable techniques invoked from within agents:
+
+- `skills/engineering/tdd/` — RED-GREEN-REFACTOR discipline
+- `skills/engineering/agent-dispatch/` — subagent dispatch with 2 modes (serial+review / wave parallel), merged from the former `parallel-agents` and `subagent-driven-development` skills
+- `skills/engineering/verification-loop/` — 4-layer verification + Nyquist sampling
+- `skills/engineering/debugging/` — hypothesis/evidence/elimination cycle
+- `skills/engineering/*-patterns/` — language/framework references
+- `skills/business/**` — solo-founder playbooks (validation, pricing, finance, legal, GTM, content, interviews)
+- `skills/intelligence/**` — market research, builder tracking, autonomous operations
+- `skills/learning/**` — learning/evolution workflows
+- `skills/using-superopc/SKILL.md` — meta-skill that bootstraps the whole system
+
+When understanding SuperOPC behaviour: for a **business activity** (plan/build/review/ship), the authoritative source is the **agent** file. For an **atomic technique** (TDD, dispatch, verification), the authoritative source is the **atomic skill**.
+
+### 3. Agents are the workflow owners
+
+`agents/` contains 17 specialist roles. Under the v1.3 dispatcher pattern, **each agent is the single source of truth for its workflow** — planner owns planning flow, executor owns implementation flow, reviewer owns review flow, shipper owns release flow.
+
+`agents/registry.json` provides a capability-based routing registry that the DAG engine uses for semantic task-to-agent matching (replacing the v1 keyword-based routing). `AGENTS.md` defines the intended orchestration patterns, including the main product pipeline (brainstorming → planning → implementing → reviewing → shipping) plus dedicated debugging, security-review, and autonomous-operation flows.
 
 ### 4. Rules and references are the quality system
 - `rules/common/` applies across the repo
