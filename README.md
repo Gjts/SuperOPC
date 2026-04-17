@@ -109,7 +109,7 @@ SuperOPC/
 │   │   ├── tdd/               # RED-GREEN-REFACTOR 铁律
 │   │   ├── debugging/         # 四阶段根因分析
 │   │   ├── git-worktrees/     # 隔离工作空间
-│   │   └── parallel-agents/   # 波次并行执行引擎
+│   │   └── agent-dispatch/    # 子代理派发（合并串行审查 + 波次并行）
 │   ├── business/              # 💼 商业运营
 │   │   ├── find-community/    # 找到你的社区
 │   │   ├── validate-idea/     # 验证商业想法
@@ -165,18 +165,13 @@ SuperOPC/
 │       ├── resume.md          # /opc-resume 恢复会话
 │       ├── session-report.md  # /opc-session-report 会话报告
 │       ├── ship.md            # /opc-ship 发布
-│       ├── quick.md           # /opc-quick 快速任务
 │       ├── review.md          # /opc-review 代码审查
-│       ├── next.md            # /opc-next 推荐下一步
+│       ├── opc.md             # /opc 统一入口（替代 do/next/discuss/explore/fast/quick）
 │       ├── health.md          # /opc-health 质量与目录体检
 │       ├── autonomous.md      # /opc-autonomous 有边界自主推进
-│       ├── fast.md            # /opc-fast 微任务执行
-│       ├── discuss.md         # /opc-discuss 纯讨论模式
-│       ├── explore.md         # /opc-explore 苏格拉底式探索
 │       ├── thread.md          # /opc-thread 上下文线程
 │       ├── seed.md            # /opc-seed 想法种子
-│       ├── backlog.md         # /opc-backlog 延后任务池
-│       └── do.md              # /opc-do 自然语言路由
+│       └── backlog.md         # /opc-backlog 延后任务池
 ├── hooks/                     # 钩子系统（质量门控）
 │   └── hooks.json             # 钩子注册表（ECC 模式）
 ├── mcp-configs/               # MCP 模板（Context7/Supabase/Sequential Thinking/Playwright）

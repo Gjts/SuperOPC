@@ -7,6 +7,92 @@
 
 ---
 
+## [1.3.0] - 架构重构：Skill-Dispatcher / Agent-Workflow 模式
+
+重大架构变更。将 `command / skill / agent` 三层职责重叠清理为**单源**结构：
+agent 独占 workflow，skill 分为两类（dispatcher 触发器 + atomic 原子技术），
+command 退化为薄入口。详见 `docs/REFACTOR-PLAN.md` 和 `docs/plans/2026-04-17-architecture-refactor.md`。
+
+### 架构
+
+- **三层契约**：Command (≤ 15 行) → Dispatcher Skill (≤ 30 行) → Agent (workflow 所有者) → Atomic Skill (按需调用)
+- **两种 skill**：dispatcher（6 个，派发 agent）/ atomic（～51 个，可复用技术）
+- **触发链路**：slash 命令和自然语言走**同一条** skill → agent 链路，零分叉
+
+### 新增
+
+- `references/plan-template.md` — PLAN.md 的 XML+Markdown 标准模板与字段语义
+- `references/review-rubric.md` — 五维度代码审查评分表（被 opc-reviewer 引用）
+- `agents/opc-shipper.md` — 新 agent，持有完整发布流程（测试验证 / 一人公司检查清单 / 4 选项 / worktree 清理）
+- `skills/engineering/agent-dispatch/` — 合并 `parallel-agents` + `subagent-driven-development`，统一 Mode A（串行+双阶段审查）和 Mode B（波次并行）
+- `commands/opc/opc.md` — 统一自然语言入口，派发 `workflow-modes` dispatcher
+
+### 变更（瘦身为 dispatcher skill）
+
+- `skills/product/brainstorming/SKILL.md` — 77 → 28 行
+- `skills/product/planning/SKILL.md` — 84 → 33 行
+- `skills/product/implementing/SKILL.md` — 109 → 31 行
+- `skills/product/reviewing/SKILL.md` — 81 → 26 行
+- `skills/product/shipping/SKILL.md` — 96 → 30 行
+- `skills/using-superopc/workflow-modes/SKILL.md` — 66 → 31 行
+
+### 变更（agent 吸收完整 workflow）
+
+- `agents/opc-planner.md` — 吸收 brainstorming 需求澄清 + 方案比较 + pre-flight gate，现为 Phase 0-5 完整流程
+- `agents/opc-executor.md` — 吸收子代理派发 + 双阶段审查 + TDD + 原子提交 + SUMMARY.md
+- `agents/opc-reviewer.md` — 引用 `references/review-rubric.md`，补齐一人公司可维护性 6 项检查
+- `agents/opc-orchestrator.md` — 双职责：7 模式路由决策树（吸收自 workflow-modes skill） + 流水线编排
+
+### 变更（command 瘦身）
+
+- `commands/opc/plan.md` — 55 → 15 行（仅派发 planning skill）
+- `commands/opc/build.md` — 41 → 15 行（仅派发 implementing skill）
+- `commands/opc/review.md` — 25 → 12 行（仅派发 reviewing skill）
+- `commands/opc/ship.md` — 19 → 14 行（仅派发 shipping skill）
+
+### 移除
+
+- 6 个路由命令合并为单一 `/opc`：
+  - `commands/opc/do.md`、`commands/opc/next.md`、`commands/opc/discuss.md`、`commands/opc/explore.md`、`commands/opc/fast.md`、`commands/opc/quick.md`
+- 2 个重复 atomic skill 合并为 `agent-dispatch`：
+  - `skills/engineering/parallel-agents/`
+  - `skills/engineering/subagent-driven-development/`（3 个 prompt 模板 git rename 到新目录）
+
+### 迁移映射（外部引用更新指南）
+
+| 旧路径 | 新路径 |
+|---|---|
+| `Skill("parallel-agents")` | `Skill("agent-dispatch")` Mode B |
+| `Skill("subagent-driven-development")` | `Skill("agent-dispatch")` Mode A |
+| `/opc-do` / `/opc-next` / `/opc-discuss` / `/opc-explore` / `/opc-fast` / `/opc-quick` | `/opc` + 自然语言（orchestrator 自动识别模式）|
+| `skills/product/*` 中查找 workflow 步骤 | 对应 agent 文件（`opc-planner` / `opc-executor` / `opc-reviewer` / `opc-shipper`）|
+| `agents/opc-planner.md` 内找 PLAN.md 模板 | `references/plan-template.md` |
+| `skills/product/reviewing/SKILL.md` 内找评分表 | `references/review-rubric.md` |
+
+### 统计
+
+| 项 | v1.2 | v1.3 | 变化 |
+|---|---|---|---|
+| Skill 文件 | 58 | 57 | -1 |
+| 其中 dispatcher skill | 0 | 6 | 新类型 |
+| Command 文件 | 27 | 22 | -5 |
+| Agent 文件 | 16 | 17 | +1（opc-shipper） |
+
+### 兼容性
+
+- `scripts/convert.py` 导出到 Cursor/Windsurf/Gemini/OpenCode/OpenClaw 自动跟随新结构，无需适配
+- `scripts/engine/` v2 engine 完全不受影响（只操作 `agents/registry.json` 和状态层）
+- `hooks/`、`rules/`、`references/` 现有文件不变
+- `agents/registry.json` schema 保持兼容，仅新增 `opc-shipper` 条目
+
+### 回滚
+
+- 重构基线：git tag `pre-refactor-v1.3`
+- 每个 Phase 独立 commit：Phase A（planning 链路样板）/ Phase B（4 链路复制）/ Phase C（atomic skill + command 收敛）/ Phase D（全局扫尾）
+- 任一 Phase 失败可单独 `git revert <commit>`
+
+---
+
 ## [1.2.0] - CLI 工具层：opc-tools 程序化基础
 
 ### 新增
