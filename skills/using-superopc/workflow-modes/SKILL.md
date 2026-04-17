@@ -1,66 +1,41 @@
 ---
 name: workflow-modes
-description: Use when deciding whether to discuss, explore, route, fast-execute, or recommend the next step in SuperOPC.
+description: Use when the task is ambiguous and the key question is "which mode should I enter?" rather than "what should I do?". Dispatches opc-orchestrator agent which owns the 7-mode decision tree (autonomous/discuss/explore/fast/quick/do/next) and the full pipeline orchestration.
 ---
 
-# 工作流模式
+# workflow-modes — 模式路由派发器
 
-当任务的关键问题不是“做什么”，而是“现在该用哪种工作方式”时，使用本技能。
+**触发条件：** 用户请求的目标清晰度不确定，或需要决定"现在该用哪种工作方式"。适用于 `/opc` 命令以及 "该用什么流程"、"帮我决定下一步"、"不确定怎么做" 等场景。
 
-## 模式选择
+**宣布：** "我调用 workflow-modes 技能，派发给 opc-orchestrator 选择最合适的工作模式。"
 
-### autonomous
-用于在已知边界内连续推进一段路线图工作，并在 blocker、验证欠债或人工检查点处停下。
+## 派发
 
-### discuss
-用于澄清与取舍，不执行。
+使用 Task 工具派发 `opc-orchestrator` agent：
 
-### explore
-用于苏格拉底式提问，先发现真正的问题。
+- **输入：** 用户的自然语言请求 + 当前 `.opc/STATE.md` 状态
+- **输出：** 选定的模式名 + 进入该模式的派发动作
 
-### fast
-用于一个明确的微任务，直接行内完成。
+## 7 种模式概览
 
-### quick
-用于 1-3 个任务的小流程。
+| 模式 | 一句话 |
+|---|---|
+| autonomous | 已知边界内连续推进路线图工作 |
+| discuss | 只澄清与取舍，不执行 |
+| explore | 苏格拉底式提问，先发现真正问题 |
+| fast | 一个明确微任务，直接行内完成 |
+| quick | 1-3 个任务的小流程 |
+| do | 自然语言意图路由到现有命令 |
+| next | 基于当前状态推荐下一动作 |
 
-### do
-用于把自然语言意图路由到现有命令或技能。
+**完整决策树在 `opc-orchestrator.md` 的"职责 A：模式选择决策树"。**
 
-### next
-用于基于当前状态推荐一个主动作。
+## 边界
 
-## 决策顺序
+- 本 skill **不做**决策 —— 决策树在 agent 内
+- **不内联** 7 模式细则 —— 在 agent 内
 
-1. 问题是否已经定义清楚？
-   - 否 → `explore`
-2. 问题清楚但要做方案取舍？
-   - 是 → `discuss`
-3. 是否想在明确边界内连续推进，而不是每步都重新确认？
-   - 是 → `autonomous`
-4. 是否只是一个明确微任务？
-   - 是 → `fast`
-5. 是否需要轻量任务流？
-   - 是 → `quick`
-6. 用户只是说一句自然语言，不知道怎么开始？
-   - 是 → `do`
-7. 用户只想知道下一步？
-   - 是 → `next`
+## 关联
 
-## 原则
-
-- 优先复用已有命令
-- `do` 是路由器，不是新工作流引擎
-- `fast` 不要膨胀成 `quick`
-- `discuss` / `explore` 不要偷偷进入实现
-
-## 压力测试
-
-### 高压场景
-- 用户同时给出模糊目标和一点实现细节时，容易直接切进执行，没先判断该走 explore、discuss 还是 quick。
-
-### 常见偏差
-- 见到“做一下”就默认进入 fast 或 quick，导致问题还没定义清楚就开始产出。
-
-### 使用技能后的纠正
-- 先按任务清晰度和推进边界选模式：未定义清楚先 explore，要取舍先 discuss，小而明确再用 fast/quick。
+- **相关 agent：** opc-orchestrator（模式路由器 + 流水线编排器）
+- **下游 skill：** planning / implementing / reviewing / shipping（模式选定后派发）
