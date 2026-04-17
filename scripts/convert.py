@@ -28,10 +28,12 @@ SKILL_DIRS = [
     "skills/product",
     "skills/engineering",
     "skills/business",
-    "skills/intelligence",
     "skills/learning",
     "skills/using-superopc",
 ]
+# NOTE (v1.4.0): skills/intelligence/ 已在 v1.4 精简中全部下沉到 references/
+# （market-research / follow-builders → references/intelligence/；
+#  autonomous-ops → skills/using-superopc/autonomous-ops/）。
 AGENT_DIR = "agents"
 COMMAND_DIR = "commands/opc"
 

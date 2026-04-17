@@ -1,7 +1,7 @@
 {
   "name": "superopc",
   "description": "SuperOPC — The One-Person Company Operating System. AI-powered workflow, agents, skills, MCP templates, and multi-runtime exports for solo founders who build, ship, and grow without a team.",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "author": {
     "name": "Gjts"
   },
@@ -31,6 +31,7 @@
   ],
   "agents": [
     "./agents/opc-assumptions-analyzer.md",
+    "./agents/opc-business-advisor.md",
     "./agents/opc-codebase-mapper.md",
     "./agents/opc-debugger.md",
     "./agents/opc-doc-verifier.md",
