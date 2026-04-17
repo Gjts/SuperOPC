@@ -25,9 +25,9 @@ Most changes in this repo are documentation and workflow changes; the main execu
 
 - Treat this repo as a **one-person company operating system** for solo founders: product, engineering, business, and market-intelligence workflows live side by side.
 - Existing repo guidance is **skill-first**: if a relevant skill exists, prefer the skill-driven workflow over ad-hoc behavior.
-- [!!CRITICAL RED FLAG!!] **Anti-Build-Trap Guardrail (Minimalist Entrepreneur):** Before executing any code generation or `brainstorming` for a new product/feature idea, you MUST force the user through the `validate-idea` and `find-community` skills. If there is no real-world proof of a paying community or validated niche, halt coding operations immediately and run `/opc-discuss`.
-- Feature work follows the documented pipeline: `brainstorming -> planning -> implementing -> reviewing -> shipping`.
-- Bug work follows: `debugging -> tdd -> implementing`.
+- [!!CRITICAL RED FLAG!!] **Anti-Build-Trap Guardrail (Minimalist Entrepreneur):** Before executing any code generation for a new product/feature idea, you MUST route through the `business-advisory` skill → `opc-business-advisor` agent, which enforces `validate-idea` + `find-community` sub-activities from `references/business/` before permitting construction.
+- Feature work pipeline: `planning -> implementing -> reviewing -> shipping`（`planning` skill 已吸收旧 brainstorming 的需求澄清）.
+- Bug work: `debugging skill -> opc-debugger (hypothesis-evidence-elimination) -> calls tdd skill in fix phase`.
 - TDD is a repo-level expectation for behavior-changing work; `rules/common/testing.md` sets an **80% coverage target** and documents the RED/GREEN/REFACTOR loop.
 - Commits are expected to use **Conventional Commits**; `rules/common/git-workflow.md` also forbids bypassing hooks with `--no-verify`.
 - `AGENTS.md` instructs Claude to delegate proactively to specialist agents via `dag_engine.py` (v2) for planning, execution, review, verification, debugging, security review, and documentation.
@@ -100,38 +100,55 @@ Data flow: `Perception (events) → EventBus → DecisionEngine → DAGEngine �
 
 These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
 
-### 2. Skills are the discovery + atomic-technique layer (v1.3 dispatcher pattern)
+### 2. Skills are the discovery + atomic-technique layer (v1.4 — 17 skills)
 
-Starting in v1.3, SuperOPC adopts a **skill-dispatcher / agent-workflow** architecture. Skills are split into two kinds:
+Starting in v1.3 and sharpened in **v1.4**, SuperOPC enforces a strict **skill-dispatcher / agent-workflow** contract. skill 空间只保留真正驱动 agent workflow 的入口 + 被 agent 调用的刚性原子技术 + 系统元层规则。Knowledge-base content (technical patterns / business playbooks) has been sunk into `references/`.
 
-**Dispatcher skills** (≤ 30 lines each) — auto-trigger entries that delegate to an agent. They own the `description` that Claude's auto-discovery matches, and their job is to `Task()` the corresponding agent. They do NOT contain workflow steps, review rubrics, or templates.
+**Dispatcher skills** (≤ 30 lines each, 8 total) — auto-trigger entries that delegate to an agent. They own the `description` that Claude's auto-discovery matches, and their job is to `Task()` the corresponding agent. They do NOT contain workflow steps, review rubrics, or templates.
 
-- `skills/product/brainstorming/` → dispatches `opc-planner` Phase 0-1
-- `skills/product/planning/` → dispatches `opc-planner` (full workflow)
+- `skills/product/planning/` → dispatches `opc-planner` (**吸收了旧 brainstorming**，Phase 0-5 完整流程)
 - `skills/product/implementing/` → dispatches `opc-executor`
-- `skills/product/reviewing/` → dispatches `opc-reviewer`
+- `skills/product/reviewing/` → dispatches `opc-reviewer` (with Quick/Standard/Deep depth)
 - `skills/product/shipping/` → dispatches `opc-shipper`
+- `skills/engineering/debugging/` → dispatches `opc-debugger`
+- `skills/engineering/security-review/` → dispatches `opc-security-auditor`
+- `skills/business/advisory/` → dispatches `opc-business-advisor` (**v1.4 新增**，一人公司商业活动统一入口)
 - `skills/using-superopc/workflow-modes/` → dispatches `opc-orchestrator` for 7-mode routing
 
-**Atomic skills** — self-contained reusable techniques invoked from within agents:
+**Rigid atomic skills** (4 total) — self-contained reusable techniques invoked from within agents:
 
 - `skills/engineering/tdd/` — RED-GREEN-REFACTOR discipline
-- `skills/engineering/agent-dispatch/` — subagent dispatch with 2 modes (serial+review / wave parallel), merged from the former `parallel-agents` and `subagent-driven-development` skills
 - `skills/engineering/verification-loop/` — 4-layer verification + Nyquist sampling
-- `skills/engineering/debugging/` — hypothesis/evidence/elimination cycle
-- `skills/engineering/*-patterns/` — language/framework references
-- `skills/business/**` — solo-founder playbooks (validation, pricing, finance, legal, GTM, content, interviews)
-- `skills/intelligence/**` — market research, builder tracking, autonomous operations
-- `skills/learning/**` — learning/evolution workflows
-- `skills/using-superopc/SKILL.md` — meta-skill that bootstraps the whole system
+- `skills/engineering/agent-dispatch/` — subagent dispatch with 2 modes
+- `skills/engineering/git-worktrees/` — isolated workspace
 
-When understanding SuperOPC behaviour: for a **business activity** (plan/build/review/ship), the authoritative source is the **agent** file. For an **atomic technique** (TDD, dispatch, verification), the authoritative source is the **atomic skill**.
+**Meta skills** (4 total) — system-level runtime rules consumed by decision engine / cruise controller / hooks:
+
+- `skills/using-superopc/SKILL.md` — meta-skill that bootstraps the whole system
+- `skills/using-superopc/session-management/` — HANDOFF / pause / resume / report rules
+- `skills/using-superopc/developer-profile/` — 8-dimension profiling across sessions
+- `skills/using-superopc/autonomous-ops/` — GREEN / YELLOW / RED permission zones + Anti-Build-Trap guardrail
+
+**Learning skill** (1 total):
+
+- `skills/learning/continuous-learning/` — PostToolUse observation pipeline + instinct evolution
+
+**Knowledge base sunk to `references/` (v1.4 change):**
+
+- `references/patterns/engineering/*.md` — 13 technical-stack patterns (nextjs / dotnet / postgres / docker / kotlin-compose / api-design / ADR / codebase-onboarding / database-migrations / deployment / e2e-testing / frontend / backend)
+- `references/business/*.md` — 19 solo-founder playbooks (pricing, mvp, validate-idea, first-customers, find-community, processize, seo, content-engine, brand-voice, marketing-plan, grow-sustainably, user-interview, investor-materials, legal-basics, finance-ops, company-values, product-lens, daily-standup, minimalist-review)
+- `references/intelligence/*.md` — market-research / follow-builders (referenced by `opc-researcher`)
+- `references/review-rubric.md` — 5-dimension rubric + Quick/Standard/Deep depth (referenced by `opc-reviewer`)
+- `references/security-checklist.md` — OWASP Top 10 full checklist (referenced by `opc-security-auditor` and `opc-reviewer` Deep)
+- `references/skill-authoring.md` — skill author handbook (merged from former `skill-from-masters` + `writing-skills`)
+
+When understanding SuperOPC behaviour: for a **workflow activity** (plan/build/review/ship/debug/security/business-advise), the authoritative source is the **agent** file. For an **atomic technique** (TDD, dispatch, verification, worktrees), the authoritative source is the **atomic skill**. For **reference content** (framework patterns, playbooks, rubrics, checklists), the authoritative source is `references/`.
 
 ### 3. Agents are the workflow owners
 
-`agents/` contains 17 specialist roles. Under the v1.3 dispatcher pattern, **each agent is the single source of truth for its workflow** — planner owns planning flow, executor owns implementation flow, reviewer owns review flow, shipper owns release flow.
+`agents/` contains **18 specialist roles** (v1.4 added `opc-business-advisor`). Under the v1.3 dispatcher pattern sharpened in v1.4, **each agent is the single source of truth for its workflow** — planner owns planning, executor owns implementation, reviewer owns review, shipper owns release, business-advisor owns commercial decisions.
 
-`agents/registry.json` provides a capability-based routing registry that the DAG engine uses for semantic task-to-agent matching (replacing the v1 keyword-based routing). `AGENTS.md` defines the intended orchestration patterns, including the main product pipeline (brainstorming → planning → implementing → reviewing → shipping) plus dedicated debugging, security-review, and autonomous-operation flows.
+`agents/registry.json` provides a capability-based routing registry that the DAG engine uses for semantic task-to-agent matching (replacing the v1 keyword-based routing). `AGENTS.md` defines the intended orchestration patterns, including the main product pipeline (planning → implementing → reviewing → shipping) plus dedicated debugging, security-review, business-advisory, and autonomous-operation flows.
 
 ### 4. Rules and references are the quality system
 - `rules/common/` applies across the repo
@@ -180,7 +197,7 @@ The plugin manifest should stay aligned with the full shipped agent set in `agen
 
 ## Workflow artifacts and expectations
 
-- `/opc-plan` runs brainstorming + planning and outputs a `PLAN.md` artifact (the command docs refer to `docs/plans/`).
+- `/opc-plan` runs the unified planning flow (Phase 0-5 in `opc-planner`, covering both clarification and decomposition) and outputs a `PLAN.md` artifact (the command docs refer to `docs/plans/`).
 - `/opc-build` consumes a `PLAN.md`, executes tasks with TDD, and produces `SUMMARY.md`.
 - `/opc-ship` verifies tests, summarizes changes, and handles merge / PR / keep / discard flows.
 - `/opc-health` validates `.opc` integrity, requirements coverage, summary traceability, plugin / hook wiring, and internal markdown links.
@@ -230,7 +247,7 @@ The decision engine (`scripts/engine/decision_engine.py`) determines actions thr
 - `AGENTS.md` — orchestration rules and specialist-agent usage
 - `agents/registry.json` — capability-based agent routing registry
 - `skills/using-superopc/SKILL.md` — meta-skill for how the system expects Claude to operate
-- `skills/intelligence/autonomous-ops/SKILL.md` — autonomous operation permission zones
+- `skills/using-superopc/autonomous-ops/SKILL.md` — autonomous operation permission zones (moved from `skills/intelligence/` in v1.4)
 - `hooks/hooks.json` — actual hook registrations
 - `rules/common/testing.md` and `rules/common/git-workflow.md` — repo-level quality and git expectations
 - `scripts/engine/` — v2 engine layer (event bus, decision engine, cruise controller, etc.)

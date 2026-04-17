@@ -97,61 +97,57 @@ SuperOPC 内置质量门控钩子（源自 [ECC hooks.json](https://github.com/n
 
 ```
 SuperOPC/
-├── skills/                    # 技能系统（核心）
-│   ├── using-superopc/        # 元技能：如何使用系统
-│   ├── product/               # 🚀 产品开发
-│   │   ├── brainstorming/     # 头脑风暴 → 设计方案
-│   │   ├── planning/          # 计划分解 → PLAN.md
-│   │   ├── implementing/      # 子代理执行 + TDD
-│   │   ├── reviewing/         # 五维度代码审查
-│   │   └── shipping/          # 发布 → 合并/PR
-│   ├── engineering/           # 🔧 工程质量
+├── skills/                    # 技能系统（v1.4 精简 17 个）
+│   ├── using-superopc/        # 🧭 元层（5 个）
+│   │   ├── SKILL.md           # 总则：如何发现与调用 skill
+│   │   ├── session-management/# HANDOFF / pause / resume / report
+│   │   ├── developer-profile/ # 8 维度开发者画像
+│   │   ├── autonomous-ops/    # GREEN/YELLOW/RED 三区权限（从 intelligence/ 迁入）
+│   │   └── workflow-modes/    # 派发 opc-orchestrator 做 7 模式路由
+│   ├── product/               # 🚀 产品派发器（4 个）
+│   │   ├── planning/          # 派发 opc-planner（吸收旧 brainstorming）
+│   │   ├── implementing/      # 派发 opc-executor
+│   │   ├── reviewing/         # 派发 opc-reviewer（Quick/Standard/Deep）
+│   │   └── shipping/          # 派发 opc-shipper
+│   ├── engineering/           # 🔧 工程（6 个：2 派发器 + 4 原子）
+│   │   ├── debugging/         # 派发 opc-debugger
+│   │   ├── security-review/   # 派发 opc-security-auditor
 │   │   ├── tdd/               # RED-GREEN-REFACTOR 铁律
-│   │   ├── debugging/         # 四阶段根因分析
-│   │   ├── git-worktrees/     # 隔离工作空间
-│   │   └── agent-dispatch/    # 子代理派发（合并串行审查 + 波次并行）
-│   ├── business/              # 💼 商业运营
-│   │   ├── find-community/    # 找到你的社区
-│   │   ├── validate-idea/     # 验证商业想法
-│   │   ├── mvp/               # 最小可行产品
-│   │   ├── processize/        # 先手动后自动
-│   │   ├── first-customers/   # 找前 100 个客户
-│   │   ├── pricing/           # 定价策略
-│   │   ├── legal-basics/      # 法务基础与合规边界
-│   │   ├── finance-ops/       # 财务运营与 MRR / Burn / Runway
-│   │   ├── investor-materials/# 融资材料
-│   │   ├── product-lens/      # 产品视角审查
-│   │   ├── seo/               # 搜索增长
-│   │   ├── content-engine/    # 内容引擎
-│   │   ├── brand-voice/       # 品牌语调
-│   │   ├── user-interview/    # The Mom Test 访谈
-│   │   ├── marketing-plan/    # 内容营销
-│   │   ├── grow-sustainably/  # 可持续增长
-│   │   ├── company-values/    # 公司价值观
-│   │   └── minimalist-review/ # 极简审查
-│   ├── intelligence/          # 🔍 市场情报
-│   │   ├── market-research/   # 多源市场调研
-│   │   └── follow-builders/   # 建造者追踪
-│   └── learning/              # 📚 学习进化
-│       ├── skill-from-masters/# 从大师学习
-│       ├── writing-skills/    # 创建新技能
-│       └── continuous-learning/# 持续改进
-├── agents/                    # 专业代理（15 个）
+│   │   ├── verification-loop/ # 4 层验证 + Nyquist 采样
+│   │   ├── agent-dispatch/    # 子代理派发（Mode A/B）
+│   │   └── git-worktrees/     # 隔离工作空间
+│   ├── business/              # 💼 商业（1 个，统一入口）
+│   │   └── advisory/          # 派发 opc-business-advisor → 按 references/business/ 执行 20 个子活动
+│   └── learning/              # 📚 学习（1 个）
+│       └── continuous-learning/ # PostToolUse 观察管道 + 本能演化
+├── references/                # 📖 知识库（v1.4 新层）
+│   ├── business/              # 19 个一人公司 playbook（定价/验证/MVP/获客/营销/SEO/法务/财务...）
+│   ├── patterns/engineering/  # 13 个技术栈 patterns（nextjs/dotnet/postgres/docker/kotlin-compose/api-design/ADR/...）
+│   ├── intelligence/          # market-research / follow-builders 方法论
+│   ├── security-checklist.md  # OWASP Top 10 完整清单
+│   ├── review-rubric.md       # 代码审查 5 维度 + Quick/Standard/Deep
+│   ├── skill-authoring.md     # skill 作者手册（合并 skill-from-masters + writing-skills）
+│   ├── plan-template.md       # PLAN.md 模板
+│   ├── gates.md / verification-patterns.md / anti-patterns.md / ...（其他 v0.x 参考）
+├── agents/                    # 专业代理（18 个，v1.4 +1）
 │   ├── opc-orchestrator.md    # 全流程编排器
-│   ├── opc-planner.md         # 规划专家
+│   ├── opc-planner.md         # 规划专家（Phase 0-5 完整流程）
 │   ├── opc-executor.md        # 执行专家
-│   ├── opc-reviewer.md        # 审查专家
+│   ├── opc-reviewer.md        # 审查专家（Quick/Standard/Deep）
+│   ├── opc-shipper.md         # 发布专家
 │   ├── opc-researcher.md      # 研究专家
 │   ├── opc-verifier.md        # 验证专家
-│   ├── opc-debugger.md        # 科学方法调试（假设-证据-排除）
-│   ├── opc-security-auditor.md # OWASP 安全审计
+│   ├── opc-debugger.md        # 科学方法调试（假设-证据-排除+修复规程）
+│   ├── opc-security-auditor.md # OWASP Top 10 + ASVS 审计
+│   ├── opc-business-advisor.md # 一人公司商业顾问（v1.4 新增，20 个子活动）
 │   ├── opc-doc-writer.md      # 文档生成
 │   ├── opc-doc-verifier.md    # 文档准确性验证
 │   ├── opc-codebase-mapper.md # 4 维代码地图
 │   ├── opc-ui-auditor.md      # 6 支柱 UI 审计
 │   ├── opc-plan-checker.md    # 8 维度计划验证
 │   ├── opc-assumptions-analyzer.md # 隐藏假设分析
-│   └── opc-roadmapper.md      # 产品路线图
+│   ├── opc-roadmapper.md      # 产品路线图
+│   └── opc-intel-updater.md   # 代码库索引刷新
 ├── commands/                  # 斜杠命令
 │   └── opc/
 │       ├── start.md           # /opc-start 初始化项目

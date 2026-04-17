@@ -310,28 +310,46 @@
 
 ---
 
-### v1.4.0 — 领域代理库
+### v1.4.0 [已完成] — Skill 精简 + Agent 吸收 + references/ 知识层
 
-**目标：** 融合 Agency-Agents 192代理，按一人公司需求精选
+**目标：** 把 v1.3 三层契约推到极限。skill 空间只保留"真正驱动 agent workflow"的入口，
+柔性知识下沉到 `references/`。
 
-#### 工程代理（精选自 engineering/ 26个）
-- [ ] backend-architect, frontend-developer, mobile-app-builder
-- [ ] devops-automator, security-engineer, database-optimizer
-- [ ] ai-engineer, rapid-prototyper, technical-writer
+> **范围调整：** 原计划 v1.4.0 的"领域代理库（融合 Agency-Agents 192 代理）" 实际上
+> 已在早期版本分散落地（registry.json 含 5 个 domain agent：devops / seo / content /
+> growth / pricing）。v1.4 重新聚焦为 skill/agent/references 三层责任重划分。
 
-#### 营销代理（精选自 marketing/ 29个）
-- [ ] seo-specialist, content-creator, growth-hacker
-- [ ] social-media-strategist, podcast-strategist
-- [ ] linkedin-content-creator, twitter-engager, reddit-community-builder
+#### 架构精简
+- [x] Skill 从 ~30 → 17（-43%），只保留驱动型 skill + 原子技术 + 元层
+- [x] Agent 从 17 → 18，新增 `opc-business-advisor` 作为 20 个商业子活动统一入口
+- [x] references/ 成为第四层，承载 13 patterns + 19 playbook + 3 rubric/checklist
 
-#### 策略+其他代理
-- [ ] strategy-nexus（战略协调）, strategy-playbooks（战术手册）
-- [ ] product-manager, design-brand-guardian, sales-closer
-- [ ] support-agent, testing-qa-engineer
+#### 新增 agent + skill
+- [x] `agents/opc-business-advisor.md` — 一人公司商业顾问（Phase 0 子活动识别 + Anti-Build-Trap HARD-GATE）
+- [x] `skills/business/advisory/SKILL.md` — 商业活动统一派发器（50 行）
 
-#### 代理路由器
-- [ ] 用户意图自动匹配最佳领域代理
-- [ ] 领域代理与核心代理(opc-*)协作协议
+#### agent 吸收完整 workflow
+- [x] `opc-reviewer.md` 吸收 Quick / Standard / Deep 三级审查深度
+- [x] `opc-security-auditor.md` 吸收 OWASP Top 10 完整 workflow
+- [x] `opc-debugger.md` 吸收修复规程（失败测试先行 / ≥3 次失败质疑架构）
+- [x] `opc-planner.md` 已在 v1.3 吸收 brainstorming Phase 0-1，v1.4 正式下线独立 skill
+
+#### skill 瘦身 / 合并
+- [x] security-review SKILL: 139 → 35 行（dispatcher 化）
+- [x] debugging SKILL: 118 → 37 行（dispatcher 化）
+- [x] brainstorming 合并入 planning（都派发 opc-planner）
+- [x] skill-from-masters + writing-skills → `references/skill-authoring.md`
+
+#### 知识下沉到 references/
+- [x] `references/business/` — 19 个一人公司 playbook（pricing / mvp / validate-idea / ...）
+- [x] `references/patterns/engineering/` — 13 个技术栈 patterns（nextjs / dotnet / postgres / ...）
+- [x] `references/intelligence/` — market-research / follow-builders
+- [x] `references/security-checklist.md` — OWASP Top 10
+- [x] `references/review-rubric.md` — 5 维度 + Quick/Standard/Deep
+- [x] `references/skill-authoring.md` — skill 作者手册
+
+#### 元层稳固
+- [x] `skills/using-superopc/autonomous-ops/` — 从 intelligence/ 迁入，GREEN/YELLOW/RED 三区权限
 
 
 ### v1.5.0 — 高级调试 + 取证
@@ -468,7 +486,7 @@
 | 智能 | v1.1.0 | 画像+学习 | 高 | ~12 | GSD profiling+learnings |
 | | v1.2.0 | CLI工具层 | 高 | ~15 | GSD gsd-tools 19模块 |
 | | v1.3.0 | 安全强化 | 中 | ~8 | GSD security+OWASP |
-| | v1.4.0 | 领域代理库 | 高 | ~25 | Agency-Agents 192精选 |
+| | v1.4.0 | Skill 精简 + references/ 层 | 高 | ~50 | 重构（无外部来源） |
 | | v1.5.0 | 调试+取证 | 中 | ~10 | GSD debug/forensics/undo |
 | 平台 | v1.6.0 | 工作流引擎 | 高 | ~20 | GSD 68工作流 |
 | | v1.7.0 | 国际化 | 中 | ~30 | GSD i18n+Agency中国市场 |

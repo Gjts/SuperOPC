@@ -31,50 +31,65 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 
 **其他环境:** 查看平台文档了解技能加载方式。
 
-## 技能体系
+## 技能体系（v1.4 精简后，17 个）
 
-### 🚀 产品开发（Product）
+v1.4.0 起采用严格的 **skill-dispatcher / agent-workflow** 契约。skill 空间只保留
+真正"驱动 agent workflow"的入口 + 被 agent 调用的刚性原子技术 + 系统元层规则。
+知识库类（技术栈 patterns / 商业 playbook）已下沉到 `references/`。
+
+### 🚀 派发器（Dispatcher — 7 个）
+触发后 `Task()` 派发给对应 agent。agent 是 workflow 的唯一事实源。
+
+| 技能 | 派发目标 Agent | 何时使用 |
+|------|---------------|---------|
+| **planning** | opc-planner (Phase 0-5) | 新功能 / 模糊需求 / 已批准设计 → PLAN.md（已吸收旧 brainstorming） |
+| **implementing** | opc-executor | 有 PLAN.md 后执行任务（TDD + 子代理派发 + 原子提交） |
+| **reviewing** | opc-reviewer | 代码 / 功能完成后五维度审查（Quick / Standard / Deep） |
+| **shipping** | opc-shipper | 发布 / 合并 / PR / worktree 清理 |
+| **debugging** | opc-debugger | Bug / 异常 / 测试失败 → 四阶段根因分析 |
+| **security-review** | opc-security-auditor | OWASP Top 10 + 密钥 / 注入 / 配置审计 |
+| **business-advisory** | opc-business-advisor | 一人公司商业活动入口：定价 / 验证 / MVP / 获客 / 营销 / SEO / 法务 / 财务等 |
+
+### 🔧 刚性原子（Rigid Atomic — 4 个）
+被 agent workflow 按需调用的单一技术规则。
+
 | 技能 | 何时使用 |
 |------|---------|
-| **brainstorming** | 新功能、新产品、任何需要设计的事 |
-| **planning** | 设计批准后，创建实施计划 |
-| **implementing** | 有计划后，执行开发任务 |
-| **reviewing** | 代码/功能完成后，质量审查 |
-| **shipping** | 开发完成，准备发布/合并 |
-
-### 🔧 工程质量（Engineering）
-| 技能 | 何时使用 |
-|------|---------|
-| **tdd** | 写新功能、修 bug、重构 — 先写测试 |
-| **debugging** | 遇到 bug、错误、异常行为 |
+| **tdd** | 写新功能、修 bug、重构 — 先写测试（RED-GREEN-REFACTOR 铁律） |
+| **verification-loop** | 4 层验证 + Nyquist 采样 + 节点修复 |
+| **agent-dispatch** | 子代理派发（Mode A 串行+双阶段审查 / Mode B 波次并行） |
 | **git-worktrees** | 需要隔离工作空间开发新功能 |
 
-### 💼 商业运营（Business）
-| 技能 | 何时使用 |
-|------|---------|
-| **find-community** | 寻找商业想法、找社区 |
-| **validate-idea** | 测试商业想法是否值得追求 |
-| **mvp** | 准备构建第一个产品 |
-| **processize** | 先手动交付价值再写代码 |
-| **first-customers** | 有产品，需要找前100个客户 |
-| **pricing** | 定价或调价 |
-| **marketing-plan** | 有 PMF，准备规模化内容营销 |
-| **grow-sustainably** | 决定支出、招聘或扩张 |
-| **company-values** | 定义文化、准备招聘 |
-| **minimalist-review** | 检验任何商业决策 |
+### 🧭 派发器（元层 Meta — 1 个）
 
-### 🔍 市场情报（Intelligence）
-| 技能 | 何时使用 |
-|------|---------|
-| **market-research** | 调研市场、分析趋势、竞品分析 |
-| **follow-builders** | 追踪行业建造者的最新动态 |
+| 技能 | 派发目标 | 何时使用 |
+|------|----------|---------|
+| **workflow-modes** | opc-orchestrator | 7 模式路由决策（watch / assist / cruise / fast / quick / discuss / explore） |
 
-### 📚 学习进化（Learning）
+### 🗂️ 元层（Meta — 4 个）
+系统级运行规则，由引擎 / 决策器 / 钩子消费。
+
+| 技能 | 作用 |
+|------|------|
+| **using-superopc/SKILL.md**（本文件） | 总则：如何发现与调用 skill |
+| **session-management** | 会话 HANDOFF / 暂停 / 恢复 / 报告规则 |
+| **developer-profile** | 8 维度开发者画像跨会话持久化 |
+| **autonomous-ops** | GREEN / YELLOW / RED 三区权限模型 + Anti-Build-Trap |
+
+### � 学习（Learning — 1 个）
+
 | 技能 | 何时使用 |
 |------|---------|
-| **skill-from-masters** | 从行业大师学习，创建新技能 |
-| **writing-skills** | 创建或改进 SuperOPC 技能 |
-| **continuous-learning** | 从交互中持续学习和改进 |
+| **continuous-learning** | 交互中持续学习（PostToolUse 观察管道 + 模式检测 + 本能演化） |
+
+### � 已下沉到 references/（不再是 skill）
+
+- `references/patterns/engineering/` — 13 个技术栈 patterns（nextjs / dotnet / postgres / docker / kotlin-compose / api-design / ADR / codebase-onboarding / database-migrations / deployment / e2e-testing / frontend / backend）
+- `references/business/` — 19 个一人公司 playbook（pricing / mvp / validate-idea / first-customers / find-community / processize / seo / content-engine / brand-voice / marketing-plan / grow-sustainably / user-interview / investor-materials / legal-basics / finance-ops / company-values / product-lens / daily-standup / minimalist-review）
+- `references/intelligence/` — market-research / follow-builders（由 opc-researcher 引用）
+- `references/review-rubric.md` — 代码审查五维度 + Quick/Standard/Deep 三级深度
+- `references/security-checklist.md` — OWASP Top 10 完整清单
+- `references/skill-authoring.md` — skill 作者手册（合并 skill-from-masters + writing-skills）
 
 ## 核心规则
 
@@ -101,14 +116,15 @@ digraph skill_flow {
 
 当多个技能可能适用时：
 
-1. **过程技能优先**（brainstorming, debugging）— 决定怎么做
-2. **执行技能其次**（implementing, tdd）— 指导执行
-3. **商业技能平行**（可与技术技能同时考虑）
+1. **过程派发器优先**（planning, debugging）— 决定怎么做
+2. **执行派发器其次**（implementing, reviewing, shipping）— 指导执行
+3. **刚性原子**（tdd, verification-loop）被 agent workflow 按需调用
+4. **商业派发器平行**（business-advisory，可与技术派发器同时考虑）
 
-"构建 X" → brainstorming 优先，然后实施技能
-"修复 Bug" → debugging 优先，然后 TDD
-"这个想法怎么样" → validate-idea
-"怎么定价" → pricing
+"构建 X" → planning 优先（吸收了 brainstorming），然后 implementing
+"修复 Bug" → debugging 优先（派发 opc-debugger），修复阶段调用 tdd
+"这个想法怎么样" → business-advisory（opc-business-advisor 走 validate-idea 子活动）
+"怎么定价" → business-advisory（opc-business-advisor 委派 opc-pricing-analyst）
 
 ## 红旗 — 停下来，你在合理化
 
@@ -134,10 +150,19 @@ digraph skill_flow {
 ### 使用技能后的纠正
 - 先匹配并调用最相关的技能，再按技能规定宣布用途、执行流程与输出。
 
-## 技能类型
+## 技能类型（v1.4 分类）
 
-**刚性技能**（TDD, debugging）：严格遵循，不可适配跳过纪律。
+**派发器 skill**（≤ 30 行）：识别触发词后 `Task()` 派发给 agent。不包含 workflow。
+例：`planning`、`implementing`、`reviewing`、`shipping`、`debugging`、`security-review`、
+`business-advisory`、`workflow-modes`。
 
-**柔性技能**（brainstorming, market-research）：适配原则到具体场景。
+**刚性原子 skill**（60-150 行）：被 agent workflow 调用的单一纪律。含铁律 + 违规处罚。
+例：`tdd`、`verification-loop`、`agent-dispatch`、`git-worktrees`。
 
-技能本身会告诉你它是哪种。
+**元层 skill**：系统级运行规则，由引擎 / 决策器消费，不由 AI 手动触发。
+例：`using-superopc/SKILL.md`、`session-management`、`developer-profile`、`autonomous-ops`。
+
+**学习 skill**：交互中持续学习。
+例：`continuous-learning`。
+
+v1.4 起不再有"柔性 skill"——柔性内容全部下沉到 `references/`，由 agent workflow 引用。

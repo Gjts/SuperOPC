@@ -7,6 +7,85 @@
 
 ---
 
+## [1.4.0] - Skill 精简 + Agent 吸收 + references/ 知识层
+
+**主题：** 把 v1.3 的三层契约推到极限。skill 空间只保留"真正驱动 agent workflow"的入口和被 agent 调用的原子技术；柔性知识内容（技术栈 patterns / 商业 playbook / rubric / checklist）全部下沉到 `references/` 供 agent workflow 引用。详见 `docs/plans/2026-04-17-architecture-refactor.md`。
+
+### 架构
+
+- **四层契约**：Command → Dispatcher Skill → Agent → (Atomic Skill | references/)
+- **skill 从 30 → 17**（-43%）：只保留驱动型 skill，柔性知识下沉
+- **agent 从 17 → 18**：新增 `opc-business-advisor` 作为 20 个商业子活动的统一入口
+- **references/ 成为第四层**：13 个技术 patterns + 19 个商业 playbook + 2 个 intelligence 方法论 + 3 个 rubric/checklist/authoring
+
+### 新增
+
+- **`agents/opc-business-advisor.md`** — 一人公司商业顾问 agent，持有 20 个商业子活动的识别 / 路由 / 执行 workflow。Phase 0 子活动识别 + Anti-Build-Trap HARD-GATE + Phase 2 按 `references/business/<sub-activity>.md` 方法论执行或委派 domain agent
+- **`skills/business/advisory/SKILL.md`** — 商业活动统一派发器（50 行）
+- **`references/business/*.md`** — 19 个一人公司 playbook（从 skills/business/ 迁移）
+- **`references/patterns/engineering/*.md`** — 13 个技术栈 patterns（从 skills/engineering/ 迁移）
+- **`references/intelligence/*.md`** — market-research / follow-builders（从 skills/intelligence/ 迁移）
+- **`references/security-checklist.md`** — OWASP Top 10 完整清单（从旧 security-review SKILL 抽取）
+- **`references/review-rubric.md`** 扩展三级审查深度（Quick/Standard/Deep，从旧 code-review-pipeline 抽取）
+- **`references/skill-authoring.md`** — skill 作者手册（合并 skill-from-masters + writing-skills）
+
+### 变更（agent 吸收完整 workflow）
+
+- `opc-reviewer.md` — 吸收 Quick/Standard/Deep 三级审查深度（Wave 2.2）
+- `opc-security-auditor.md` — 吸收 OWASP Top 10 完整 workflow，引用 `references/security-checklist.md`（Wave 2.3）
+- `opc-debugger.md` — 吸收调试修复规程（失败测试先行 / 单一修复 / ≥3 次失败质疑架构，Wave 2.4）
+- `opc-business-advisor.md` — 新 agent 持有 20 个商业子活动的完整 workflow（Wave 2.1）
+
+### 变更（skill 瘦身为 dispatcher）
+
+- `skills/engineering/security-review/SKILL.md` — 139 → 35 行
+- `skills/engineering/debugging/SKILL.md` — 118 → 37 行
+- `skills/product/planning/SKILL.md` — 扩展触发面覆盖旧 brainstorming，添加 HARD-GATE
+- `skills/business/advisory/SKILL.md` — 新建 50 行派发器
+
+### 变更（skill 合并）
+
+- **brainstorming 合并入 planning**：两者都派发给 opc-planner，由 agent 根据输入成熟度自动路由到 Phase 0-1 或 Phase 2-5（Wave 3.4b）
+
+### 移除（下沉到 references/）
+
+- `skills/business/` 下 19 个 playbook 目录（pricing / mvp / validate-idea / first-customers / find-community / processize / seo / content-engine / brand-voice / marketing-plan / grow-sustainably / user-interview / investor-materials / legal-basics / finance-ops / company-values / product-lens / daily-standup / minimalist-review）→ `references/business/`
+- `skills/engineering/` 下 13 个技术栈 patterns（nextjs / dotnet / postgres / docker / kotlin-compose / api-design / ADR / codebase-onboarding / database-migrations / deployment / e2e-testing / frontend / backend / code-review-pipeline）→ `references/patterns/engineering/`
+- `skills/intelligence/` 整个目录 → `references/intelligence/` + `skills/using-superopc/autonomous-ops/`（元层）
+- `skills/learning/skill-from-masters/` + `skills/learning/writing-skills/` → `references/skill-authoring.md`
+- `skills/product/brainstorming/` → 合并到 `skills/product/planning/`
+
+### 迁移映射
+
+见 `AGENTS.md` 的 "v1.4 迁移" 章节。外部文档引用旧 skill 路径须按表替换为新的 `Skill("business-advisory")` / `references/business/*.md` / `references/patterns/engineering/*.md` 等路径。
+
+### 统计
+
+| 项 | v1.3 | v1.4 | 变化 |
+|---|---|---|---|
+| Skill 文件 | ~30 | 17 | -43% |
+| 其中 dispatcher | 6 | 8 | +2（security-review、business-advisory） |
+| 其中 atomic | 4 | 4 | 持平 |
+| 其中 meta | 4 | 4 | 持平（autonomous-ops 从 intelligence 迁入 using-superopc） |
+| 其中 learning | 3 | 1 | -2（skill-from-masters + writing-skills 合并到 references） |
+| 其中 product | 5 | 4 | -1（brainstorming 合并入 planning） |
+| Agent 文件 | 17 | 18 | +1（opc-business-advisor） |
+| references 知识条目 | ~15 | ~50 | +35（19 business + 13 patterns + 2 intel + 3 rubric/checklist/authoring） |
+
+### 兼容性
+
+- `scripts/convert.py` SKILL_DIRS 移除 `skills/intelligence`，其余自动适配
+- `.claude-plugin/plugin.json` version 1.0.0 → **1.4.0**（长期与 CHANGELOG 脱节，顺便修正），agents 列表追加 `opc-business-advisor`
+- `scripts/engine/` v2 engine 完全不受影响
+- `hooks/` / `rules/` / `commands/` / `agents/registry.json` schema 保持兼容
+
+### 回滚
+
+- 每个 Wave 独立 commit，任一 Wave 失败可单独 `git revert <commit>`
+- 重构基线 pre-refactor-v1.3 tag 保留
+
+---
+
 ## [1.3.0] - 架构重构：Skill-Dispatcher / Agent-Workflow 模式
 
 重大架构变更。将 `command / skill / agent` 三层职责重叠清理为**单源**结构：
