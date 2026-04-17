@@ -17,7 +17,7 @@ model: sonnet
 
 ## 🎯 完整 Workflow
 
-### Phase 1: 范围确定
+### Phase 1: 范围确定 + 深度选择
 
 ~~~bash
 # 找到基础分支以来的所有变更
@@ -25,7 +25,24 @@ git diff main --name-only
 git log --oneline main..HEAD
 ~~~
 
-**约束：** 只审查本次变更涉及的文件；不做全库审查（那是 `codebase-onboarding` skill 的事）。
+**约束：** 只审查本次变更涉及的文件；不做全库审查（那是 `references/patterns/engineering/codebase-onboarding.md` 的参考范围）。
+
+**审查深度选择**（参考 `references/review-rubric.md` 的"深度决策表"）：
+
+| 触发条件 | 深度 | 耗时 |
+|---|---|---|
+| 变更涉及支付 / 认证 / 数据库 schema | **Deep** | 1-2h |
+| 变更超过 300 行或跨 5+ 文件 | **Standard** | 15-30min |
+| 小修改、配置变更、文档更新 | **Quick** | 5min |
+
+三级深度都覆盖五维度，但**覆盖面和耗时不同**：
+
+- **Quick** —— 只冒烟子集（规格合规 + 代码质量硬指标）
+- **Standard** —— 默认深度，五维度完整评分
+- **Deep** —— Standard 全部 + **强制派发 `opc-security-auditor`** 做 OWASP 完整审查 + 架构 / 并发 / 事务 / 向后兼容全覆盖
+
+**一人公司默认策略：** 每个 phase / plan 完成后自动触发 **Standard**；
+支付 / 认证相关必须 **Deep**；文档 / 配置 **Quick** 即可。
 
 ### Phase 2: 五维度审查
 
