@@ -1,84 +1,32 @@
 ---
 name: planning
-description: Use after brainstorming design is approved. Breaks design into bite-sized executable tasks with exact code references, commands, and test expectations. Produces a PLAN.md file.
+description: Use when a design has been approved and needs to be broken into executable tasks with wave-based parallel optimization. Dispatches opc-planner agent which owns the full planning workflow (需求澄清 → 方案比较 → 任务分解 → 波次 → pre-flight gate).
 ---
 
-## 实施计划编写
+# planning — 规划派发器
 
-**前提：** 设计规格已经通过 brainstorming 技能获得用户批准。
+**触发条件：** 需要从需求或已批准的设计落成可执行的 PLAN.md。适用于 "规划 X"、"拆解 X"、"做个执行计划"、"把 X 分解成任务" 等场景。
 
-**宣布：** "我正在使用 planning 技能，将设计分解为可执行的任务列表。"
+**宣布：** "我调用 planning 技能，派发给 opc-planner 持有完整规划 workflow。"
 
-## 输出格式
+## 派发
 
-将计划保存到 `docs/plans/YYYY-MM-DD-<feature-name>.md`
+使用 Task 工具派发 `opc-planner` agent：
 
-```markdown
-# [功能名称] 实施计划
+- **输入：** 需求描述 / 已批准的设计规格 / spec 文档路径
+- **输出：** `docs/plans/YYYY-MM-DD-<feature>.md`，含：
+  - `<opc-plan>` XML 主体（波次化任务）
+  - `## OPC Plan Check`
+  - `## OPC Assumptions Analysis`
+  - `## OPC Pre-flight Gate`（含 `ready-for-build: true`）
 
-> **执行要求：** 使用 superopc:implementing 技能执行此计划。每个任务使用 TDD。
+## 边界
 
-**目标：** [一句话描述构建什么]
+- 本 skill **不执行**任务分解、方案比较、gate 判决 —— 全部由 opc-planner 处理
+- **不内联** PLAN.md 模板 —— 在 `references/plan-template.md`
 
-**设计规格：** [链接到规格文档]
+## 关联
 
-## 任务列表
-
-### 任务 1: [标题]
-**文件：** `path/to/file.ts`
-**做什么：** [具体描述]
-**测试期望：** [测试应该验证什么]
-**完成标志：** [怎么知道做完了]
-
-### 任务 2: [标题]
-...
-```
-
-## 任务分解原则
-
-1. **每个任务 2-5 分钟**：能在一个 AI 子代理上下文中完成
-2. **原子性**：每个任务独立可提交
-3. **依赖明确**：标注任务间的依赖关系
-4. **测试驱动**：每个任务都有预期的测试
-5. **具体路径**：指明要修改的确切文件和函数
-
-## 任务结构检查清单
-
-每个任务必须包含：
-- [ ] 要修改/创建的文件路径
-- [ ] 具体的修改内容描述
-- [ ] 测试预期（什么应该通过/失败）
-- [ ] 完成标志
-
-## 波次优化（来自 GSD）
-
-将独立任务分组为"波次"，同一波次内的任务可并行执行：
-
-```markdown
-## 波次 1（可并行）
-- 任务 1: 创建数据模型
-- 任务 2: 创建 API 路由骨架
-
-## 波次 2（依赖波次 1）
-- 任务 3: 实现 API 逻辑
-- 任务 4: 实现数据验证
-```
-
-## 移交
-
-计划完成后：
-- **必须** 调用 `implementing` 技能执行计划
-- 每个任务用子代理执行 + TDD
-- 完成后调用 `reviewing` 技能审查
-
-## 压力测试
-
-### 高压场景
-- 方案刚被接受，就想直接开工。
-
-### 常见偏差
-- 任务切分模糊，缺文件路径和验证标准。
-
-### 使用技能后的纠正
-- 把目标拆成可执行、可测试、可交接的原子任务。
-
+- **上游：** 需求模糊时走 `brainstorming` skill
+- **下游：** PLAN.md 交付后走 `implementing` skill 执行
+- **相关 agent：** opc-planner / opc-plan-checker / opc-assumptions-analyzer
