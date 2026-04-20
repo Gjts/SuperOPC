@@ -2,6 +2,13 @@
 
 SuperOPC 仓库提交信息规范。
 
+> **v1.4 说明：** 本文档中 `§5.推荐写法` / `§6.2 分类示例` / `§10.好示例` 的 **示例引用了 v0.5.0 历史提交**（当时 `skills/engineering/<tech>-patterns/` 与 `skills/business/<playbook>/` 是活跃 skill）。在 **v1.4.0** 重构后，这些路径已迁移：
+> - `skills/engineering/<tech>-patterns/` → `references/patterns/engineering/<tech>.md`
+> - `skills/business/<playbook>/` → `references/business/<playbook>.md`
+> - `skills/intelligence/<topic>/` → `references/intelligence/<topic>.md`
+>
+> 示例作为**历史范本格式**保留，**不要**在新 commit 中套用这些旧路径；请根据当前仓库结构真实定位变更文件。详见 `AGENTS.md` 的 "v1.4 迁移" 章节。
+
 本规范用于统一项目的 `git commit` 风格，确保版本历史满足以下目标：
 
 - 可快速回顾每个版本的**目标**
