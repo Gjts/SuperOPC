@@ -1,6 +1,13 @@
 ---
 name: using-superopc
 description: Use when starting any conversation — establishes how to find and use SuperOPC skills, requiring skill invocation before ANY response. This is the meta-skill that teaches AI how to operate as a one-person company OS.
+id: using-superopc
+type: meta
+tags: [meta, skill-first, bootstrap, system, fallback]
+triggers:
+  keywords: []
+  phrases: []
+version: 1.4.1
 ---
 
 <SUBAGENT-STOP>

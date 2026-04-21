@@ -1,6 +1,12 @@
 ---
 name: agent-dispatch
 description: Atomic skill for dispatching subagents — covers both serial-with-review (single session, quality-first) and wave-based parallel (multi-session, speed-first) patterns. Called by orchestrator agents (opc-executor / opc-orchestrator) when they need to delegate atomic tasks to fresh subagent contexts.
+id: agent-dispatch
+type: atomic
+tags: [subagent, parallel, dispatch, wave, orchestration]
+triggers:
+  keywords: [subagent, 波次, 子代理, 并行派发, wave, dispatch, 串行派发]
+version: 1.4.1
 ---
 
 # agent-dispatch — 子代理派发原子技能

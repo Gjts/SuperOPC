@@ -1,6 +1,13 @@
 ---
 name: session-management
 description: Use when the task is about pausing, resuming, checkpointing, reporting, or recovering SuperOPC project context across sessions.
+id: session-management
+type: meta
+tags: [session, handoff, resume, pause, checkpoint, recovery]
+triggers:
+  keywords: [暂停, 恢复, handoff, checkpoint, 继续上次, 上次到哪里, resume, pause, session]
+  phrases: ["继续上次", "从哪里开始", "恢复上下文", "暂停工作"]
+version: 1.4.1
 ---
 
 # 会话管理

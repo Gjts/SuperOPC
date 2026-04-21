@@ -1,6 +1,13 @@
 ---
 name: developer-profile
 description: Use when onboarding a new developer or when SuperOPC behavior feels misaligned with user preferences. Runs 8-dimension questionnaire and personalizes system behavior.
+id: developer-profile
+type: meta
+tags: [profile, onboarding, personalization, questionnaire, 8-dimension]
+triggers:
+  keywords: [画像, profile, onboard, 偏好, personalize, 个性化]
+  phrases: ["我的偏好", "配置开发者画像", "调整默认行为"]
+version: 1.4.1
 ---
 
 # 开发者画像 — 8 维度个性化引擎

@@ -1,6 +1,12 @@
 ---
 name: git-worktrees
 description: Use when starting new feature development that needs an isolated workspace. Creates safe git worktrees with automatic project setup and test verification.
+id: git-worktrees
+type: atomic
+tags: [git, worktree, isolated, workspace, branch]
+triggers:
+  keywords: [worktree, 工作树, 隔离分支, 新分支, feature branch]
+version: 1.4.1
 ---
 
 ## Git Worktree 管理

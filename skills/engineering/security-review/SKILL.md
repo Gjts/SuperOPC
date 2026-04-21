@@ -1,43 +1,23 @@
 ---
 name: security-review
-description: Use when reviewing code for security vulnerabilities, conducting security audits, hardening against OWASP Top 10, or before production release. Dispatcher only — delegates to opc-security-auditor agent.
+description: Use for security audits, OWASP review, auth/input/database changes, or pre-release hardening. Dispatcher only; delegates to opc-security-auditor.
+id: security-review
+type: dispatcher
+tags: [security, owasp, audit, auth, injection, xss, csrf, hardening]
+dispatches_to: opc-security-auditor
+triggers:
+  keywords: [安全审计, owasp, 安全审查, security, audit, 漏洞, 注入, injection, auth, 授权]
+  phrases: ["安全审查", "security review", "发布前检查", "输入校验"]
+version: 1.4.1
 ---
-
-## 安全审查派发器
-
-**这是 dispatcher skill。不包含 workflow，统一派发给 `opc-security-auditor` agent。**
-
-## 触发场景
-
-- 代码审查中发现安全相关代码
-- 发布前安全检查
-- 处理用户输入的新功能
-- 认证 / 授权变更
-- 第三方集成
-- 数据库查询变更
-- opc-reviewer 的 **Deep** 级审查要求安全子审
-
-## 派发动作
-
-```
-Task(subagent_type="opc-security-auditor", description="security-audit", prompt="[审查范围 + 变更摘要]")
-```
-
-opc-security-auditor 会：
-
-1. 做轻量威胁模型（资产识别 → 攻击面枚举）
-2. 自动扫描密钥泄露 / 注入漏洞 / 配置错误
-3. 按 `references/security-checklist.md` 逐项完成 **OWASP Top 10 A01-A10** 清单
-4. 输出分级报告（🔴 Critical / 🟠 High / 🟡 Medium / 🔵 Low）+ 判决（SECURE / NEEDS FIX / CRITICAL RISK）
-
-## 铁律
-
-1. **dispatcher 不执行 workflow** —— 所有审查动作留给 opc-security-auditor
-2. **密钥泄露或认证缺陷阻止发布** —— 由 auditor 输出 CRITICAL RISK 判决触发
-3. **一人公司优先级：** 认证授权 > 输入验证 > 密钥管理 > 依赖审计 > 日志监控
-
-## 关联
-
-- `agents/opc-security-auditor.md` —— workflow 持有者
-- `references/security-checklist.md` —— OWASP Top 10 完整清单
-- `rules/common/security.md` —— 通用安全硬规则
+# security-review — 安全审查派发器
+**触发：** 安全审计、发布前检查、认证授权、用户输入、第三方集成、数据库查询变更。
+**宣布：** "我调用 security-review 技能，派发给 opc-security-auditor 做安全审计。"
+## 派发
+使用 Task 工具派发 `opc-security-auditor` agent。
+- **输入：** 审查范围、变更摘要、风险上下文
+- **输出：** 威胁模型、OWASP 清单结果、分级发现、SECURE / NEEDS FIX / CRITICAL RISK 判决
+## 边界
+- 本 skill 不执行审计 workflow
+- 安全清单在 `references/security-checklist.md`
+- workflow 唯一事实源是 `agents/opc-security-auditor.md`

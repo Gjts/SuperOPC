@@ -3,6 +3,12 @@ name: autonomous-ops
 description: Autonomous operations skill — defines boundaries, permission zones, and escalation rules for AI self-directed execution.
 category: intelligence
 trigger: When the system needs to decide whether to act autonomously or escalate to human.
+id: autonomous-ops
+type: meta
+tags: [autonomous, zones, permission, cruise, escalation, green-yellow-red]
+triggers:
+  keywords: [自主, autonomous, 权限区, cruise, 自动执行, green, yellow, red, 升级]
+version: 1.4.1
 ---
 
 # Autonomous Operations

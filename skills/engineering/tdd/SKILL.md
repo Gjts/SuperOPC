@@ -1,6 +1,12 @@
 ---
 name: tdd
 description: Use when writing new features, fixing bugs, or refactoring code. Enforces RED-GREEN-REFACTOR cycle. RIGID skill — follow exactly, no exceptions.
+id: tdd
+type: atomic
+tags: [tdd, red-green-refactor, test-first, testing]
+triggers:
+  keywords: [tdd, 先写测试, red green, test first, 测试驱动]
+version: 1.4.1
 ---
 
 ## 测试驱动开发

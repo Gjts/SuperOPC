@@ -1,6 +1,13 @@
 ---
 name: continuous-learning
 description: Use when you want to improve the SuperOPC system itself based on patterns observed in your workflow. Meta-skill for system evolution.
+id: continuous-learning
+type: learning
+tags: [learning, patterns, instinct, evolution, meta-improvement]
+triggers:
+  keywords: [学习, 总结, pattern, instinct, 经验, 教训, 改进系统]
+  phrases: ["总结经验", "把教训学下来", "改进 SuperOPC"]
+version: 1.4.1
 ---
 
 ## 持续学习

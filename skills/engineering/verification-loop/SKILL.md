@@ -1,6 +1,12 @@
 ---
 name: verification-loop
 description: Use after executing a plan or phase to verify deliverables meet requirements. Implements Nyquist validation (sample-based checking) and node repair (auto-fix failed checks). RIGID skill.
+id: verification-loop
+type: atomic
+tags: [verification, nyquist, node-repair, validation, test-coverage]
+triggers:
+  keywords: [验证, verification, nyquist, node repair, 校验交付]
+version: 1.4.1
 ---
 
 ## 验证循环
