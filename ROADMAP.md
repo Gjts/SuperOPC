@@ -351,6 +351,63 @@
 #### 元层稳固
 - [x] `skills/using-superopc/autonomous-ops/` — 从 intelligence/ 迁入，GREEN/YELLOW/RED 三区权限
 
+---
+
+### v1.4.1 [进行中] — Skill-Driven Runtime (Phase A)
+
+**目标：** 把 skill 发现机制从 LLM 自由匹配升级为 "Registry + 三级路由 L1 命中 / L3 兜底" 的可审计结构化管道，
+Context 成本降至原 30% 以下，保持 v1.4 skill-dispatcher / agent-workflow 契约完全向后兼容。
+
+**设计文档：** `docs/SKILL-DRIVEN-DESIGN.md` §5.1 路线 A
+**架构决策：** `docs/adr/0001-skill-registry-schema.md` · `docs/adr/0002-intent-router-tiers.md` · `docs/adr/0003-orchestration-grain.md`
+**执行计划：** `docs/plans/2026-04-21-skill-driven-runtime-phase-a.md`（待 `opc-plan-checker` + `opc-assumptions-analyzer` 通过 Pre-flight Gate 才可执行）
+
+#### Skill Registry（生成式，从 frontmatter 聚合）
+- [ ] `skills/registry.schema.json` — JSON Schema Draft-07 字段契约
+- [ ] `scripts/build_skill_registry.py` — SKILL.md frontmatter → registry.json 生成器（`--check` 校验模式）
+- [ ] 17 份 SKILL.md frontmatter 扩展可选字段：`id / type / tags / dispatches_to / version`（不动现有 name/description）
+- [ ] `scripts/opc_health.py` 扩展 `skill_registry_consistency` 一致性校验项
+
+#### Intent Router（L1 规则 + L3 fallback，Phase A 跳过 L2）
+- [ ] `scripts/engine/intent_router.py` — L1 关键词打分 + L3 LLM 占位（本地 mock，真实 LLM 接入放 Phase B）
+- [ ] 阈值 `L1_CONFIDENT_THRESHOLD = 20`；三级全 miss 兜底 `using-superopc`
+- [ ] `.opc/routing/YYYY-MM-DD.jsonl` 可审计日志
+- [ ] event_bus 新增 `skill.routed` topic
+
+#### 观察与元层
+- [ ] `scripts/hooks/observe.py` 追加 skill 路由观察 → `~/.opc/learnings/skill_routing.jsonl`
+- [ ] `skills/using-superopc/SKILL.md` 增补 "可选加速路径" 指引（不替换原 skill-first 铁律）
+
+#### TDD 保障
+- [ ] `tests/engine/test_build_skill_registry.py`（RED → GREEN）
+- [ ] `tests/engine/test_intent_router.py`（RED → GREEN）
+
+---
+
+### v1.4.2 [待规划] — Skill-Driven Runtime (Phase B)
+
+**目标：** 在 Phase A 基础上补齐 L2 Embedding + LRU Loader + 仪表板，兑现 `docs/SKILL-DRIVEN-DESIGN.md` §5.2 路线 B 收益。
+
+**触发条件：** v1.4.1 上线 2 周观察期结束，路由命中率 / 阈值调优数据就绪。
+
+#### L2 Embedding 检索
+- [ ] 本地 embedding 模型选型（候选：`bge-small-zh` / `bge-small-en-v1.5`，按输入语言分发）
+- [ ] 离线生成 `skills/embeddings.json`（排除于 git 或 LFS 管理）
+- [ ] `IntentRouter.route` 增补 L2 层与阈值 `L2_CONFIDENT_THRESHOLD = 0.75`
+- [ ] 真实 LLM 接入（替换 Phase A 的 `_call_llm()` mock）
+
+#### Skill Loader（运行时按需加载）
+- [ ] `scripts/engine/skill_loader.py` — LRU + TTL 缓存 + 依赖预取 + 文件变更失效
+- [ ] 与 `context_assembler.py` 的 phase 级候选集协同
+
+#### 仪表板
+- [ ] `/opc-stats` 扩展：路由 L1/L2/L3 分布 + cache hit rate + `usage_stats` 热度图
+- [ ] `scripts/opc_health.py` 追加 embedding 索引新鲜度检查
+
+> **路线 C（skill 成为声明式工作流原语，agent 下沉为执行引擎）**: 见 `docs/SKILL-DRIVEN-DESIGN.md` §5.3，
+> 待 v1.4.2 稳定后评估是否启动为独立 milestone（暂定 v2.0.0 方向）。
+
+---
 
 ### v1.5.0 — 高级调试 + 取证
 
@@ -487,6 +544,8 @@
 | | v1.2.0 | CLI工具层 | 高 | ~15 | GSD gsd-tools 19模块 |
 | | v1.3.0 | 安全强化 | 中 | ~8 | GSD security+OWASP |
 | | v1.4.0 | Skill 精简 + references/ 层 | 高 | ~50 | 重构（无外部来源） |
+| | v1.4.1 | Skill-Driven Runtime (Phase A) | 中 | ~8 | Registry + Intent Router L1/L3 |
+| | v1.4.2 | Skill-Driven Runtime (Phase B) | 中 | ~6 | L2 Embedding + Loader + 仪表板 |
 | | v1.5.0 | 调试+取证 | 中 | ~10 | GSD debug/forensics/undo |
 | 平台 | v1.6.0 | 工作流引擎 | 高 | ~20 | GSD 68工作流 |
 | | v1.7.0 | 国际化 | 中 | ~30 | GSD i18n+Agency中国市场 |
