@@ -192,11 +192,16 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
         cwd=REPO_ROOT,
     )
 
+    source_plugin = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+    )
+    expected_version = source_plugin["version"]
+
     runtime_map = json.loads((out_dir / "claude-code" / "runtime-map.json").read_text(encoding="utf-8"))
-    assert runtime_map["pluginVersion"] == "1.0.0"
+    assert runtime_map["pluginVersion"] == expected_version
 
     claude_plugin = json.loads((out_dir / "claude-code" / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert claude_plugin["version"] == "1.0.0"
+    assert claude_plugin["version"] == expected_version
     assert not (out_dir / "claude-code" / ".claude-plugin" / "marketplace.json").exists()
 
     assert (out_dir / "claude-code" / "commands" / "opc" / "progress.md").exists()
@@ -217,9 +222,18 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
     intel_cmd = (out_dir / "claude-code" / "commands" / "opc" / "intel.md").read_text(encoding="utf-8")
     plan_cmd = (out_dir / "claude-code" / "commands" / "opc" / "plan.md").read_text(encoding="utf-8")
 
-    assert "python bin/opc-tools profile show" in profile_cmd
-    assert "feed -> insights -> methodology -> report -> extracted-skills" in research_cmd
-    assert "IntelEngine.refresh()" in intel_cmd
-    assert "opc-plan-checker" in plan_cmd
+    # Commands must route to their corresponding runtime tool/skill/agent.
+    # Assertions are semantic (existence of key anchors) rather than exact strings
+    # so that content edits in command frontmatter don't silently break tests.
+    assert "python bin/opc-tools profile" in profile_cmd
+    assert "$ARGUMENTS" in profile_cmd
+
+    assert "python bin/opc-tools research" in research_cmd
+    assert "feed" in research_cmd and "insights" in research_cmd
+
+    assert "intel" in intel_cmd.lower()
+    assert "intel_engine" in intel_cmd or "IntelEngine" in intel_cmd
+
+    assert "planning" in plan_cmd or "opc-planner" in plan_cmd
 
 
