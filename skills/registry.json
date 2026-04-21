@@ -1,0 +1,546 @@
+{
+  "$schema": "SuperOPC Skill Registry",
+  "version": "2.0.0-phase-a",
+  "description": "Generated from SKILL.md frontmatter. DO NOT EDIT MANUALLY.",
+  "generated_at": "2026-04-21T15:17:35Z",
+  "skills": [
+    {
+      "id": "agent-dispatch",
+      "name": "agent-dispatch",
+      "path": "skills/engineering/agent-dispatch/SKILL.md",
+      "type": "atomic",
+      "description": "Atomic skill for dispatching subagents — covers both serial-with-review (single session, quality-first) and wave-based parallel (multi-session, speed-first) patterns. Called by orchestrator agents (opc-executor / opc-orchestrator) when they need to delegate atomic tasks to fresh subagent contexts.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "subagent",
+          "波次",
+          "子代理",
+          "并行派发",
+          "wave",
+          "dispatch",
+          "串行派发"
+        ]
+      },
+      "tags": [
+        "subagent",
+        "parallel",
+        "dispatch",
+        "wave",
+        "orchestration"
+      ]
+    },
+    {
+      "id": "git-worktrees",
+      "name": "git-worktrees",
+      "path": "skills/engineering/git-worktrees/SKILL.md",
+      "type": "atomic",
+      "description": "Use when starting new feature development that needs an isolated workspace. Creates safe git worktrees with automatic project setup and test verification.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "worktree",
+          "工作树",
+          "隔离分支",
+          "新分支",
+          "feature branch"
+        ]
+      },
+      "tags": [
+        "git",
+        "worktree",
+        "isolated",
+        "workspace",
+        "branch"
+      ]
+    },
+    {
+      "id": "tdd",
+      "name": "tdd",
+      "path": "skills/engineering/tdd/SKILL.md",
+      "type": "atomic",
+      "description": "Use when writing new features, fixing bugs, or refactoring code. Enforces RED-GREEN-REFACTOR cycle. RIGID skill — follow exactly, no exceptions.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "tdd",
+          "先写测试",
+          "red green",
+          "test first",
+          "测试驱动"
+        ]
+      },
+      "tags": [
+        "tdd",
+        "red-green-refactor",
+        "test-first",
+        "testing"
+      ]
+    },
+    {
+      "id": "verification-loop",
+      "name": "verification-loop",
+      "path": "skills/engineering/verification-loop/SKILL.md",
+      "type": "atomic",
+      "description": "Use after executing a plan or phase to verify deliverables meet requirements. Implements Nyquist validation (sample-based checking) and node repair (auto-fix failed checks). RIGID skill.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "验证",
+          "verification",
+          "nyquist",
+          "node repair",
+          "校验交付"
+        ]
+      },
+      "tags": [
+        "verification",
+        "nyquist",
+        "node-repair",
+        "validation",
+        "test-coverage"
+      ]
+    },
+    {
+      "id": "business-advisory",
+      "name": "business-advisory",
+      "path": "skills/business/advisory/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use for one-person-company decisions: pricing, validation, MVP, customers, community, marketing, SEO, legal, finance, interviews, or growth. Dispatcher only; delegates to opc-business-advisor.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "定价",
+          "验证",
+          "mvp",
+          "获客",
+          "营销",
+          "seo",
+          "法律",
+          "财务",
+          "访谈",
+          "pricing",
+          "marketing",
+          "validate",
+          "launch",
+          "一人公司"
+        ],
+        "phrases": [
+          "怎么定价",
+          "这个想法",
+          "怎么获客",
+          "一人公司",
+          "要不要做这个"
+        ]
+      },
+      "tags": [
+        "business",
+        "advisory",
+        "pricing",
+        "mvp",
+        "validate-idea",
+        "marketing",
+        "growth",
+        "legal",
+        "finance",
+        "seo"
+      ],
+      "dispatches_to": "opc-business-advisor"
+    },
+    {
+      "id": "debugging",
+      "name": "debugging",
+      "path": "skills/engineering/debugging/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use for bugs, errors, unexpected behavior, failing tests, or performance anomalies. Dispatcher only; delegates to opc-debugger.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "bug",
+          "调试",
+          "异常",
+          "错误",
+          "失败",
+          "debug",
+          "堆栈",
+          "stack",
+          "panic",
+          "报错"
+        ],
+        "phrases": [
+          "修一下 bug",
+          "为什么错了",
+          "测试失败",
+          "复现不出来"
+        ]
+      },
+      "tags": [
+        "debugging",
+        "bug",
+        "error",
+        "diagnosis",
+        "troubleshooting",
+        "root-cause"
+      ],
+      "dispatches_to": "opc-debugger"
+    },
+    {
+      "id": "implementing",
+      "name": "implementing",
+      "path": "skills/product/implementing/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use when executing an approved PLAN.md with ready-for-build. Dispatches opc-executor, which owns implementation, TDD, review, and commits.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "实现",
+          "执行",
+          "开始实现",
+          "build",
+          "implement",
+          "按计划",
+          "开工"
+        ],
+        "phrases": [
+          "按 PLAN.md 做",
+          "开始实现",
+          "执行计划",
+          "按计划执行",
+          "开工"
+        ]
+      },
+      "tags": [
+        "implementation",
+        "execute",
+        "build",
+        "tdd",
+        "commit",
+        "code"
+      ],
+      "dispatches_to": "opc-executor"
+    },
+    {
+      "id": "planning",
+      "name": "planning",
+      "path": "skills/product/planning/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use for new features, products, significant changes, or approved designs that need executable tasks. Dispatches opc-planner, which owns Phase 0-5.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "规划",
+          "拆解",
+          "plan",
+          "计划",
+          "设计",
+          "任务分解",
+          "怎么实现",
+          "brainstorm",
+          "脑暴"
+        ],
+        "phrases": [
+          "帮我规划",
+          "怎么实现",
+          "拆一下任务",
+          "做个计划",
+          "怎么做这个"
+        ]
+      },
+      "tags": [
+        "planning",
+        "design",
+        "decomposition",
+        "architecture",
+        "roadmap",
+        "phase-0-5"
+      ],
+      "dispatches_to": "opc-planner"
+    },
+    {
+      "id": "reviewing",
+      "name": "reviewing",
+      "path": "skills/product/reviewing/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use after code is written or modified. Dispatches opc-reviewer agent which owns the 5-dimension review workflow (spec compliance / code quality / security / one-person-company maintainability / test coverage).",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "审查",
+          "审核",
+          "review",
+          "code review",
+          "质量检查",
+          "quick review",
+          "deep review"
+        ],
+        "phrases": [
+          "审查一下",
+          "看看有没有问题",
+          "code review",
+          "评审"
+        ]
+      },
+      "tags": [
+        "review",
+        "code-review",
+        "quality",
+        "audit",
+        "pr-review"
+      ],
+      "dispatches_to": "opc-reviewer"
+    },
+    {
+      "id": "security-review",
+      "name": "security-review",
+      "path": "skills/engineering/security-review/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use for security audits, OWASP review, auth/input/database changes, or pre-release hardening. Dispatcher only; delegates to opc-security-auditor.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "安全审计",
+          "owasp",
+          "安全审查",
+          "security",
+          "audit",
+          "漏洞",
+          "注入",
+          "injection",
+          "auth",
+          "授权"
+        ],
+        "phrases": [
+          "安全审查",
+          "security review",
+          "发布前检查",
+          "输入校验"
+        ]
+      },
+      "tags": [
+        "security",
+        "owasp",
+        "audit",
+        "auth",
+        "injection",
+        "xss",
+        "csrf",
+        "hardening"
+      ],
+      "dispatches_to": "opc-security-auditor"
+    },
+    {
+      "id": "shipping",
+      "name": "shipping",
+      "path": "skills/product/shipping/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use when development and review are complete. Dispatches opc-shipper agent which owns the full release workflow — test verification, 4-option presentation (merge/PR/keep/discard), one-person-company release checklist, and worktree cleanup.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "发布",
+          "合并",
+          "pr",
+          "ship",
+          "部署",
+          "merge",
+          "release",
+          "publish",
+          "上线"
+        ],
+        "phrases": [
+          "ship it",
+          "发布",
+          "创建 PR",
+          "合并",
+          "准备发布"
+        ]
+      },
+      "tags": [
+        "shipping",
+        "release",
+        "merge",
+        "pr",
+        "deploy",
+        "publish",
+        "worktree-cleanup"
+      ],
+      "dispatches_to": "opc-shipper"
+    },
+    {
+      "id": "workflow-modes",
+      "name": "workflow-modes",
+      "path": "skills/using-superopc/workflow-modes/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use when the task is ambiguous and the key question is \"which mode should I enter?\" rather than \"what should I do?\". Dispatches opc-orchestrator agent which owns the 7-mode decision tree (autonomous/discuss/explore/fast/quick/do/next) and the full pipeline orchestration.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "模式",
+          "流程",
+          "下一步",
+          "mode",
+          "不确定",
+          "该用什么"
+        ],
+        "phrases": [
+          "该用什么流程",
+          "帮我决定下一步",
+          "不确定怎么做",
+          "走哪条路"
+        ]
+      },
+      "tags": [
+        "orchestration",
+        "mode",
+        "routing",
+        "meta-routing",
+        "pipeline"
+      ],
+      "dispatches_to": "opc-orchestrator"
+    },
+    {
+      "id": "continuous-learning",
+      "name": "continuous-learning",
+      "path": "skills/learning/continuous-learning/SKILL.md",
+      "type": "learning",
+      "description": "Use when you want to improve the SuperOPC system itself based on patterns observed in your workflow. Meta-skill for system evolution.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "学习",
+          "总结",
+          "pattern",
+          "instinct",
+          "经验",
+          "教训",
+          "改进系统"
+        ],
+        "phrases": [
+          "总结经验",
+          "把教训学下来",
+          "改进 SuperOPC"
+        ]
+      },
+      "tags": [
+        "learning",
+        "patterns",
+        "instinct",
+        "evolution",
+        "meta-improvement"
+      ]
+    },
+    {
+      "id": "autonomous-ops",
+      "name": "autonomous-ops",
+      "path": "skills/using-superopc/autonomous-ops/SKILL.md",
+      "type": "meta",
+      "description": "Autonomous operations skill — defines boundaries, permission zones, and escalation rules for AI self-directed execution.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "自主",
+          "autonomous",
+          "权限区",
+          "cruise",
+          "自动执行",
+          "green",
+          "yellow",
+          "red",
+          "升级"
+        ]
+      },
+      "tags": [
+        "autonomous",
+        "zones",
+        "permission",
+        "cruise",
+        "escalation",
+        "green-yellow-red"
+      ]
+    },
+    {
+      "id": "developer-profile",
+      "name": "developer-profile",
+      "path": "skills/using-superopc/developer-profile/SKILL.md",
+      "type": "meta",
+      "description": "Use when onboarding a new developer or when SuperOPC behavior feels misaligned with user preferences. Runs 8-dimension questionnaire and personalizes system behavior.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "画像",
+          "profile",
+          "onboard",
+          "偏好",
+          "personalize",
+          "个性化"
+        ],
+        "phrases": [
+          "我的偏好",
+          "配置开发者画像",
+          "调整默认行为"
+        ]
+      },
+      "tags": [
+        "profile",
+        "onboarding",
+        "personalization",
+        "questionnaire",
+        "8-dimension"
+      ]
+    },
+    {
+      "id": "session-management",
+      "name": "session-management",
+      "path": "skills/using-superopc/session-management/SKILL.md",
+      "type": "meta",
+      "description": "Use when the task is about pausing, resuming, checkpointing, reporting, or recovering SuperOPC project context across sessions.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [
+          "暂停",
+          "恢复",
+          "handoff",
+          "checkpoint",
+          "继续上次",
+          "上次到哪里",
+          "resume",
+          "pause",
+          "session"
+        ],
+        "phrases": [
+          "继续上次",
+          "从哪里开始",
+          "恢复上下文",
+          "暂停工作"
+        ]
+      },
+      "tags": [
+        "session",
+        "handoff",
+        "resume",
+        "pause",
+        "checkpoint",
+        "recovery"
+      ]
+    },
+    {
+      "id": "using-superopc",
+      "name": "using-superopc",
+      "path": "skills/using-superopc/SKILL.md",
+      "type": "meta",
+      "description": "Use when starting any conversation — establishes how to find and use SuperOPC skills, requiring skill invocation before ANY response. This is the meta-skill that teaches AI how to operate as a one-person company OS.",
+      "version": "1.4.1",
+      "triggers": {
+        "keywords": [],
+        "phrases": []
+      },
+      "tags": [
+        "meta",
+        "skill-first",
+        "bootstrap",
+        "system",
+        "fallback"
+      ]
+    }
+  ]
+}
