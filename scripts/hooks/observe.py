@@ -23,6 +23,7 @@ from bridge import emit_hook_event  # noqa: E402
 
 LEARNINGS_DIR = Path.home() / ".opc" / "learnings"
 OBS_FILE = LEARNINGS_DIR / "observations.jsonl"
+SKILL_ROUTING_SINK = LEARNINGS_DIR / "skill_routing.jsonl"
 
 
 def main() -> None:
@@ -65,6 +66,76 @@ def main() -> None:
         "action": action,
         "project": project,
     })
+
+    # Mirror intent_router audit log into the long-term learning sink.
+    try:
+        added = sync_skill_routing()
+        if added:
+            emit_hook_event(
+                "learning.routing_synced",
+                {"added": added, "project": project},
+            )
+    except Exception:
+        # Never let observation break the hook.
+        pass
+
+
+def sync_skill_routing(project_root: Path | None = None) -> int:
+    """Copy new records from .opc/routing/<today>.jsonl into
+    ~/.opc/learnings/skill_routing.jsonl. Deduplicates by input_hash.
+
+    Returns the number of newly appended records.
+    """
+    project_root = project_root or _project_root()
+    date_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    src = project_root / ".opc" / "routing" / f"{date_key}.jsonl"
+    if not src.exists():
+        return 0
+
+    LEARNINGS_DIR.mkdir(parents=True, exist_ok=True)
+
+    seen: set[str] = set()
+    if SKILL_ROUTING_SINK.exists():
+        try:
+            for line in SKILL_ROUTING_SINK.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                rec = json.loads(line)
+                h = rec.get("input_hash")
+                if h:
+                    seen.add(h)
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    appended = 0
+    try:
+        with SKILL_ROUTING_SINK.open("a", encoding="utf-8") as sink:
+            for line in src.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                h = rec.get("input_hash")
+                if not h or h in seen:
+                    continue
+                rec.setdefault("project", project_root.name)
+                sink.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                seen.add(h)
+                appended += 1
+    except OSError:
+        pass
+    return appended
+
+
+def _project_root() -> Path:
+    """Walk up CWD to find the project root (marked by .opc/ or .git/)."""
+    cwd = Path.cwd()
+    for candidate in [cwd] + list(cwd.parents):
+        if (candidate / ".opc").is_dir() or (candidate / ".git").is_dir():
+            return candidate
+    return cwd
 
 
 def _extract_action(tool: str, inp: dict) -> str:
