@@ -133,6 +133,38 @@ digraph skill_flow {
 "这个想法怎么样" → business-advisory（opc-business-advisor 走 validate-idea 子活动）
 "怎么定价" → business-advisory（opc-business-advisor 委派 opc-pricing-analyst）
 
+## v1.4.1 可选加速路径（不替代 skill-first 铁律）
+
+从 v1.4.1 起，仓库新增了一条**可选**的结构化路由管道，用于提高匹配速度与可审计性：
+
+```
+scripts/build_skill_registry.py  →  skills/registry.json
+scripts/engine/intent_router.py  →  L1 关键词 → L3 LLM fallback
+.opc/routing/YYYY-MM-DD.jsonl    ←  每次路由决策的审计日志
+```
+
+**它是什么：** `IntentRouter.route(user_input)` 返回最可能的 skill 候选
+（`skill_id / confidence / path / latency_ms`），并把决策写入可追溯的 JSONL。
+
+**它不是什么：**
+- **不是**替换本 skill 文件定义的 skill-first 规则。本文件的"核心规则"仍是铁律。
+- **不是**调用 skill 的工具。router 只给建议；真正的 `Skill` 工具调用仍由你执行。
+- **不是**决策器。`confidence < 0.2` 或 `path=['L1','L3']` 时，仍必须回到人工检查 skill 表。
+
+**何时使用：**
+- 构建新工具 / 脚本需要快速判断"该调哪个 skill"时，可作参考。
+- 调试路由 miss 时查 `.opc/routing/<today>.jsonl` 与 `~/.opc/learnings/skill_routing.jsonl`。
+- **不要**在 Claude Code 正常会话中跳过本 skill 表直接信任 router 结果。
+
+**三级路由概览（ADR-0002）：**
+| 层 | 方式 | 成本 | 阈值 |
+|---|---|---|---|
+| L1 | `triggers.keywords / phrases` 规则打分 | 免费、<1ms | ≥ 20 即命中 |
+| L2 | Embedding 语义检索 | 本地推理 | Phase B 启用 |
+| L3 | 小型 LLM fallback | 单次 LLM 调用 | 最终兜底 |
+
+全三级均 miss → 回落到 `using-superopc`（本 skill），确保 skill-first 入口永远有效。
+
 ## 红旗 — 停下来，你在合理化
 
 | 你的想法 | 现实 |
