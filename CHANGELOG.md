@@ -7,6 +7,76 @@
 
 ---
 
+## [1.4.1] - Skill-Driven Runtime (Phase A)
+
+**主题：** 把 skill 发现机制从"LLM 自由匹配 17 份 SKILL.md description"升级为
+"Registry + 三级路由 L1 命中 / L3 兜底"的可审计结构化管道。Context 成本降至原 30%
+以下，保持 v1.4 skill-dispatcher / agent-workflow 契约完全向后兼容。详见
+`docs/SKILL-DRIVEN-DESIGN.md` §5.1 与 `docs/plans/2026-04-21-skill-driven-runtime-phase-a.md`。
+
+### 架构
+
+- **Skill Registry（生成式）**：从 17 份 SKILL.md frontmatter 聚合生成
+  `skills/registry.json`，作为三级路由的单一事实源。`skills/registry.schema.json`
+  定义 JSON Draft-07 契约。
+- **Intent Router 三级**：L1 关键词/短语打分（阈值 20）→ L2 Embedding（Phase A 跳过）
+  → L3 LLM fallback（Phase A 使用 mock）。全级 miss 回落到 `using-superopc`。
+- **审计日志**：每次 `IntentRouter.route()` 调用写 `.opc/routing/<today>.jsonl`
+  （含 input_hash，不落原文）。`observe.py` 同步到 `~/.opc/learnings/skill_routing.jsonl`。
+
+### 新增
+
+- **`skills/registry.schema.json`** — 17 行 field 白名单 + type enum + semver 正则
+- **`skills/registry.json`** — 生成产物：8 dispatcher + 4 atomic + 4 meta + 1 learning
+- **`scripts/build_skill_registry.py`** — frontmatter → registry.json 生成器
+  * `--check` 模式检测 drift，退出非零
+  * `--registry PATH` 自定义校验路径
+  * 稳定排序保证可重入，`generated_at` 忽略 diff
+- **`scripts/engine/intent_router.py`** — `IntentRouter.route(input)` 结构化路由
+  * 返回 `skill_id / confidence / path / latency_ms / candidates_explored`
+  * `_call_llm(prompt, candidates)` 模块级 mock，Phase B 替换真实 LLM
+  * 发送 `skill.routed` 事件到 event_bus
+- **`docs/SKILL-DRIVEN-DESIGN.md`** — 现状诊断 + 四组件 schema + 两条演进路线（A/B）+ 决策清单
+- **`docs/adr/0001-skill-registry-schema.md`** — 生成式 Registry 与 frontmatter 扩展决策
+- **`docs/adr/0002-intent-router-tiers.md`** — L1/L2/L3 三级递进决策
+- **`docs/adr/0003-orchestration-grain.md`** — 编排粒度双绑定（agent 默认 + 可选 skill）
+- **`docs/adr/README.md`** — ADR 索引与生命周期
+- **`docs/plans/2026-04-21-skill-driven-runtime-phase-a.md`** — 3 波 10 任务 `<opc-plan>` XML，含 Pre-flight Gate 评审记录
+
+### 扩展（不破坏契约）
+
+- **17 份 SKILL.md frontmatter** 新增可选字段 `id / type / tags / dispatches_to / triggers / version`，
+  正文零行改动。8 份 dispatcher 显式声明 `dispatches_to` 指向 `agents/registry.json` 中已存在的 agent id。
+  `business-advisory.description` 包含冒号已加双引号修复 YAML 歧义
+- **`scripts/hooks/observe.py`** 新增 `sync_skill_routing()` 函数，PostToolUse 触发后
+  把路由日志的新记录（以 input_hash 去重）拷贝到 `~/.opc/learnings/skill_routing.jsonl`
+- **`scripts/opc_quality.py`** 新增 `repo.skill-registry-consistency` 健康检查，
+  自动运行 `build_skill_registry.py --check`；drift 时 `opc-health` 报 fail
+- **`skills/using-superopc/SKILL.md`** 增补 "v1.4.1 可选加速路径" 段落，
+  明示 Registry + Router 是**可选**路径，不替代 skill-first 铁律
+
+### 测试
+
+- **`tests/engine/test_build_skill_registry.py`** — 8 个契约测试（从 RED → GREEN）：
+  SKILL.md 数量一致、id 唯一、type 白名单、dispatcher.dispatches_to 存在性、
+  registry 通过 JSON Schema、路径存在性、frontmatter/registry 字段一致、`--check` drift 检测
+- **`tests/engine/test_intent_router.py`** — 6 个契约测试（从 RED → GREEN）：
+  返回结构、L1 命中、L1 miss 直进 L3、三级全 miss 回落、JSONL 日志、`skill.routed` 事件
+
+### 已知限制（预期）
+
+- L2 Embedding 检索延后到 Phase B（`docs/SKILL-DRIVEN-DESIGN.md` §5.2 路线 B）
+- L3 使用 mock，真实 LLM 接入在 Phase B
+- Context 节省仅对新会话生效，对已开长会话无追溯
+
+### 迁移（无破坏）
+
+- v1.4.0 所有 skill/agent/references 契约 100% 保留
+- 老 workflow（直接调用 `Skill` 工具）仍是默认路径
+- Registry/Router 为可选加速层，不启用即不影响行为
+
+---
+
 ## [1.4.0] - Skill 精简 + Agent 吸收 + references/ 知识层
 
 **主题：** 把 v1.3 的三层契约推到极限。skill 空间只保留"真正驱动 agent workflow"的入口和被 agent 调用的原子技术；柔性知识内容（技术栈 patterns / 商业 playbook / rubric / checklist）全部下沉到 `references/` 供 agent workflow 引用。详见 `docs/plans/2026-04-17-architecture-refactor.md`。

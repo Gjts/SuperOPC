@@ -353,34 +353,34 @@
 
 ---
 
-### v1.4.1 [进行中] — Skill-Driven Runtime (Phase A)
+### v1.4.1 [已完成] — Skill-Driven Runtime (Phase A)
 
 **目标：** 把 skill 发现机制从 LLM 自由匹配升级为 "Registry + 三级路由 L1 命中 / L3 兜底" 的可审计结构化管道，
 Context 成本降至原 30% 以下，保持 v1.4 skill-dispatcher / agent-workflow 契约完全向后兼容。
 
 **设计文档：** `docs/SKILL-DRIVEN-DESIGN.md` §5.1 路线 A
 **架构决策：** `docs/adr/0001-skill-registry-schema.md` · `docs/adr/0002-intent-router-tiers.md` · `docs/adr/0003-orchestration-grain.md`
-**执行计划：** `docs/plans/2026-04-21-skill-driven-runtime-phase-a.md`（待 `opc-plan-checker` + `opc-assumptions-analyzer` 通过 Pre-flight Gate 才可执行）
+**执行计划：** `docs/plans/2026-04-21-skill-driven-runtime-phase-a.md`（Pre-flight Gate APPROVED + PASS）
 
 #### Skill Registry（生成式，从 frontmatter 聚合）
-- [ ] `skills/registry.schema.json` — JSON Schema Draft-07 字段契约
-- [ ] `scripts/build_skill_registry.py` — SKILL.md frontmatter → registry.json 生成器（`--check` 校验模式）
-- [ ] 17 份 SKILL.md frontmatter 扩展可选字段：`id / type / tags / dispatches_to / version`（不动现有 name/description）
-- [ ] `scripts/opc_health.py` 扩展 `skill_registry_consistency` 一致性校验项
+- [x] `skills/registry.schema.json` — JSON Schema Draft-07 字段契约
+- [x] `scripts/build_skill_registry.py` — SKILL.md frontmatter → registry.json 生成器（`--check` 校验模式）
+- [x] 17 份 SKILL.md frontmatter 扩展可选字段：`id / type / tags / dispatches_to / triggers / version`（正文零行改动）
+- [x] `scripts/opc_quality.py` 扩展 `repo.skill-registry-consistency` 一致性校验项
 
 #### Intent Router（L1 规则 + L3 fallback，Phase A 跳过 L2）
-- [ ] `scripts/engine/intent_router.py` — L1 关键词打分 + L3 LLM 占位（本地 mock，真实 LLM 接入放 Phase B）
-- [ ] 阈值 `L1_CONFIDENT_THRESHOLD = 20`；三级全 miss 兜底 `using-superopc`
-- [ ] `.opc/routing/YYYY-MM-DD.jsonl` 可审计日志
-- [ ] event_bus 新增 `skill.routed` topic
+- [x] `scripts/engine/intent_router.py` — L1 关键词打分 + L3 LLM 占位（本地 mock，真实 LLM 接入放 Phase B）
+- [x] 阈值 `L1_CONFIDENT_THRESHOLD = 20`；三级全 miss 兜底 `using-superopc`
+- [x] `.opc/routing/YYYY-MM-DD.jsonl` 可审计日志
+- [x] event_bus 新增 `skill.routed` topic（publish-only, 不动 CORE_EVENTS 列表）
 
 #### 观察与元层
-- [ ] `scripts/hooks/observe.py` 追加 skill 路由观察 → `~/.opc/learnings/skill_routing.jsonl`
-- [ ] `skills/using-superopc/SKILL.md` 增补 "可选加速路径" 指引（不替换原 skill-first 铁律）
+- [x] `scripts/hooks/observe.py` 追加 `sync_skill_routing()` → `~/.opc/learnings/skill_routing.jsonl`
+- [x] `skills/using-superopc/SKILL.md` 增补 "v1.4.1 可选加速路径" 段落（不替换原 skill-first 铁律）
 
 #### TDD 保障
-- [ ] `tests/engine/test_build_skill_registry.py`（RED → GREEN）
-- [ ] `tests/engine/test_intent_router.py`（RED → GREEN）
+- [x] `tests/engine/test_build_skill_registry.py` — 8 测试 RED → GREEN
+- [x] `tests/engine/test_intent_router.py` — 6 测试 RED → GREEN
 
 ---
 
