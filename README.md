@@ -328,14 +328,14 @@ python scripts/opc_stats.py --cwd /path/to/your/project
 
 ### 产品开发流水线
 ```
-brainstorming → planning → implementing → reviewing → shipping
-   (设计)        (规划)      (执行+TDD)    (审查)      (发布)
+planning → implementing → reviewing → shipping
+(澄清+方案+规划) (执行+TDD)    (审查)      (发布)
 ```
 
 ### 商业决策流水线
 ```
-find-community → validate-idea → mvp → first-customers → pricing → grow
-  (找社区)        (验证想法)    (MVP)   (获客)          (定价)   (增长)
+business-advisory → references/business/* → domain agents
+(识别子活动+Anti-Build-Trap) (方法论执行)   (pricing/seo/content/growth)
 ```
 
 ### 质量保证

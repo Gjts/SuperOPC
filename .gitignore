@@ -1,7 +1,7 @@
 # SuperOPC generated files
 integrations/
-.opc/sessions/
-.opc/audit.log
+# All runtime state under .opc/ is local-only (sessions/audit.log/routing/intelligence/…)
+.opc/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -54,6 +54,7 @@ coverage.xml
 *.py.cover
 .hypothesis/
 .pytest_cache/
+.test_tmp/
 cover/
 
 # Translations

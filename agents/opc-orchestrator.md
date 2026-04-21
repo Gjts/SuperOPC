@@ -75,8 +75,8 @@ model: sonnet
 ### 产品开发流水线
 
 ~~~
-需求 → brainstorming skill → planning skill → implementing skill → reviewing skill → shipping skill
-       (opc-planner P0-1)    (opc-planner P2-5) (opc-executor)    (opc-reviewer)   (opc-shipper)
+需求 → planning skill                         → implementing skill → reviewing skill → shipping skill
+       (opc-planner Phase 0-5：澄清/方案/计划) (opc-executor)       (opc-reviewer)   (opc-shipper)
 ~~~
 
 ### 编排规则

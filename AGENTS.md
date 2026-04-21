@@ -21,11 +21,11 @@ Command (<= 15 行入口) ──> Dispatcher Skill (<= 30 行派发器) ──> 
 
 全部 agent 注册在 `agents/registry.json`，含 capability_tags、scenarios、input/output 契约、priority。
 
-`scripts/engine/dag_engine.py` 通过 registry 做**语义路由**（而非关键词匹配）。
+`scripts/engine/dag_engine.py` 通过 registry 做 **capability-tag 路由**：显式 agent 优先，其次匹配 capability_tags / scenarios，最后才走关键词回退。
 
-### Agent 类型与数量（18 个）
+### Agent 类型与数量（25 个）
 
-- **core** (16)：内置专家（v1.4 新增 **opc-business-advisor**）
+- **core** (18)：内置专家（v1.4 新增 **opc-business-advisor** / **opc-shipper** / **opc-intel-updater** 等）
 - **matrix** (2)：专业执行代理（frontend-wizard / backend-architect）
 - **domain** (5)：按需激活的领域代理（devops / seo / content / growth / pricing），由 opc-business-advisor 或核心 agent 委派
 
@@ -118,7 +118,7 @@ Bug 报告 → debugging skill → opc-debugger (假设-证据-排除) → opc-e
 ### 自主运营流水线（v2 engine）
 
 ~~~
-事件 → decision_engine (三层决策) → dag_engine (波次编排) → registry (语义路由)
+事件 → decision_engine (三层决策) → dag_engine (波次编排) → registry (capability-tag 路由)
      → agent 执行 → quality_gate → state_engine → event_bus (循环)
 ~~~
 

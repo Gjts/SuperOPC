@@ -146,9 +146,9 @@ When understanding SuperOPC behaviour: for a **workflow activity** (plan/build/r
 
 ### 3. Agents are the workflow owners
 
-`agents/` contains **18 specialist roles** (v1.4 added `opc-business-advisor`). Under the v1.3 dispatcher pattern sharpened in v1.4, **each agent is the single source of truth for its workflow** — planner owns planning, executor owns implementation, reviewer owns review, shipper owns release, business-advisor owns commercial decisions.
+`agents/` contains **25 registered specialist roles** (18 core, 2 matrix, 5 domain). Under the v1.3 dispatcher pattern sharpened in v1.4, **each agent is the single source of truth for its workflow** — planner owns planning, executor owns implementation, reviewer owns review, shipper owns release, business-advisor owns commercial decisions.
 
-`agents/registry.json` provides a capability-based routing registry that the DAG engine uses for semantic task-to-agent matching (replacing the v1 keyword-based routing). `AGENTS.md` defines the intended orchestration patterns, including the main product pipeline (planning → implementing → reviewing → shipping) plus dedicated debugging, security-review, business-advisory, and autonomous-operation flows.
+`agents/registry.json` provides a capability-based routing registry that the DAG engine uses for task-to-agent matching, with keyword fallback only when capability tags/scenarios do not match. `AGENTS.md` defines the intended orchestration patterns, including the main product pipeline (planning → implementing → reviewing → shipping) plus dedicated debugging, security-review, business-advisory, and autonomous-operation flows.
 
 ### 4. Rules and references are the quality system
 - `rules/common/` applies across the repo

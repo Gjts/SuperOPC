@@ -65,28 +65,23 @@ BUDGET_PROFILES = {
 
 PHASE_SKILL_PRIORITY: dict[ProjectPhase, list[str]] = {
     ProjectPhase.IDLE: [
-        "using-superopc", "workflow-modes", "session-management",
-        "validate-idea", "find-community",
+        "using-superopc", "workflow-modes", "business-advisory", "session-management",
     ],
     ProjectPhase.DISCUSSING: [
-        "using-superopc", "brainstorming", "validate-idea",
-        "find-community", "user-interview", "market-research",
+        "using-superopc", "workflow-modes", "planning", "business-advisory",
     ],
     ProjectPhase.PLANNING: [
-        "planning", "architecture-decision-records", "brainstorming",
-        "parallel-agents", "codebase-onboarding",
+        "planning", "business-advisory", "agent-dispatch", "verification-loop",
     ],
     ProjectPhase.EXECUTING: [
-        "implementing", "tdd", "parallel-agents",
+        "implementing", "tdd", "agent-dispatch",
         "git-worktrees", "debugging", "verification-loop",
     ],
     ProjectPhase.REVIEWING: [
-        "reviewing", "code-review-pipeline", "security-review",
-        "shipping", "e2e-testing",
+        "reviewing", "security-review", "verification-loop", "shipping",
     ],
     ProjectPhase.SHIPPING: [
-        "shipping", "deployment-patterns", "docker-patterns",
-        "seo", "content-engine",
+        "shipping", "security-review", "verification-loop", "git-worktrees",
     ],
     ProjectPhase.PAUSED: [
         "session-management", "using-superopc", "workflow-modes",
@@ -107,6 +102,42 @@ PHASE_RULES_PRIORITY: dict[ProjectPhase, list[str]] = {
     ProjectPhase.EXECUTING: ["testing", "coding-style", "security", "git-workflow"],
     ProjectPhase.REVIEWING: ["testing", "security", "patterns"],
     ProjectPhase.SHIPPING: ["git-workflow", "security"],
+}
+
+PHASE_REFERENCE_PRIORITY: dict[ProjectPhase, list[str]] = {
+    ProjectPhase.IDLE: [
+        "gates", "anti-patterns", "context-budget",
+        "business/validate-idea", "business/find-community",
+        "intelligence/market-research", "intelligence/follow-builders",
+    ],
+    ProjectPhase.DISCUSSING: [
+        "gates", "anti-patterns", "business/validate-idea",
+        "business/find-community", "business/user-interview",
+        "intelligence/market-research",
+    ],
+    ProjectPhase.PLANNING: [
+        "gates", "anti-patterns", "context-budget", "plan-template",
+        "patterns/engineering/codebase-onboarding", "patterns/engineering/adr",
+    ],
+    ProjectPhase.EXECUTING: [
+        "gates", "anti-patterns", "context-budget", "tdd",
+        "verification-patterns", "git-integration",
+        "patterns/engineering/api-design", "patterns/engineering/frontend",
+        "patterns/engineering/backend",
+    ],
+    ProjectPhase.REVIEWING: [
+        "gates", "anti-patterns", "review-rubric",
+        "security-checklist", "verification-patterns",
+        "patterns/engineering/e2e-testing",
+    ],
+    ProjectPhase.SHIPPING: [
+        "gates", "anti-patterns", "git-integration",
+        "security-checklist", "patterns/engineering/deployment",
+        "patterns/engineering/docker", "business/seo", "business/content-engine",
+    ],
+    ProjectPhase.PAUSED: [
+        "gates", "context-budget", "session-management", "handoff-format",
+    ],
 }
 
 
@@ -241,11 +272,11 @@ class ContextAssembler:
             if "debug" in hint_lower:
                 self._promote(priority, "debugging")
             if "api" in hint_lower:
-                self._promote(priority, "api-design")
+                self._promote(priority, "implementing")
             if "seo" in hint_lower:
-                self._promote(priority, "seo")
+                self._promote(priority, "business-advisory")
             if "price" in hint_lower or "pricing" in hint_lower:
-                self._promote(priority, "pricing")
+                self._promote(priority, "business-advisory")
 
         return priority[:10]
 
@@ -261,11 +292,7 @@ class ContextAssembler:
         return rules
 
     def _select_references(self, phase: ProjectPhase) -> list[str]:
-        refs = ["gates", "anti-patterns", "context-budget"]
-        if phase == ProjectPhase.EXECUTING:
-            refs.extend(["tdd", "verification-patterns", "git-integration"])
-        elif phase == ProjectPhase.REVIEWING:
-            refs.extend(["verification-patterns"])
+        refs = list(PHASE_REFERENCE_PRIORITY.get(phase, ["gates", "anti-patterns", "context-budget"]))
         return refs
 
     def _select_learnings(self, state: ProjectState, task_hint: str) -> list[dict[str, Any]]:
