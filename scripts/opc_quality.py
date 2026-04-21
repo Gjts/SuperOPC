@@ -985,6 +985,10 @@ def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
     else:
         checks.append(make_check("repo.version", "pass", f"插件版本有效: {plugin_version}。"))
 
+    registry_check = validate_skill_registry_consistency(repo_root)
+    if registry_check is not None:
+        checks.append(registry_check)
+
     summary = summarize_checks(checks)
     return {
         "target": "repo",
@@ -994,6 +998,64 @@ def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
         "checks": checks,
         "repairs": [],
     }
+
+
+def validate_skill_registry_consistency(repo_root: Path) -> dict[str, Any] | None:
+    """Run `scripts/build_skill_registry.py --check`; return a check dict or None."""
+    import subprocess
+    import sys as _sys
+
+    script = repo_root / "scripts" / "build_skill_registry.py"
+    registry_file = repo_root / "skills" / "registry.json"
+    schema_file = repo_root / "skills" / "registry.schema.json"
+    if not script.exists() or not schema_file.exists():
+        return None  # registry feature not present in this checkout
+
+    if not registry_file.exists():
+        return make_check(
+            "repo.skill-registry-consistency",
+            "fail",
+            "skills/registry.json 缺失，请运行 python scripts/build_skill_registry.py 生成。",
+            severity="error",
+            repairable=True,
+            files=[str(registry_file)],
+        )
+
+    try:
+        result = subprocess.run(
+            [_sys.executable, str(script), "--check"],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_root),
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return make_check(
+            "repo.skill-registry-consistency",
+            "warn",
+            f"无法运行 skill registry --check: {exc}",
+            severity="warning",
+            files=[str(script)],
+        )
+
+    if result.returncode == 0:
+        return make_check(
+            "repo.skill-registry-consistency",
+            "pass",
+            "skill registry 与 SKILL.md frontmatter 同步。",
+            files=[str(registry_file)],
+        )
+
+    details = [line.strip() for line in (result.stderr or result.stdout).splitlines() if line.strip()]
+    return make_check(
+        "repo.skill-registry-consistency",
+        "fail",
+        "skill registry 与 SKILL.md frontmatter 漂移。运行 python scripts/build_skill_registry.py 重新生成。",
+        severity="error",
+        repairable=True,
+        files=[str(registry_file)],
+        details=details[:12],
+    )
 
 
 def collect_project_quality_report(start_dir: Path, repair: bool = False) -> dict[str, Any]:
