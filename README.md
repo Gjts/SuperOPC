@@ -61,7 +61,7 @@ python scripts/convert.py --tool all          # 一键生成全部导出
 ```
 
 SuperOPC 当前支持 **Claude Code 原生格式**，并内置 **11 个运行时导出目标**：Claude Code、Cursor、Windsurf、Copilot、Gemini CLI、OpenCode、Codex、Trae、Cline、Augment Code、OpenClaw。
-转换后的文件输出到 `integrations/<tool>/`。`scripts/convert.py` 现在同时提供：
+转换后的文件输出到 `integrations/<tool>/`（目录已纳入 `.gitignore`，新克隆仓库里为空，请先跑一次 `python scripts/convert.py --tool all` 生成）。`scripts/convert.py` 现在同时提供：
 - **运行时注册表**：统一维护每个目标运行时的目录、frontmatter 和输出布局
 - **工具名映射**：把 Claude Code 工具术语转换成目标运行时可理解的名称
 - **钩子事件映射**：为每个导出生成 `HOOKS.md` + `runtime-map.json`
@@ -78,20 +78,41 @@ SuperOPC 提供常用 MCP 模板，位于 `mcp-configs/mcp-servers.json`：
 
 ## 钩子系统
 
-SuperOPC 内置质量门控钩子（源自 [ECC hooks.json](https://github.com/nicobailon/everything-claude-code) 模式）：
+SuperOPC 内置 **13 个质量门控与学习钩子**（源自 [ECC hooks.json](https://github.com/nicobailon/everything-claude-code) 模式，v1.1+ 增加了 observe/bridge 向 v2 事件总线联动）：
+
+### PreToolUse（工具调用前，7 个）
+
+| 钩子 | Matcher | 功能 |
+|------|---------|------|
+| **block-no-verify** | Bash | 🔴 阻止 `git --no-verify` 绕过 pre-commit（唯一的强阻断钩子之一） |
+| **commit-quality** | Bash | 检查 `git commit -m` 是否符合 Conventional Commits，并扫描提交消息中的疑似密钥；同时通过 `bridge.py` 发 `hook.commit_quality` 到 v2 事件总线 |
+| **read-before-edit** | Edit/Write/MultiEdit | 编辑前提示先读取目标文件（建议性） |
+| **doc-file-warning** | Write | 警告创建非标准路径下的文档文件 |
+| **config-protection** | Edit/Write/MultiEdit | 保护 linter / formatter / test 配置文件不被弱化（建议性） |
+| **prompt-injection-scan** | Edit/Write/MultiEdit | 扫描写入内容中的常见提示注入模式和不可见字符（建议性） |
+| **state-file-lock** | Edit/Write/MultiEdit | 波次执行中 `.opc/STATE.md` 并行写入冲突检测（建议性） |
+
+### PostToolUse（工具调用后，4 个）
+
+| 钩子 | Matcher | 功能 |
+|------|---------|------|
+| **command-audit-log** | Bash | 追加已执行 bash 命令到 `.opc/audit.log`，供会话审查 |
+| **console-log-warn** | Edit/Write/MultiEdit | 检测编辑内容中遗留的 `console.log` / `print` debug 语句 |
+| **git-push-reminder** | Bash | 提醒在 git push 前先审查 diff |
+| **observe** | `*`（全部） | v1.1 持续学习：把工具调用观测写到 `~/.opc/learnings/observations.jsonl`，供 `instinct_generator` 生成个性化规则 |
+
+### Notification & Stop（2 个）
 
 | 钩子 | 类型 | 功能 |
 |------|------|------|
-| **block-no-verify** | PreToolUse | 阻止 `git --no-verify` 绕过 pre-commit |
-| **commit-quality** | PreToolUse | 检查 `git commit -m` 是否符合 Conventional Commits，并扫描提交消息中的疑似密钥 |
-| **read-before-edit** | PreToolUse | 编辑前提示先读取目标文件（建议性提醒，不跟踪真实读取状态） |
-| **config-protection** | PreToolUse | 保护 linter / formatter 配置不被轻易削弱 |
-| **prompt-injection-scan** | PreToolUse | 扫描写入内容中的常见提示注入模式（建议性） |
-| **command-audit-log** | PostToolUse | 记录命令审计日志到 `.opc/audit.log` |
-| **console-log-warn** | PostToolUse | 检测编辑内容中的常见 debug 语句并提醒清理 |
-| **session-summary** | Stop | 持久化基础会话摘要（时间戳、工具名、会话 ID） |
+| **statusline** | Notification:StatusLine | 状态栏展示：模型 + 当前任务 + 目录 + 上下文使用率进度条 |
+| **session-summary** | Stop | 持久化会话摘要（时间戳、工具名、会话 ID） |
 
-钩子遵循**建议性优先**原则——大多数钩子只发出警告或提示，不会阻止正常工作流；只有 `--no-verify` 和提交消息中的高风险密钥模式会被阻止。
+### 共享支持（不注册为钩子）
+
+`scripts/hooks/bridge.py` 和 `common.py` 是其他钩子 import 的支持库。`bridge.py` 负责把钩子事件发布到 v2 `event_bus`，供 `decision_engine` / `cruise_controller` / `notification` 消费。
+
+钩子遵循**建议性优先**原则——大多数钩子只发出警告或提示，不会阻止正常工作流；只有 `block-no-verify` 和 `commit-quality` 检测到高风险密钥模式时会强阻断。
 
 ## 架构
 

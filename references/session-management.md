@@ -1,5 +1,12 @@
 # Session Management — 会话管理
 
+> **⚠️ DEPRECATED (v1.4.2 起)** — 本文件是 v0.8.0 的初始设计稿，内容已被以下真相源超越：
+> - 工作流逻辑 → `agents/opc-session-manager.md`（agent 持有 workflow）
+> - Dispatcher 契约 → `skills/using-superopc/session-management/SKILL.md`（skill 派发）
+> - HANDOFF.json schema → `references/handoff-format.md`（JSON 字段定义）
+>
+> 本文件保留以便追溯早期设计意图。若你在改 session 行为，请改 agent / skill / handoff-format，不要改这里。
+
 v0.8.0 为 SuperOPC 增加跨会话连续性：暂停、恢复、进度查看、会话报告。
 
 ---

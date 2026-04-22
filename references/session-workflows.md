@@ -1,5 +1,12 @@
 # Session Workflows — 会话工作流参考
 
+> **⚠️ DEPRECATED (v1.4.2 起)** — 本文件是 v0.8.0 工作流描述稿，已被 agent 层超越：
+> - 4 个命令的 workflow 实现 → `agents/opc-session-manager.md`（单一真相源）
+> - 命令入口 → `commands/opc/{pause,resume,progress,session-report}.md`（含跨机协议、错误路径）
+> - Skill 派发规则 → `skills/using-superopc/session-management/SKILL.md`
+>
+> 本文件保留以便追溯早期设计意图。若你在改 session 行为，请改 agent / command / skill，不要改这里。
+
 SuperOPC v0.8.0 的会话管理工作流围绕四个命令展开：
 - `/opc-progress`
 - `/opc-pause`
