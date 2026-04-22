@@ -418,9 +418,58 @@ def collect_files(directories: list[str], suffix: str = ".md") -> list[Path]:
     return sorted(results)
 
 
+def collect_skill_files(directories: list[str]) -> list[Path]:
+    """Only match `SKILL.md` under each skill directory.
+
+    v1.4.2 fix: previously used `rglob('*.md')` which incorrectly swept in
+    supporting prompt templates like `implementer-prompt.md` under
+    `skills/engineering/agent-dispatch/`. Those are NOT skills — they are
+    prompts that the agent-dispatch skill references. Treating them as
+    skills caused convert.py to export 20 'skills' per runtime (17 real +
+    3 prompt templates) which in turn littered 33 bogus skill files across
+    11 runtime targets per conversion.
+
+    Canonical rule: one skill == one directory containing exactly one
+    `SKILL.md`. Any additional `.md` files in the directory are
+    skill-internal assets — collected separately by `collect_skill_assets()`.
+    """
+    results: list[Path] = []
+    for directory in directories:
+        abs_dir = REPO_ROOT / directory
+        if abs_dir.exists():
+            results.extend(sorted(path for path in abs_dir.rglob("SKILL.md") if path.is_file()))
+    return sorted(results)
+
+
+def collect_skill_assets(directories: list[str]) -> list[Path]:
+    """Collect non-SKILL.md files inside skill directories.
+
+    These are supporting assets (prompt templates, reference diagrams, etc.)
+    that a skill references via relative paths (e.g. `./implementer-prompt.md`
+    inside `agent-dispatch/SKILL.md`). They must be copied alongside the
+    skill for the skill to function end-to-end — but they are NOT standalone
+    skills and must never be counted or discovered as skills.
+
+    Only runtimes that preserve the skill directory structure
+    (claude-code, gemini-cli, openclaw) should copy these verbatim. Flat
+    runtimes (cursor, copilot) lose them by design — users of those
+    runtimes must reference the canonical SuperOPC repo for full skill
+    assets.
+    """
+    results: list[Path] = []
+    for directory in directories:
+        abs_dir = REPO_ROOT / directory
+        if not abs_dir.exists():
+            continue
+        for md_path in abs_dir.rglob("*.md"):
+            if md_path.name != "SKILL.md" and md_path.is_file():
+                results.append(md_path)
+    return sorted(results)
+
+
 def collect_sources() -> list[SourceFile]:
     sources: list[SourceFile] = []
-    for path in collect_files(SKILL_DIRS):
+    for path in collect_skill_files(SKILL_DIRS):
         sources.append(SourceFile("skill", path, path.relative_to(REPO_ROOT), parse_frontmatter(path.read_text(encoding="utf-8"))))
     for path in collect_files([AGENT_DIR]):
         sources.append(SourceFile("agent", path, path.relative_to(REPO_ROOT), parse_frontmatter(path.read_text(encoding="utf-8"))))
@@ -678,6 +727,12 @@ def convert_claude_code(sources: list[SourceFile], out_dir: Path) -> int:
         write_file(runtime_root / source.relative_path, source.path.read_text(encoding="utf-8"))
         count += 1
 
+    # Copy skill assets (non-SKILL.md files inside skill dirs) verbatim.
+    # Required for skills like agent-dispatch that reference relative prompt
+    # templates (./implementer-prompt.md etc.).
+    for asset in collect_skill_assets(SKILL_DIRS):
+        write_file(runtime_root / asset.relative_to(REPO_ROOT), asset.read_text(encoding="utf-8"))
+
     for relative in STATIC_CLAUDE_EXPORTS:
         source_path = REPO_ROOT / relative
         if source_path.exists():
@@ -728,6 +783,15 @@ def convert_gemini_cli(sources: list[SourceFile], out_dir: Path) -> int:
     for source in sources:
         write_file(runtime_output_path("gemini-cli", source, out_dir), render_gemini_skill(source))
         count += 1
+
+    # Gemini CLI preserves skill directory structure (skills/<slug>/SKILL.md),
+    # so copy skill assets alongside each SKILL.md (slug-based relative path).
+    for asset in collect_skill_assets(SKILL_DIRS):
+        parts = asset.relative_to(REPO_ROOT).parts  # ("skills", "<category>", "<slug>", "<asset>.md")
+        if len(parts) >= 4:
+            slug = parts[-2]
+            target = out_dir / "gemini-cli" / "skills" / slug / parts[-1]
+            write_file(target, asset.read_text(encoding="utf-8"))
 
     write_file(
         out_dir / "gemini-cli" / "gemini-extension.json",
