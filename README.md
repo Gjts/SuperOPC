@@ -97,27 +97,27 @@ SuperOPC 内置质量门控钩子（源自 [ECC hooks.json](https://github.com/n
 
 ```
 SuperOPC/
-├── skills/                    # 技能系统（v1.4 精简 17 个）
-│   ├── using-superopc/        # 🧭 元层（5 个）
-│   │   ├── SKILL.md           # 总则：如何发现与调用 skill
-│   │   ├── session-management/# HANDOFF / pause / resume / report
-│   │   ├── developer-profile/ # 8 维度开发者画像
-│   │   ├── autonomous-ops/    # GREEN/YELLOW/RED 三区权限（从 intelligence/ 迁入）
-│   │   └── workflow-modes/    # 派发 opc-orchestrator 做 7 模式路由
+├── skills/                    # 技能系统（v1.4.2 精简 17 个：10 派发器 + 4 原子 + 2 元层 + 1 学习）
+│   ├── using-superopc/        # 🧭 元层与自主运营（5 个：1 元层 SKILL.md + 4 子技能）
+│   │   ├── SKILL.md           # 总则：如何发现与调用 skill（元层）
+│   │   ├── session-management/# 📡 派发 opc-session-manager（v1.4.2 升级为派发器）
+│   │   ├── autonomous-ops/    # 📡 派发 opc-cruise-operator（v1.4.2 升级为派发器）
+│   │   ├── workflow-modes/    # 📡 派发 opc-orchestrator 做 7 模式路由
+│   │   └── developer-profile/ # 元层：8 维度开发者画像（引擎消费）
 │   ├── product/               # 🚀 产品派发器（4 个）
-│   │   ├── planning/          # 派发 opc-planner（吸收旧 brainstorming）
-│   │   ├── implementing/      # 派发 opc-executor
-│   │   ├── reviewing/         # 派发 opc-reviewer（Quick/Standard/Deep）
-│   │   └── shipping/          # 派发 opc-shipper
+│   │   ├── planning/          # 📡 派发 opc-planner（吸收旧 brainstorming）
+│   │   ├── implementing/      # 📡 派发 opc-executor
+│   │   ├── reviewing/         # 📡 派发 opc-reviewer（Quick/Standard/Deep）
+│   │   └── shipping/          # 📡 派发 opc-shipper
 │   ├── engineering/           # 🔧 工程（6 个：2 派发器 + 4 原子）
-│   │   ├── debugging/         # 派发 opc-debugger
-│   │   ├── security-review/   # 派发 opc-security-auditor
-│   │   ├── tdd/               # RED-GREEN-REFACTOR 铁律
-│   │   ├── verification-loop/ # 4 层验证 + Nyquist 采样
-│   │   ├── agent-dispatch/    # 子代理派发（Mode A/B）
-│   │   └── git-worktrees/     # 隔离工作空间
-│   ├── business/              # 💼 商业（1 个，统一入口）
-│   │   └── advisory/          # 派发 opc-business-advisor → 按 references/business/ 执行 20 个子活动
+│   │   ├── debugging/         # 📡 派发 opc-debugger
+│   │   ├── security-review/   # 📡 派发 opc-security-auditor
+│   │   ├── tdd/               # 原子：RED-GREEN-REFACTOR 铁律
+│   │   ├── verification-loop/ # 原子：4 层验证 + Nyquist 采样
+│   │   ├── agent-dispatch/    # 原子：子代理派发（Mode A/B）
+│   │   └── git-worktrees/     # 原子：隔离工作空间
+│   ├── business/              # 💼 商业（1 个派发器）
+│   │   └── advisory/          # 📡 派发 opc-business-advisor → 按 references/business/ 执行 20 个子活动
 │   └── learning/              # 📚 学习（1 个）
 │       └── continuous-learning/ # PostToolUse 观察管道 + 本能演化
 ├── references/                # 📖 知识库（v1.4 新层）
@@ -129,7 +129,7 @@ SuperOPC/
 │   ├── skill-authoring.md     # skill 作者手册（合并 skill-from-masters + writing-skills）
 │   ├── plan-template.md       # PLAN.md 模板
 │   ├── gates.md / verification-patterns.md / anti-patterns.md / ...（其他 v0.x 参考）
-├── agents/                    # 专业代理（18 个，v1.4 +1）
+├── agents/                    # 专业代理（27 个：20 core + 2 matrix + 5 domain，v1.4.2 +2）
 │   ├── opc-orchestrator.md    # 全流程编排器
 │   ├── opc-planner.md         # 规划专家（Phase 0-5 完整流程）
 │   ├── opc-executor.md        # 执行专家
@@ -140,6 +140,8 @@ SuperOPC/
 │   ├── opc-debugger.md        # 科学方法调试（假设-证据-排除+修复规程）
 │   ├── opc-security-auditor.md # OWASP Top 10 + ASVS 审计
 │   ├── opc-business-advisor.md # 一人公司商业顾问（v1.4 新增，20 个子活动）
+│   ├── opc-session-manager.md # 会话连续性（v1.4.2 新增：pause/resume/progress/session-report）
+│   ├── opc-cruise-operator.md # 自主运营（v1.4.2 新增：cruise/heartbeat/autonomous）
 │   ├── opc-doc-writer.md      # 文档生成
 │   ├── opc-doc-verifier.md    # 文档准确性验证
 │   ├── opc-codebase-mapper.md # 4 维代码地图
@@ -147,27 +149,36 @@ SuperOPC/
 │   ├── opc-plan-checker.md    # 8 维度计划验证
 │   ├── opc-assumptions-analyzer.md # 隐藏假设分析
 │   ├── opc-roadmapper.md      # 产品路线图
-│   └── opc-intel-updater.md   # 代码库索引刷新
-├── commands/                  # 斜杠命令
+│   ├── opc-intel-updater.md   # 代码库索引刷新
+│   ├── matrix/                # 2 个专业执行代理：opc-frontend-wizard / opc-backend-architect
+│   └── domain/                # 5 个按需激活领域代理：devops / seo / content / growth / pricing
+├── commands/                  # 斜杠命令（25 个：16 派发器 + 6 纯只读 CLI + 3 混合低摩擦 CLI）
 │   └── opc/
-│       ├── start.md           # /opc-start 初始化项目
-│       ├── plan.md            # /opc-plan 规划功能
-│       ├── build.md           # /opc-build 执行开发
-│       ├── research.md        # /opc-research 市场研究
-│       ├── dashboard.md       # /opc-dashboard 项目仪表盘
-│       ├── stats.md           # /opc-stats 项目指标
-│       ├── progress.md        # /opc-progress 会话进度
-│       ├── pause.md           # /opc-pause 暂停并交接
-│       ├── resume.md          # /opc-resume 恢复会话
-│       ├── session-report.md  # /opc-session-report 会话报告
-│       ├── ship.md            # /opc-ship 发布
-│       ├── review.md          # /opc-review 代码审查
-│       ├── opc.md             # /opc 统一入口（替代 do/next/discuss/explore/fast/quick）
-│       ├── health.md          # /opc-health 质量与目录体检
-│       ├── autonomous.md      # /opc-autonomous 有边界自主推进
-│       ├── thread.md          # /opc-thread 上下文线程
-│       ├── seed.md            # /opc-seed 想法种子
-│       └── backlog.md         # /opc-backlog 延后任务池
+│       ├── opc.md             # /opc 统一自然语言入口（派发 workflow-modes）
+│       ├── start.md           # /opc-start 初始化项目（派发 planning 或 workflow-modes）
+│       ├── plan.md            # /opc-plan 规划功能（派发 planning）
+│       ├── build.md           # /opc-build 执行开发（派发 implementing）
+│       ├── review.md          # /opc-review 代码审查（派发 reviewing）
+│       ├── ship.md            # /opc-ship 发布（派发 shipping）
+│       ├── debug.md           # /opc-debug 调试（派发 debugging，v1.4.2 新增）
+│       ├── security.md        # /opc-security 安全审计（派发 security-review，v1.4.2 新增）
+│       ├── business.md        # /opc-business 商业决策（派发 business-advisory，v1.4.2 新增）
+│       ├── progress.md        # /opc-progress 会话进度（派发 session-management）
+│       ├── pause.md           # /opc-pause 暂停并交接（派发 session-management）
+│       ├── resume.md          # /opc-resume 恢复会话（派发 session-management）
+│       ├── session-report.md  # /opc-session-report 会话报告（派发 session-management）
+│       ├── cruise.md          # /opc-cruise 启动巡航（派发 autonomous-ops）
+│       ├── heartbeat.md       # /opc-heartbeat 查看心跳（派发 autonomous-ops）
+│       ├── autonomous.md      # /opc-autonomous 有边界自主推进（派发 autonomous-ops）
+│       ├── health.md          # /opc-health 质量体检（纯只读 CLI）
+│       ├── dashboard.md       # /opc-dashboard 项目仪表盘（纯只读 CLI）
+│       ├── stats.md           # /opc-stats 项目指标（纯只读 CLI）
+│       ├── intel.md           # /opc-intel 代码库情报（纯只读 CLI，refresh 子命令走 agent）
+│       ├── profile.md         # /opc-profile 开发者画像（纯只读 CLI）
+│       ├── research.md        # /opc-research 研究产物索引（纯只读 CLI）
+│       ├── thread.md          # /opc-thread 上下文线程（混合低摩擦 CLI）
+│       ├── seed.md            # /opc-seed 想法种子（混合低摩擦 CLI）
+│       └── backlog.md         # /opc-backlog 延后任务池（混合低摩擦 CLI）
 ├── hooks/                     # 钩子系统（质量门控）
 │   └── hooks.json             # 钩子注册表（ECC 模式）
 ├── mcp-configs/               # MCP 模板（Context7/Supabase/Sequential Thinking/Playwright）
@@ -370,17 +381,23 @@ business-advisory → references/business/* → domain agents
 TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + verifier (目标反向验证)
 ```
 
-## 技能一览
+## 技能一览（v1.4.2）
 
-| 类别 | 技能数 | 核心理念 |
+SuperOPC v1.4 起严格执行 **skill-dispatcher / agent-workflow** 契约：知识库内容已下沉到 `references/`，skill 空间只保留 17 个核心技能。
+
+| 类别 | 技能数 | 技能列表 |
 |------|--------|---------|
-| 产品开发 | 5 | brainstorm → plan → implement → review → ship |
-| 工程质量 | 20 | TDD 铁律 + 调试 + 并行执行 + 工程模式库 |
-| 商业运营 | 18 | 极简创业 + 财务 / 法务 / 内容 / SEO / 用户访谈 |
-| 市场情报 | 2 | 多源调研 + 建造者追踪 |
-| 学习进化 | 3 | 从大师学习 + 创建技能 + 持续改进 |
-| 元技能 | 3 | 如何在项目里正确使用 SuperOPC |
-| **总计** | **51** | |
+| 🚀 产品派发器 | 4 | planning / implementing / reviewing / shipping |
+| 🔧 工程派发器 | 2 | debugging / security-review |
+| 💼 商业派发器 | 1 | business-advisory |
+| 🧭 自主/会话派发器 | 3 | workflow-modes / session-management / autonomous-ops（v1.4.2 升级）|
+| ⚙️ 原子技能 | 4 | tdd / verification-loop / agent-dispatch / git-worktrees |
+| 🤖 元层 | 2 | using-superopc/SKILL.md / developer-profile |
+| 📚 学习 | 1 | continuous-learning |
+| **总计** | **17** | **10 派发器 + 4 原子 + 2 元层 + 1 学习** |
+
+> **为什么不是 51？** v0.x 曾有 51 个 skill，但其中大多数是知识库文档（技术栈 patterns / 商业 playbooks）。
+> v1.4 将它们下沉到 `references/`（由 agent workflow 按需引用），skill 只留真正驱动行为的派发器和不可被其他技能取代的原子规则。详见 `CHANGELOG.md` [1.4.0]。
 
 ## 设计原则
 
@@ -392,30 +409,23 @@ TDD (先写测试) + debugging (根因分析) + reviewing (五维度审查) + ve
 
 ## 路线图
 
-查看完整的产品演进计划：**[ROADMAP.md](ROADMAP.md)**（融合 7 个来源项目，350+ 文件规划）
+完整变更记录见 **[CHANGELOG.md](CHANGELOG.md)**；未来规划见 **[ROADMAP.md](ROADMAP.md)**。
 
 | 阶段 | 版本 | 主题 | 状态 |
 |------|------|------|------|
-| **基础** | v0.1.0 | 骨架搭建（24技能+6代理+7命令） | ✅ 完成 |
-| | v0.2.0 | Hooks + Rules + 引用系统 | ✅ 完成 |
-| | v0.3.0 | 代理扩展+波次执行（6→15代理+并行引擎） | ✅ 完成 |
-| | v0.4.0 | 状态管理+文件系统（.opc/） | ✅ 完成 |
-| | v0.5.0 | 工程技能深化（4→19） | ✅ 完成 |
-| **深化** | v0.6.0 | 商业技能+仪表盘 | ✅ 完成 |
-| | v0.7.0 | 多运行时适配+MCP（Claude Code + 10 个导出运行时） | ✅ 完成 |
-| | v0.8.0 | 会话管理+高级工作流 | ✅ 完成 |
-| | v0.9.0 | 质量保证体系 | ✅ 完成 |
-| | v1.0.0 | 正式开源发布 | ✅ 完成 |
-| **智能** | v1.1.0 | 开发者画像+全局学习 | 📋 计划中 |
-| | v1.2.0 | CLI 工具层 | 📋 计划中 |
-| | v1.3.0 | 安全强化 | 📋 计划中 |
-| | v1.4.0 | 领域代理库（192代理精选） | 📋 计划中 |
-| | v1.5.0 | 高级调试+取证 | 📋 计划中 |
-| **平台** | v1.6.0 | 工作流引擎 | 📋 计划中 |
-| | v1.7.0 | 国际化（5语言） | 📋 计划中 |
-| | v1.8.0 | 企业级功能 | 📋 计划中 |
-| | v1.9.0 | SDK+可编程接口 | 📋 计划中 |
+| **基础** | v0.1.0 – v0.5.0 | 骨架→Hooks/Rules→代理扩展→状态管理→工程技能 | ✅ 完成 |
+| **深化** | v0.6.0 – v1.0.0 | 商业技能→多运行时→会话管理→质量保证→正式发布 | ✅ 完成 |
+| **智能** | v1.1.0 | 开发者画像+全局学习 | ✅ 完成 |
+| | v1.2.0 | CLI 工具层 (`bin/opc-tools`) | ✅ 完成 |
+| | v1.3.0 | Dispatcher 契约 + references/ 层 | ✅ 完成 |
+| | v1.4.0 | Skill 精简到 17 个，新增 business-advisor | ✅ 完成 |
+| | v1.4.1 | Skill Registry + Intent Router（ADR-0001/0002/0003） | ✅ 完成 |
+| | v1.4.2 | 命令契约封堵 + cruise 真派发（ADR-0004） | ✅ 完成 |
+| **待定** | v1.5.0+ | 高级调试 / 工作流引擎 / 国际化 / SDK | 📋 计划中 |
 | | v2.0.0 | 超级一人公司 OS | 🎯 终极目标 |
+
+> ROADMAP.md 中早期为 v1.1-v2.0 所规划的内容（CLI / 安全 / 领域代理 192 库 / 调试取证等）部分已在 v1.4
+> 中以更精简的形式交付（花名已重新划分），但部分高阶功能（取证 / 工作流 DSL / i18n / 企业级）仍待定。
 
 ## 贡献
 
@@ -447,11 +457,12 @@ SuperOPC 站在巨人的肩膀上。感谢所有开源项目的作者：
 
 ## 中文说明
 
-SuperOPC（超级一人公司操作系统）是一个 AI 驱动的开源工具，专为独立创始人设计。它融合了 9 个顶级开源项目的精华，提供：
+SuperOPC（超级一人公司操作系统）是一个 AI 驱动的开源工具，专为独立创始人设计。它融合了 9 个顶级开源项目的精华，提供（v1.4.2 当前状态）：
 
-- **51 个 AI 技能**：覆盖产品开发、工程质量、商业运营、市场情报、学习进化
-- **15 个专业代理**：编排器、规划师、执行者、审查员、调试器、安全审计、UI 审计、文档写作等
-- **23 个斜杠命令**：覆盖规划、执行、发布、状态查看、会话恢复、工作流模式与自然语言路由
+- **17 个 AI 技能**：10 派发器（planning / implementing / reviewing / shipping / debugging / security-review / business-advisory / workflow-modes / session-management / autonomous-ops）+ 4 原子（tdd / verification-loop / agent-dispatch / git-worktrees）+ 2 元层 + 1 学习
+- **27 个专业代理**：20 core（v1.4.2 +2：opc-session-manager / opc-cruise-operator）+ 2 matrix（frontend-wizard / backend-architect）+ 5 domain（devops / seo / content / growth / pricing）
+- **25 个斜杠命令**：16 派发器命令 + 6 纯只读 CLI（/opc-health /opc-dashboard /opc-stats /opc-intel /opc-profile /opc-research）+ 3 混合低摩擦 CLI（/opc-thread /opc-seed /opc-backlog）
+- **200+ references/**：技术栈 patterns / 商业 playbooks / rubric / checklist，由 agent workflow 按子活动引用
 - **4 个项目模板**：SaaS / API 服务 / 移动应用 / 营销页，开箱即用
 - **11 个 AI 工具适配**：Claude Code / Cursor / Windsurf / Copilot / Gemini CLI / OpenCode / Codex / Trae / Cline / Augment / OpenClaw
 
