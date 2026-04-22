@@ -244,6 +244,8 @@ SuperOPC/
 
 ## 快速开始
 
+> **快速选命令：** 如果你不确定该用哪个 slash 命令，先看 **[docs/COMMAND-CHEAT-SHEET.md](docs/COMMAND-CHEAT-SHEET.md)**（一页纸决策树 + 端到端旅程 + 错误路径速查）。
+
 ### 1. 初始化项目
 ```
 /opc-start
