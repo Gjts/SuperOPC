@@ -66,11 +66,12 @@ SuperOPC 的 `opc-executor` 代理会：
 
 ### 第五步：查看进度
 
-```bash
-python scripts/opc_dashboard.py --cwd .
+```
+/opc-dashboard       # 纯只读 CLI，项目仪表盘
+/opc-progress        # 派发 session-management skill → opc-session-manager 的 progress 子场景
 ```
 
-输出：
+`/opc-dashboard` 输出示例：
 ```
 ╔══════════════════════════════════════╗
 ║         QuickInvoice Dashboard      ║
@@ -83,17 +84,25 @@ python scripts/opc_dashboard.py --cwd .
 ╚══════════════════════════════════════╝
 ```
 
+`/opc-progress` 输出**五段式摘要 + 唯一一个推荐下一步**（agent 强制收敛，不给三选一）。
+
 ### 第六步：暂停和恢复
 
 当天结束时：
-```bash
-python scripts/opc_pause.py --cwd . --note "OAuth 回调 URL 需要确认"
+```
+/opc-pause --note "OAuth 回调 URL 需要确认"
 ```
 
+`/opc-pause` 派发 `session-management` skill → `opc-session-manager`，写入 `.opc/HANDOFF.json` 并更新 `STATE.md` 连续性字段。
+
 第二天恢复：
-```bash
-python scripts/opc_resume.py --cwd .
 ```
+/opc-resume
+```
+
+`/opc-resume` 读 handoff → 校验 recovery_files → 对齐 STATE.md → 推荐**一个**主下一步。
+
+> v1.4.2 前的旧用法 `python scripts/opc_pause.py` / `opc_resume.py` 已不再推荐。CLI 仍可跑，但会跳过 agent workflow 层，失去 HARD-GATE 和 validation debt 跟踪。
 
 ### 第七步：发布
 
@@ -101,35 +110,47 @@ python scripts/opc_resume.py --cwd .
 /opc-ship
 ```
 
-SuperOPC 会：
+派发 `shipping` skill → `opc-shipper`。SuperOPC 会：
 1. 运行所有测试
 2. 生成变更日志
 3. 创建 PR 或直接合并
 4. 更新 `.opc/STATE.md`
 
-## 关键技能使用
+## 关键引用与技能使用
 
-| 技能 | 使用场景 |
-|------|---------|
-| `nextjs-patterns` | Server Components + Server Actions 架构 |
-| `postgres-patterns` | Supabase RLS 和查询优化 |
-| `tdd` | 每个功能先写测试 |
-| `api-design` | RESTful 端点设计 |
-| `pricing` | 定价策略（Free / Pro / Enterprise） |
-| `seo` | Landing page SEO 优化 |
-| `security-review` | 上线前安全审计 |
+v1.4 起技术栈与商业知识下沉到 `references/`，由 agent workflow 按需引用，不再是顶层 skill。
 
-## 代理协作流程
+| 引用 / 技能 | 类型 | 使用场景 |
+|-------------|------|---------|
+| `references/patterns/engineering/nextjs.md` | reference | Server Components + Server Actions 架构（由 opc-executor 引用） |
+| `references/patterns/engineering/postgres.md` | reference | Supabase RLS 和查询优化 |
+| `references/patterns/engineering/api-design.md` | reference | RESTful 端点设计 |
+| `references/business/pricing.md` | reference | 定价策略（由 opc-business-advisor 或 opc-pricing-analyst 引用） |
+| `references/business/seo.md` | reference | Landing page SEO（由 opc-seo-specialist 引用） |
+| `tdd` | 原子 skill | 每个功能先写测试（RED-GREEN-REFACTOR） |
+| `security-review` | 派发器 skill → opc-security-auditor | 上线前 OWASP Top 10 审计 |
+| `verification-loop` | 原子 skill | 4 层验证 + Nyquist 采样 |
+
+## 代理协作流程（v1.4.2）
 
 ```
 用户需求
-  → opc-planner (规划 2-3 方案)
+  ↓ /opc-plan
+  → opc-planner (Phase 0-5 完整流程：澄清 → 方案 → 分解 → 波次 → 检查 → pre-flight gate)
   → opc-plan-checker (8 维度验证)
-  → opc-executor (TDD 执行)
-  → opc-reviewer (五维度审查)
-  → opc-verifier (目标反向验证)
-  → opc-security-auditor (安全扫描)
+  ↓ /opc-build
+  → opc-executor (TDD 执行 + 子代理派发 + 原子提交)
+  → opc-reviewer (五维度审查，Quick/Standard/Deep)
+  ↓ /opc-security (上线前)
+  → opc-security-auditor (OWASP Top 10)
+  ↓ /opc-ship
+  → opc-shipper (测试验证 → PR/合并 → worktree 清理)
 ```
+
+跨会话与长时间推进：
+- `/opc-pause` → opc-session-manager 写 HANDOFF.json
+- `/opc-resume` → opc-session-manager 重建上下文
+- `/opc-cruise --mode assist --hours 2` → opc-cruise-operator 启动有边界自主运营
 
 ## 预期时间线
 
