@@ -263,59 +263,86 @@ AI 会：逐任务 TDD 执行 → 双阶段审查 → 原子提交
 ```
 多源调研 → 竞品分析 → 行动建议
 
-### 6. 查看项目仪表盘
-```bash
-python scripts/opc_dashboard.py --cwd /path/to/your/project
+### 6. 查看项目仪表盘（只读 CLI）
 ```
-汇总阶段、计划、需求、MRR、债务、下一步。
+/opc-dashboard
+```
+或命令行：`python scripts/opc_dashboard.py --cwd /path/to/your/project`
+汇总阶段、计划、需求、MRR、债务、下一步。这是 v1.4.2 **只读白名单命令**之一。
 
 ### 7. 查看会话进度
-```bash
-python scripts/opc_progress.py --cwd /path/to/your/project
 ```
-查看当前位置、主下一步、完成度与验证欠债。
+/opc-progress
+```
+派发 `session-management` skill → `opc-session-manager` agent，输出五段式摘要（阶段 / 最近动作 / 未完成 TODO / 验证欠债 / 唯一主下一步）。
 
-### 8. 运行项目健康检查
+### 8. 运行项目健康检查（只读 CLI）
+```
+/opc-health
+```
+或命令行：
 ```bash
-python scripts/opc_health.py --cwd /path/to/your/project
 python scripts/opc_health.py --cwd /path/to/your/project --repair
 python scripts/opc_health.py --cwd /path/to/your/project --json
 ```
-检查 `.opc/` 完整性、需求覆盖、SUMMARY 追踪字段、恢复文件引用，并可补齐缺失的基础结构。
+检查 `.opc/` 完整性、需求覆盖、SUMMARY 追踪字段、恢复文件引用，`--repair` 可补齐缺失的基础结构。只读白名单命令。
 
 ### 9. 生成会话报告
-```bash
-python scripts/opc_session_report.py --cwd /path/to/your/project
 ```
-汇总最近会话、handoff、阻塞和恢复建议。
+/opc-session-report
+```
+派发 `session-management` skill → `opc-session-manager` agent 的 Session-report 子场景（汇总最近会话 → STATE 快照 → 质量债务 → 写入 `.opc/session-reports/*.md`）。
 
 ### 10. 有边界自主推进
-```bash
-python scripts/opc_autonomous.py --cwd /path/to/your/project --from 2 --to 4
-python scripts/opc_autonomous.py --cwd /path/to/your/project --only 3 --interactive
 ```
-在明确窗口内连续推进，并在 blocker、验证欠债或人工检查点处停下。
+/opc-autonomous --from 2 --to 4
+/opc-autonomous --only 3 --interactive
+```
+派发 `autonomous-ops` skill → `opc-cruise-operator` agent。**进入前必须通过 Anti-Build-Trap 硬门**（validate-idea + find-community 证据）。在明确窗口内连续推进，并在 blocker、验证欠债或人工检查点处停下。
 
 ### 11. 暂停并恢复工作
-```bash
-python scripts/opc_pause.py --cwd /path/to/your/project --note "今天先停在这里"
-python scripts/opc_resume.py --cwd /path/to/your/project
 ```
-将恢复快照写入 `.opc/HANDOFF.json`，并在新会话中恢复上下文。
+/opc-pause --note "今天先停在这里"
+/opc-resume
+```
+`/opc-pause` 派发 `session-management` skill 写入 `.opc/HANDOFF.json` 并更新 `STATE.md` 连续性字段；`/opc-resume` 在新会话中重建上下文并推荐**唯一**一个主下一步。
 
-### 12. 管理上下文线程 / 种子 / backlog
-```bash
-python scripts/opc_thread.py --cwd /path/to/your/project "pricing-page-copy"
-python scripts/opc_seed.py --cwd /path/to/your/project "viral referral loop" --trigger "当激活率停滞时"
-python scripts/opc_backlog.py --cwd /path/to/your/project "整理 onboarding 文案" --note "等本阶段结束后再做"
+### 12. 管理上下文线程 / 种子 / backlog（混合路径，见下文注意事项）
 ```
-把长期上下文写入 `.opc/threads/`、把未来想法写入 `.opc/seeds/`，并把延后可执行任务写入 `.opc/todos/`。
+/opc-thread pricing-page-copy
+/opc-seed "viral referral loop" --trigger "当激活率停滞时"
+/opc-backlog "整理 onboarding 文案" --note "等本阶段结束后再做"
+```
+三个命令的"**列出**"模式是纯只读（白名单）；"**创建**"模式会写入 `.opc/threads/`、`.opc/seeds/`、`.opc/todos/`，此时应优先走 `/opc` 或 `/opc-plan` 走 agent 工作流产出更高质量的条目。直接 CLI 创建仅适合"我只是想快速记一条"的场景。
 
-### 13. 导出结构化指标
-```bash
-python scripts/opc_stats.py --cwd /path/to/your/project
+### 13. 导出结构化指标（只读 CLI）
 ```
-输出 JSON，适合日报、CI 或外部面板消费。
+/opc-stats
+```
+或命令行：`python scripts/opc_stats.py --cwd /path/to/your/project`
+输出 JSON，适合日报、CI 或外部面板消费。只读白名单命令。
+
+### 14. 启动巡航 / 查看心跳
+```
+/opc-cruise --mode watch --hours 2
+/opc-heartbeat
+```
+`/opc-cruise` 启动自主运营循环（watch / assist / cruise 三档权限），`/opc-heartbeat` 只读查看当前状态、最近决策、异常信号。**Cruise 永远有时限**（`--hours` 必填或默认），无边界模式会被拒绝。
+
+### 15. 调试 / 安全审计 / 商业决策
+```
+/opc-debug "测试 foo/test_login.py::test_oauth 失败"
+/opc-security app/api/
+/opc-business "自由职业者发票 SaaS 怎么定价"
+```
+分别派发 `debugging` / `security-review` / `business-advisory` skill。`business-advisory` 自带 **Anti-Build-Trap 硬门**：没有 validate-idea + find-community 证据时拒绝进入编码阶段。
+
+---
+
+> **关于 slash 命令 vs Python 脚本：** v1.4.2 起，所有涉及 agent workflow 的命令必须走 slash 入口
+> （`/opc-xxx`），它们会派发对应的 dispatcher skill。**只读**命令（`/opc-health` `/opc-dashboard`
+> `/opc-stats` `/opc-intel` `/opc-profile` `/opc-thread` `/opc-seed` `/opc-backlog` `/opc-research`）
+> 允许直接调 Python 脚本作为等价替代。完整白名单规则见 `AGENTS.md` §Read-only CLI 白名单例外。
 
 - `references/session-management.md` — pause / resume / progress / report 生命周期与冲突规则
 - `references/workflow-modes.md` — autonomous / fast / quick / discuss / explore / do / next 边界
