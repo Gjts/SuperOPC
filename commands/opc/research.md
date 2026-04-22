@@ -1,6 +1,6 @@
 ---
 name: opc-research
-description: Run market research runtime: feed, insights, methods, report, and extracted-skill capture
+description: "Run market research runtime: feed, insights, methods, report, and extracted-skill capture"
 ---
 # /opc-research
 市场研究入口。
