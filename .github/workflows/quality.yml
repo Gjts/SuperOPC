@@ -18,11 +18,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install pytest
-        run: python -m pip install --upgrade pip pytest
+      - name: Install pytest and yaml
+        run: python -m pip install --upgrade pip pytest pyyaml jsonschema
+
+      - name: Verify command contract (skill-first / agent-workflow)
+        run: python scripts/verify_command_contract.py
+
+      - name: Verify skill registry sync
+        run: python scripts/build_skill_registry.py --check
 
       - name: Run pytest
-        run: python -m pytest tests/test_session_workflow.py tests/test_engine_v2.py -v
+        run: python -m pytest tests/test_session_workflow.py tests/test_engine_v2.py tests/engine/test_verify_command_contract.py -v
 
       - name: Run repo health check
         run: python scripts/opc_health.py --cwd . --target repo --json

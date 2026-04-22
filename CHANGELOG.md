@@ -7,6 +7,58 @@
 
 ---
 
+## [1.4.2] - 2026-04-22 — 命令契约封堵 + Cruise 真派发
+
+**主题：** 封堵 v1.4 契约审计发现的 3 处系统性断层（cruise 假派发 / 命令层越过 skill 层 / meta skill 被 slash 触发但无 agent 绑定），引入机械强制 lint。详见 `docs/adr/0004-command-contract-enforcement.md`。
+
+### 关键修复（Fixed）
+
+- **`scripts/engine/cruise_controller._dispatch_command`** 之前把 `ActionType.PLAN / BUILD / REVIEW` 全部路由到 `opc_workflow.py progress`（只读状态查询），导致 cruise 模式宣称"自动规划/构建/审查"实际从未派发 agent。现改为：
+  - `ACTION_AGENT_MAP`：plan→opc-planner, build→opc-executor, review→opc-reviewer, debug→opc-debugger, ship→opc-shipper, research→opc-researcher, pause/resume→opc-session-manager
+  - `READ_ONLY_SCRIPT_MAP`：只保留 health_check / collect_intel / run_tests / format_code / generate_docs 走白名单脚本
+  - 新增 `_run_claude_agent()` 通过 `claude --print --agent <owner>` 真派发，同时发 `cruise.agent_dispatch` 事件审计
+- **`commands/opc/research.md`** frontmatter description 含未转义冒号，修复 YAML 解析错误
+
+### 新增（Added）
+
+- **`agents/opc-session-manager.md`** — pause/resume/progress/session-report 四子场景 workflow 持有者
+- **`agents/opc-cruise-operator.md`** — cruise-start/heartbeat/autonomous-advance 三子场景 workflow 持有者（含 HARD-GATE：Anti-Build-Trap + RED 动作拦截 + 失败阈值 3）
+- **3 个新 slash 命令：** `/opc-debug` `/opc-security` `/opc-business` 分别派发 debugging / security-review / business-advisory skill
+- **`scripts/verify_command_contract.py`** — 命令契约 lint，遍历 `commands/opc/*.md` 强制：
+  - YAML frontmatter 合法且有 `name`
+  - 白名单 9 个只读 CLI 可直接调用 python 脚本
+  - 非白名单命令必须提到 "调用 `<dispatcher-id>` skill"
+  - 派发命令不得同时含直接脚本调用
+- **`docs/adr/0004-command-contract-enforcement.md`** — 状态 `accepted`，记录决策与落地清单
+- **`AGENTS.md` §Read-only CLI 白名单例外** — 明确列出 9 个允许直接调脚本的只读命令及 4 条进入条件
+
+### 变更（Changed）
+
+- **`skills/using-superopc/session-management/SKILL.md`** 从 meta 升级为 dispatcher，新增 `dispatches_to: opc-session-manager`
+- **`skills/using-superopc/autonomous-ops/SKILL.md`** 从 meta 升级为 dispatcher，新增 `dispatches_to: opc-cruise-operator`（GREEN/YELLOW/RED 规则保留为简要索引）
+- **7 个会话/巡航命令** (`/opc-pause` `/opc-resume` `/opc-progress` `/opc-session-report` `/opc-cruise` `/opc-heartbeat` `/opc-autonomous`) 的 `## 动作` 段改为派发对应 dispatcher skill
+- **`skills/using-superopc/SKILL.md`** 更新 dispatcher 数量 7→10，新增 v1.4.2 规则"被 slash 显式触发的 skill 必须是 dispatcher"
+- **`AGENTS.md`** 版本号 1.4→1.4.2，agent 数量 25→27，表格新增 session-manager/cruise-operator 行
+- **`skills/registry.json`** 自动重生成，10 dispatcher / 4 atomic / 2 meta / 1 learning
+- **`agents/registry.json`** 注册 opc-session-manager (core, priority 70) 与 opc-cruise-operator (core, priority 74)
+
+### CI / 质量门
+
+- **`.github/workflows/quality.yml`** 新增 2 步：
+  1. `verify_command_contract.py` — 命令契约 lint（违规阻断合并）
+  2. `build_skill_registry.py --check` — skill registry 同步检查
+- **`tests/test_engine_v2.py::TestCruiseDispatchContract`** — 9 个契约测试（契约守护 + 派发路径验证 + GREEN 脚本路径 + WAIT/DISCUSS noop + FileNotFoundError 错误路径）
+- **`tests/engine/test_verify_command_contract.py`** — 8 个单元测试（+ 1 个 integration 跑真实仓库）
+
+### 当前状态
+
+- 25 个命令：9 白名单 + 16 dispatcher，0 violations
+- 27 个 agent：20 core + 2 matrix + 5 domain
+- 17 个 skill：10 dispatcher + 4 atomic + 2 meta + 1 learning
+- cruise 真执行动作走 `claude --agent`，无假派发
+
+---
+
 ## [1.4.1] - Skill-Driven Runtime (Phase A)
 
 **主题：** 把 skill 发现机制从"LLM 自由匹配 17 份 SKILL.md description"升级为
