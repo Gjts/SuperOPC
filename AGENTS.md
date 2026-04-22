@@ -248,3 +248,20 @@ dag_engine 匹配任务到最佳代理：
 | `Skill("code-review-pipeline")` | `references/review-rubric.md`（由 opc-reviewer 以 Quick/Standard/Deep 深度引用） |
 | `Skill("skill-from-masters")` / `Skill("writing-skills")` | `references/skill-authoring.md` |
 | `skills/intelligence/autonomous-ops/` | `skills/using-superopc/autonomous-ops/`（移到元层） |
+
+### v1.4.2 迁移（命令契约封堵）
+
+| 旧路径 / 旧用法 | 新路径 / 新用法 | 原因 |
+|---|---|---|
+| `Skill("session-management")` 作为 meta skill 直接读规则 | `Skill("session-management")` 现为 dispatcher，自动派发 `opc-session-manager` | meta skill 被 slash 触发但无 agent 绑定，v1.4.2 封堵 |
+| `Skill("autonomous-ops")` 作为 meta skill 直接读 zone 规则 | `Skill("autonomous-ops")` 现为 dispatcher，自动派发 `opc-cruise-operator` | 同上 |
+| `python scripts/opc_pause.py` | `/opc-pause`（派发 session-management） | slash 命令必须走 dispatcher skill |
+| `python scripts/opc_resume.py` | `/opc-resume`（派发 session-management） | 同上 |
+| `python scripts/opc_progress.py` | `/opc-progress`（派发 session-management） | 同上 |
+| `python scripts/opc_session_report.py` | `/opc-session-report`（派发 session-management） | 同上 |
+| `python scripts/opc_autonomous.py` | `/opc-autonomous`（派发 autonomous-ops） | 同上 |
+| `python scripts/engine/cruise_controller.py` (直接) | `/opc-cruise` / `/opc-heartbeat`（派发 autonomous-ops） | 同上 |
+| `/opc-thread <new-name>` 直接创建（隐式写入） | 仍可用但命令文档强制标注 `<!-- MIXED: ... -->`，stderr 会输出 write-advisory | 档二 MIXED 白名单契约显式化 |
+| `/opc-seed <new-idea>` / `/opc-backlog <new-item>` | 同上 | 同上 |
+| cruise_controller._dispatch_command 中 PLAN/BUILD/REVIEW 路由到 `opc_workflow.py progress` | 改为通过 `claude --print --agent <owner>` 真派发对应 agent | 修复 v1.4.1 发现的"假派发"bug |
+| 无命令契约 lint | `scripts/verify_command_contract.py` 在 CI 强制 | ADR-0004 决策落地 |
