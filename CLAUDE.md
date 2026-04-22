@@ -96,15 +96,24 @@ python scripts/convert.py --help
 Data flow: `Perception (events) → EventBus → DecisionEngine → DAGEngine → Agents → QualityGate → StateEngine → EventBus (loop)`
 
 ### 1. Commands are the user-facing entrypoints
-`commands/opc/*.md` defines the top-level slash commands including `/opc-plan`, `/opc-build`, `/opc-ship`, `/opc-cruise`, `/opc-heartbeat`, `/opc-profile`, `/opc-intel`, and 20+ others.
+`commands/opc/*.md` defines the 25 top-level slash commands. v1.4.2 classifies them into three tiers by contract:
 
-These files are thin workflow routers. They do not contain the full logic themselves; instead they point Claude into the appropriate skill sequence.
+**Dispatcher commands (16)** — must dispatch a dispatcher skill, not call scripts directly:
+`/opc` `/opc-start` `/opc-plan` `/opc-build` `/opc-review` `/opc-ship` `/opc-debug` `/opc-security` `/opc-business` `/opc-progress` `/opc-pause` `/opc-resume` `/opc-session-report` `/opc-cruise` `/opc-heartbeat` `/opc-autonomous`
 
-### 2. Skills are the discovery + atomic-technique layer (v1.4 — 17 skills)
+**Pure read-only CLI (6)** — whitelisted to invoke `python scripts/*.py` directly, no side effects:
+`/opc-health` `/opc-dashboard` `/opc-stats` `/opc-intel` `/opc-profile` `/opc-research`
+
+**Mixed low-friction CLI (3)** — list mode is read-only, create mode writes a single markdown entry to `.opc/<dir>/` and emits stderr advisory:
+`/opc-thread` `/opc-seed` `/opc-backlog`
+
+The contract is mechanically enforced by `scripts/verify_command_contract.py` in CI (see AGENTS.md §Read-only CLI 白名单例外).
+
+### 2. Skills are the discovery + atomic-technique layer (v1.4.2 — 17 skills)
 
 Starting in v1.3 and sharpened in **v1.4**, SuperOPC enforces a strict **skill-dispatcher / agent-workflow** contract. skill 空间只保留真正驱动 agent workflow 的入口 + 被 agent 调用的刚性原子技术 + 系统元层规则。Knowledge-base content (technical patterns / business playbooks) has been sunk into `references/`.
 
-**Dispatcher skills** (≤ 30 lines each, 8 total) — auto-trigger entries that delegate to an agent. They own the `description` that Claude's auto-discovery matches, and their job is to `Task()` the corresponding agent. They do NOT contain workflow steps, review rubrics, or templates.
+**Dispatcher skills** (≤ 60 lines each, **10 total**) — auto-trigger entries that delegate to an agent. They own the `description` that Claude's auto-discovery matches, and their job is to `Task()` the corresponding agent. They do NOT contain workflow steps, review rubrics, or templates.
 
 - `skills/product/planning/` → dispatches `opc-planner` (**吸收了旧 brainstorming**，Phase 0-5 完整流程)
 - `skills/product/implementing/` → dispatches `opc-executor`
@@ -114,6 +123,8 @@ Starting in v1.3 and sharpened in **v1.4**, SuperOPC enforces a strict **skill-d
 - `skills/engineering/security-review/` → dispatches `opc-security-auditor`
 - `skills/business/advisory/` → dispatches `opc-business-advisor` (**v1.4 新增**，一人公司商业活动统一入口)
 - `skills/using-superopc/workflow-modes/` → dispatches `opc-orchestrator` for 7-mode routing
+- `skills/using-superopc/session-management/` → dispatches `opc-session-manager` (**v1.4.2 升级**，pause/resume/progress/session-report 四子场景)
+- `skills/using-superopc/autonomous-ops/` → dispatches `opc-cruise-operator` (**v1.4.2 升级**，cruise/heartbeat/autonomous-advance + GREEN/YELLOW/RED zones + Anti-Build-Trap guardrail)
 
 **Rigid atomic skills** (4 total) — self-contained reusable techniques invoked from within agents:
 
@@ -122,12 +133,10 @@ Starting in v1.3 and sharpened in **v1.4**, SuperOPC enforces a strict **skill-d
 - `skills/engineering/agent-dispatch/` — subagent dispatch with 2 modes
 - `skills/engineering/git-worktrees/` — isolated workspace
 
-**Meta skills** (4 total) — system-level runtime rules consumed by decision engine / cruise controller / hooks:
+**Meta skills** (2 total) — system-level runtime rules consumed by decision engine / cruise controller / hooks, never user-invoked:
 
-- `skills/using-superopc/SKILL.md` — meta-skill that bootstraps the whole system
-- `skills/using-superopc/session-management/` — HANDOFF / pause / resume / report rules
-- `skills/using-superopc/developer-profile/` — 8-dimension profiling across sessions
-- `skills/using-superopc/autonomous-ops/` — GREEN / YELLOW / RED permission zones + Anti-Build-Trap guardrail
+- `skills/using-superopc/SKILL.md` — meta-skill that bootstraps the whole system (skill discovery protocol)
+- `skills/using-superopc/developer-profile/` — 8-dimension profiling across sessions (engine-consumed)
 
 **Learning skill** (1 total):
 
@@ -146,7 +155,7 @@ When understanding SuperOPC behaviour: for a **workflow activity** (plan/build/r
 
 ### 3. Agents are the workflow owners
 
-`agents/` contains **25 registered specialist roles** (18 core, 2 matrix, 5 domain). Under the v1.3 dispatcher pattern sharpened in v1.4, **each agent is the single source of truth for its workflow** — planner owns planning, executor owns implementation, reviewer owns review, shipper owns release, business-advisor owns commercial decisions.
+`agents/` contains **27 registered specialist roles** (20 core, 2 matrix, 5 domain). Under the v1.3 dispatcher pattern sharpened in v1.4 and extended in v1.4.2 (adding `opc-session-manager` for pause/resume/progress/session-report and `opc-cruise-operator` for cruise/heartbeat/autonomous-advance), **each agent is the single source of truth for its workflow** — planner owns planning, executor owns implementation, reviewer owns review, shipper owns release, business-advisor owns commercial decisions, session-manager owns session continuity, cruise-operator owns autonomous operations.
 
 `agents/registry.json` provides a capability-based routing registry that the DAG engine uses for task-to-agent matching, with keyword fallback only when capability tags/scenarios do not match. `AGENTS.md` defines the intended orchestration patterns, including the main product pipeline (planning → implementing → reviewing → shipping) plus dedicated debugging, security-review, business-advisory, and autonomous-operation flows.
 
@@ -200,8 +209,13 @@ The plugin manifest should stay aligned with the full shipped agent set in `agen
 - `/opc-plan` runs the unified planning flow (Phase 0-5 in `opc-planner`, covering both clarification and decomposition) and outputs a `PLAN.md` artifact (the command docs refer to `docs/plans/`).
 - `/opc-build` consumes a `PLAN.md`, executes tasks with TDD, and produces `SUMMARY.md`.
 - `/opc-ship` verifies tests, summarizes changes, and handles merge / PR / keep / discard flows.
-- `/opc-health` validates `.opc` integrity, requirements coverage, summary traceability, plugin / hook wiring, and internal markdown links.
-- `/opc-quick` is the reduced-ceremony path: no formal `PLAN.md`, but it still keeps TDD and atomic-task execution.
+- `/opc-health` validates `.opc` integrity, requirements coverage, summary traceability, plugin / hook wiring, and internal markdown links (pure read-only CLI).
+- `/opc` is the natural-language entry; it dispatches `workflow-modes` skill which routes among 7 modes (watch / assist / cruise / fast / quick / discuss / explore). The reduced-ceremony quick path (no formal `PLAN.md`, still keeps TDD + atomic-task execution) is now reached via `/opc <natural-language>` → orchestrator → quick mode rather than a dedicated `/opc-quick` command.
+- `/opc-debug` (v1.4.2): dispatches `debugging` skill → `opc-debugger` for 4-stage root-cause analysis.
+- `/opc-security` (v1.4.2): dispatches `security-review` skill → `opc-security-auditor` for OWASP Top 10 audit.
+- `/opc-business` (v1.4.2): dispatches `business-advisory` skill → `opc-business-advisor` with Anti-Build-Trap HARD-GATE.
+- `/opc-cruise` / `/opc-heartbeat` / `/opc-autonomous` (v1.4.2): dispatch `autonomous-ops` skill → `opc-cruise-operator` for bounded autonomous operation.
+- `/opc-pause` / `/opc-resume` / `/opc-progress` / `/opc-session-report` (v1.4.2): dispatch `session-management` skill → `opc-session-manager` for session continuity.
 
 If you are changing these workflows, make sure command docs, relevant skills, and agent expectations stay aligned.
 
