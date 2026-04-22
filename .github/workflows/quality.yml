@@ -27,8 +27,12 @@ jobs:
       - name: Verify skill registry sync
         run: python scripts/build_skill_registry.py --check
 
-      - name: Run pytest
-        run: python -m pytest tests/test_session_workflow.py tests/test_engine_v2.py tests/engine/test_verify_command_contract.py -v
+      - name: Run pytest (full suite)
+        # v1.4.2 audit: previously only ran 3 test files. Now runs all tests/
+        # including test_quality_system.py, test_build_skill_registry.py,
+        # test_intent_router.py, and test_opc_routing_stats.py which were
+        # previously not covered in CI.
+        run: python -m pytest tests/ -v
 
       - name: Run repo health check
         run: python scripts/opc_health.py --cwd . --target repo --json

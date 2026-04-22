@@ -26,6 +26,15 @@
 | v1.5.0+ | 待定（本文件以下规划中的部分内容） | 📋 计划中 | 本文件 |
 | v2.0.0 | 超级一人公司 OS | 🎯 终极目标 | 本文件 |
 
+### 已实现但尚未对接的组件（v1.5 首选）
+
+下列组件代码和测试已完成，但**生产路径尚未消费**。v1.5 应优先接入：
+
+| 组件 | 代码位置 | 测试 | 对接任务 |
+|------|---------|------|---------|
+| `intent_router` L1/L3 | `scripts/engine/intent_router.py` | `tests/engine/test_intent_router.py` | ADR-0002 Phase B：接入 `opc-orchestrator` 作为 slash 命令 → skill 的路由预选层；接入 L2 embedding（本地推理，如 sentence-transformers） |
+| 无 | — | — | 目前 orchestrator 仍靠关键词 + description 全文匹配；router 建议未被使用 |
+
 ---
 
 **以下为原始愿景规划，阅读时请参考上表核对已实现部分。**
