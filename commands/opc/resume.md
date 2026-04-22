@@ -1,11 +1,11 @@
 ---
 name: opc-resume
-description: Reconstruct working context from HANDOFF, STATE, roadmap, and recent session artifacts
+description: Resume session — dispatches session-management skill which owns the workflow
 ---
-# /opc-resume
-恢复会话入口。
+# /opc-resume — 恢复会话入口
+用户显式触发会话恢复。等价于自然语言 "继续上次" / "从哪里开始"。
 ## 动作
-调用 `python scripts/opc_resume.py $ARGUMENTS`。
-重建上下文，校验恢复文件，刷新连续性字段，并推荐第一个动作。
+调用 `session-management` skill，传入 `$ARGUMENTS`，并在意图上下文附加 `sub_scenario=resume`。
+session-management skill 会派发 `opc-session-manager` agent 执行 Resume 子场景（读 `HANDOFF.json` → 校验 recovery files → 对齐 `STATE.md` → 重建当前位置 + 推荐一个主下一步）。
 ## 参数
-- `$ARGUMENTS` — 可选，传递 `--cwd <path>` 或恢复目标
+- `$ARGUMENTS` — 可选，`--cwd <path>` 或恢复目标

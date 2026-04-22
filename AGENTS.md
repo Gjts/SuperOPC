@@ -1,21 +1,49 @@
-# SuperOPC — Agent Orchestration (v1.4, Dispatcher Pattern)
+# SuperOPC — Agent Orchestration (v1.4.2, Dispatcher Pattern)
 
-## 架构契约（v1.3 起，v1.4 锐化）
+## 架构契约（v1.3 起，v1.4 锐化，v1.4.2 封堵所有断层）
 
 SuperOPC 采用三层 **skill-dispatcher / agent-workflow** 契约，加第四层 references：
 
 ~~~
-Command (<= 15 行入口) ──> Dispatcher Skill (<= 30 行派发器) ──> Agent (完整 workflow)
+Command (<= 15 行入口) ──> Dispatcher Skill (<= 60 行派发器) ──> Agent (完整 workflow)
                                                                       │
                                                                       ├─> Atomic Skill (单一技术)
                                                                       └─> references/ (知识库手册)
 ~~~
 
-- **Command**：用户手动 slash 入口，仅派发对应 dispatcher skill
-- **Dispatcher Skill**：auto-trigger 识别场景，`Task()` 派发 agent（共 8 个：planning / implementing / reviewing / shipping / debugging / security-review / business-advisory / workflow-modes）
+- **Command**：用户手动 slash 入口，**必须**派发对应 dispatcher skill；不允许直接 `python scripts/*.py`（read-only CLI 白名单除外，见下）
+- **Dispatcher Skill**：auto-trigger 识别场景，`Task()` 派发 agent（共 10 个：planning / implementing / reviewing / shipping / debugging / security-review / business-advisory / workflow-modes / session-management / autonomous-ops）
 - **Agent**：完整 workflow 持有者（唯一 source of truth）
 - **Atomic Skill**（4 个）：tdd / agent-dispatch / verification-loop / git-worktrees —— 被 agent 按需调用
 - **references/**（v1.4 新增层）：技术栈 patterns / 商业 playbook / rubric / checklist —— 由 agent workflow 按子活动引用，不作为 skill 暴露
+
+### Read-only CLI 白名单例外（v1.4.2 明确）
+
+下列 slash 命令**允许**直接调用 Python 脚本，**不**派发 skill，因为它们是纯只读数据查询
+（`autonomous-ops` skill 的 GREEN zone 定义），无副作用、无状态变更：
+
+| 命令 | 脚本 | 用途 |
+|------|------|------|
+| `/opc-health` | `scripts/opc_health.py` | 健康检查（只读诊断） |
+| `/opc-dashboard` | `scripts/opc_dashboard.py` | 项目面板（只读汇总） |
+| `/opc-stats` | `scripts/opc_stats.py` | 统计指标（只读计数） |
+| `/opc-intel` | `scripts/opc_intel.py` | 代码库情报（只读查询；`/opc-intel refresh` 走 opc-intel-updater agent） |
+| `/opc-profile` | `scripts/opc_profile.py` | 开发者画像（只读读写本地 profile） |
+| `/opc-backlog` | `scripts/opc_backlog.py` | backlog 列表（只读；创建项应走 `/opc-plan`） |
+| `/opc-seed` | `scripts/opc_seed.py` | seed 查询（只读；孵化走 `business-advisory` skill） |
+| `/opc-thread` | `scripts/opc_thread.py` | 会话线程索引（只读） |
+| `/opc-research` | `scripts/opc_research.py` | 研究产物索引（只读；新研究走 opc-researcher） |
+
+**白名单进入条件：**
+1. 命令**完全**只读，不写入 `.opc/` 的任何 state/handoff/decision 文件
+2. 命令不触发任何 agent 派发或 skill 规则执行
+3. 命令输出可被人类直接消费或给 AI 做摘要
+4. 任何一条被违反 → 立即改为派发对应 dispatcher skill
+
+**白名单之外的所有命令**（/opc-plan, /opc-build, /opc-review, /opc-ship, /opc, /opc-pause,
+/opc-resume, /opc-progress, /opc-session-report, /opc-cruise, /opc-heartbeat, /opc-autonomous,
+/opc-start, /opc-debug, /opc-security, /opc-business 等）**必须**派发 dispatcher skill。
+`scripts/verify_command_contract.py` lint 在 CI 中强制此规则。
 
 ## Agent Registry
 
@@ -23,9 +51,9 @@ Command (<= 15 行入口) ──> Dispatcher Skill (<= 30 行派发器) ──> 
 
 `scripts/engine/dag_engine.py` 通过 registry 做 **capability-tag 路由**：显式 agent 优先，其次匹配 capability_tags / scenarios，最后才走关键词回退。
 
-### Agent 类型与数量（25 个）
+### Agent 类型与数量（27 个）
 
-- **core** (18)：内置专家（v1.4 新增 **opc-business-advisor** / **opc-shipper** / **opc-intel-updater** 等）
+- **core** (20)：内置专家（v1.4 新增 **opc-business-advisor** / **opc-shipper** / **opc-intel-updater**；v1.4.2 新增 **opc-session-manager** / **opc-cruise-operator**）
 - **matrix** (2)：专业执行代理（frontend-wizard / backend-architect）
 - **domain** (5)：按需激活的领域代理（devops / seo / content / growth / pricing），由 opc-business-advisor 或核心 agent 委派
 
@@ -44,6 +72,8 @@ Command (<= 15 行入口) ──> Dispatcher Skill (<= 30 行派发器) ──> 
 | 市场 / 竞品调研 | **opc-researcher** | 自然语言（按 `references/intelligence/` 方法论执行） |
 | 阶段完成验证 | **opc-verifier** | `verification-loop` skill |
 | 多步骤复杂任务 | **opc-orchestrator** | `workflow-modes` skill / `/opc` |
+| 会话暂停 / 恢复 / 进度 / 会话报告 | **opc-session-manager** | `session-management` skill / `/opc-pause` / `/opc-resume` / `/opc-progress` / `/opc-session-report` |
+| 巡航 / 心跳 / 有边界自主推进 | **opc-cruise-operator** | `autonomous-ops` skill / `/opc-cruise` / `/opc-heartbeat` / `/opc-autonomous` |
 | 文档生成 | **opc-doc-writer** → **opc-doc-verifier** | 自然语言 |
 | 代码库理解 | **opc-codebase-mapper** | 自然语言（按 `references/patterns/engineering/codebase-onboarding.md`） |
 | UI 审查 | **opc-ui-auditor** | 自然语言 |
@@ -115,18 +145,26 @@ Bug 报告 → debugging skill → opc-debugger (假设-证据-排除) → opc-e
       → 最多 3 轮修订 → ready-for-build: true → opc-executor (波次)
 ~~~
 
-### 自主运营流水线（v2 engine）
+### 自主运营流水线（v2 engine，v1.4.2 封堵）
 
 ~~~
-事件 → decision_engine (三层决策) → dag_engine (波次编排) → registry (capability-tag 路由)
-     → agent 执行 → quality_gate → state_engine → event_bus (循环)
+用户入口:  /opc-autonomous → autonomous-ops skill → opc-cruise-operator (边界确认+HARD-GATE)
+引擎回路:  事件 → decision_engine (三层) → dag_engine (波次) → registry → agent 执行
+          → quality_gate → state_engine → event_bus (循环)
 ~~~
+
+**v1.4.2 关键修复：** cruise_controller._dispatch_command 不再把 PLAN/BUILD/REVIEW 重定向到
+`opc_workflow.py progress` 只读查询，而是通过 `claude --print --agent <owner>` 真派发到
+opc-planner / opc-executor / opc-reviewer / opc-debugger / opc-shipper / opc-researcher /
+opc-session-manager。只有 GREEN 区的 HEALTH_CHECK / COLLECT_INTEL / RUN_TESTS / FORMAT_CODE /
+GENERATE_DOCS 保留走只读脚本。
 
 ### 巡航模式
 
 ~~~
-cruise_controller → heartbeat → state_engine.load → decision_engine.decide
-                  → zone_check → execute/escalate → notify → persist
+/opc-cruise → autonomous-ops skill → opc-cruise-operator → cruise_controller
+            → heartbeat → state_engine.load → decision_engine.decide
+            → zone_check → execute(agent)/escalate(RED) → notify → persist
 ~~~
 
 ## 代理矩阵路由协议（v2 engine）
