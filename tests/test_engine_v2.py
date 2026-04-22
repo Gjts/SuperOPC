@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -40,7 +41,12 @@ from dag_engine import Task as DTask
 from profile_engine import DeveloperProfile, ProfileEngine
 from learning_store import LearningCategory, LearningStore
 from notification import FileChannel, Notification, NotificationDispatcher
-from cruise_controller import CruiseController, CruiseMode
+from cruise_controller import (
+    ACTION_AGENT_MAP,
+    READ_ONLY_SCRIPT_MAP,
+    CruiseController,
+    CruiseMode,
+)
 from scheduler import Scheduler
 from context_assembler import BUDGET_PROFILES, PHASE_SKILL_PRIORITY, ContextAssembler
 
@@ -517,6 +523,164 @@ class TestCruiseController:
         cc.stop(reason="test")
         assert not cc.status.running
         assert (tmp_path / "cruise-log" / "status.json").exists()
+
+
+# =========================================================================
+# Cruise dispatch 契约（skill-first / agent-workflow）
+# =========================================================================
+
+class TestCruiseDispatchContract:
+    """验证 cruise._dispatch_command 严格遵守 skill-first / agent-workflow 契约。
+
+    契约：
+      - 真执行类 ActionType → 必须通过 agent（而不是脚本）派发
+      - GREEN 区只读查询 → 走白名单脚本
+      - WAIT/DISCUSS → noop
+    """
+
+    def _make_decision(self, action: ActionType, command: str = "/opc-test") -> Decision:
+        zone = {
+            ActionType.PLAN: ActionZone.YELLOW,
+            ActionType.BUILD: ActionZone.YELLOW,
+            ActionType.REVIEW: ActionZone.YELLOW,
+            ActionType.DEBUG: ActionZone.YELLOW,
+            ActionType.SHIP: ActionZone.RED,
+            ActionType.HEALTH_CHECK: ActionZone.GREEN,
+            ActionType.COLLECT_INTEL: ActionZone.GREEN,
+            ActionType.WAIT: ActionZone.GREEN,
+            ActionType.DISCUSS: ActionZone.YELLOW,
+        }.get(action, ActionZone.GREEN)
+        return Decision(
+            action=action,
+            zone=zone,
+            command=command,
+            reason=f"test dispatch for {action.value}",
+            confidence=0.9,
+        )
+
+    def test_agent_map_covers_all_execution_actions(self):
+        """契约守护：任何"真执行"ActionType 都必须有对应 agent 映射。"""
+        # PLAN/BUILD/REVIEW/DEBUG/SHIP/RESEARCH 是 cruise 必须通过 agent 派发的动作
+        required = {"plan", "build", "review", "debug", "ship", "research"}
+        assert required.issubset(set(ACTION_AGENT_MAP.keys())), (
+            f"缺失真执行 ActionType → agent 映射：{required - set(ACTION_AGENT_MAP.keys())}"
+        )
+
+    def test_plan_action_dispatches_agent_not_script(self, tmp_path: Path, monkeypatch):
+        """ActionType.PLAN → 必须派发 opc-planner，不能调 opc_workflow.py progress。"""
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        captured: dict[str, Any] = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+
+            class FakeProc:
+                returncode = 0
+                stdout = "agent output"
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+
+        decision = self._make_decision(ActionType.PLAN, "/opc-plan")
+        result = cc._dispatch_command(decision)
+
+        assert result["success"] is True
+        assert result.get("dispatch_mode") == "agent", "PLAN 必须通过 agent 派发"
+        assert result.get("agent") == "opc-planner"
+        assert captured["cmd"][:3] == ["claude", "--print", "--agent"]
+        assert captured["cmd"][3] == "opc-planner"
+        assert "opc_workflow.py" not in " ".join(str(x) for x in captured["cmd"])
+
+    def test_build_action_dispatches_opc_executor(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+
+        def fake_run(cmd, **kwargs):
+            class FakeProc:
+                returncode = 0
+                stdout = ""
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        result = cc._dispatch_command(self._make_decision(ActionType.BUILD))
+        assert result["agent"] == "opc-executor"
+
+    def test_review_action_dispatches_opc_reviewer(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+
+        def fake_run(cmd, **kwargs):
+            class FakeProc:
+                returncode = 0
+                stdout = ""
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        result = cc._dispatch_command(self._make_decision(ActionType.REVIEW))
+        assert result["agent"] == "opc-reviewer"
+
+    def test_health_check_uses_readonly_script(self, tmp_path: Path, monkeypatch):
+        """GREEN 区 HEALTH_CHECK → 白名单脚本（不是 agent）。"""
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        captured: dict[str, Any] = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+
+            class FakeProc:
+                returncode = 0
+                stdout = ""
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        # 让脚本文件存在避免 _run_python_script 提前返回
+        script = (REPO_ROOT / "scripts" / "opc_health.py")
+        assert script.exists(), "opc_health.py 必须存在"
+
+        result = cc._dispatch_command(self._make_decision(ActionType.HEALTH_CHECK))
+
+        assert result["success"] is True
+        assert "dispatch_mode" not in result or result.get("dispatch_mode") != "agent"
+        cmd_str = " ".join(str(x) for x in captured["cmd"])
+        assert "opc_health.py" in cmd_str
+        assert "claude" not in cmd_str
+
+    def test_wait_returns_noop(self, tmp_path: Path):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        result = cc._dispatch_command(self._make_decision(ActionType.WAIT))
+        assert result["success"] is True
+        assert result.get("action") == "noop"
+
+    def test_discuss_returns_noop(self, tmp_path: Path):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        result = cc._dispatch_command(self._make_decision(ActionType.DISCUSS))
+        assert result["success"] is True
+        assert result.get("action") == "noop"
+
+    def test_missing_claude_cli_reports_clear_error(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+
+        def fake_run(cmd, **kwargs):
+            raise FileNotFoundError("claude not found")
+
+        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        result = cc._dispatch_command(self._make_decision(ActionType.PLAN))
+        assert result["success"] is False
+        assert "claude" in result.get("error", "").lower()
+
+    def test_readonly_script_map_has_no_execution_actions(self):
+        """契约守护：只读脚本映射绝不能包含真执行 ActionType。"""
+        forbidden = {"plan", "build", "review", "debug", "ship"}
+        overlap = forbidden & set(READ_ONLY_SCRIPT_MAP.keys())
+        assert not overlap, (
+            f"READ_ONLY_SCRIPT_MAP 不应包含真执行 ActionType：{overlap}"
+        )
 
 
 # =========================================================================

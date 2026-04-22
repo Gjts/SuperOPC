@@ -38,6 +38,36 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 
 EXECUTION_TIMEOUT_SECONDS = 120
+AGENT_EXECUTION_TIMEOUT_SECONDS = 600
+
+# ---------------------------------------------------------------------------
+# ActionType → Agent 映射
+# ---------------------------------------------------------------------------
+# 契约：凡是"真执行"类的 ActionType（YELLOW/RED 区），必须通过 agent workflow
+# 派发，而不是脚本直调。这保证了 cruise 模式遵守 skill-first / agent-workflow 铁律。
+#
+# GREEN 区只读查询（HEALTH_CHECK / COLLECT_INTEL / RUN_TESTS / FORMAT_CODE /
+# GENERATE_DOCS）走 read-only 脚本，属于 autonomous-ops skill 明确的白名单例外。
+
+ACTION_AGENT_MAP: dict[str, str] = {
+    # ActionType.value → agent name
+    "plan": "opc-planner",
+    "build": "opc-executor",
+    "review": "opc-reviewer",
+    "debug": "opc-debugger",
+    "ship": "opc-shipper",
+    "research": "opc-researcher",
+    # RESUME/PAUSE 预留 opc-session-manager（P1 上线后再接入）
+}
+
+READ_ONLY_SCRIPT_MAP: dict[str, tuple[str, list[str]]] = {
+    # ActionType.value → (script relative path, args template)
+    "health_check": ("opc_health.py", ["--target", "all"]),
+    "collect_intel": ("opc_dashboard.py", ["--json"]),
+    "run_tests": ("opc_quality.py", []),
+    "format_code": ("opc_quality.py", ["--format-only"]),
+    "generate_docs": ("opc_health.py", ["--target", "repo"]),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -217,52 +247,118 @@ class CruiseController:
             )
 
     def _dispatch_command(self, decision: Decision) -> dict[str, Any]:
-        """Route a decision to the appropriate Python function or script."""
-        action = decision.action
-        command = decision.command
+        """Route a decision through the skill-first / agent-workflow contract.
 
-        dispatch_map: dict[ActionType, str] = {
-            ActionType.HEALTH_CHECK: "health",
-            ActionType.COLLECT_INTEL: "intel",
-            ActionType.RUN_TESTS: "test",
-            ActionType.PLAN: "plan",
-            ActionType.BUILD: "build",
-            ActionType.REVIEW: "review",
-            ActionType.RESUME: "resume",
-            ActionType.PAUSE: "pause",
-        }
+        契约（AGENTS.md）：
+          - YELLOW/RED 执行类 ActionType → claude --agent <owner> 真派发 agent
+          - GREEN 只读查询 ActionType → 白名单脚本（autonomous-ops GREEN zone 例外）
+          - WAIT/DISCUSS → noop
+        """
+        action_value = decision.action.value
 
-        if action in (ActionType.WAIT, ActionType.DISCUSS):
-            return {"success": True, "action": "noop", "reason": "No executable action for wait/discuss"}
+        if decision.action in (ActionType.WAIT, ActionType.DISCUSS):
+            return {
+                "success": True,
+                "action": "noop",
+                "reason": "No executable action for wait/discuss",
+            }
 
-        script_mode = dispatch_map.get(action)
-        if script_mode:
-            return self._run_opc_script(script_mode, command)
+        # 路径 1：真执行 → 派发 agent（skill-first 契约）
+        agent_name = ACTION_AGENT_MAP.get(action_value)
+        if agent_name:
+            return self._run_claude_agent(agent_name, decision)
 
-        if action == ActionType.GENERATE_DOCS:
-            return self._run_python_script(SCRIPTS_DIR / "opc_health.py", ["--cwd", str(self._opc_dir.parent), "--target", "repo"])
+        # 路径 2：GREEN 区只读查询 → 白名单脚本
+        script_entry = READ_ONLY_SCRIPT_MAP.get(action_value)
+        if script_entry:
+            script_name, extra_args = script_entry
+            script_path = SCRIPTS_DIR / script_name
+            args = ["--cwd", str(self._opc_dir.parent)] + list(extra_args)
+            return self._run_python_script(script_path, args)
 
-        return self._run_opc_fallback(command)
+        # 路径 3：RESUME/PAUSE 暂时走 opc_workflow.py，等 opc-session-manager agent 上线后接入
+        # TODO(P1): 改为派发 opc-session-manager
+        if decision.action in (ActionType.RESUME, ActionType.PAUSE):
+            return self._run_python_script(
+                SCRIPTS_DIR / "opc_workflow.py",
+                [action_value, "--cwd", str(self._opc_dir.parent), "--json"],
+            )
 
-    def _run_opc_script(self, mode: str, command: str) -> dict[str, Any]:
-        """Run an opc_* script via Python subprocess."""
-        script_map = {
-            "health": (SCRIPTS_DIR / "opc_health.py", ["--cwd", str(self._opc_dir.parent), "--target", "all"]),
-            "intel": (SCRIPTS_DIR / "opc_dashboard.py", ["--cwd", str(self._opc_dir.parent), "--json"]),
-            "test": (SCRIPTS_DIR / "opc_quality.py", ["--cwd", str(self._opc_dir.parent)]),
-            "plan": (SCRIPTS_DIR / "opc_workflow.py", ["progress", "--cwd", str(self._opc_dir.parent), "--json"]),
-            "build": (SCRIPTS_DIR / "opc_workflow.py", ["progress", "--cwd", str(self._opc_dir.parent), "--json"]),
-            "review": (SCRIPTS_DIR / "opc_workflow.py", ["progress", "--cwd", str(self._opc_dir.parent), "--json"]),
-            "resume": (SCRIPTS_DIR / "opc_workflow.py", ["resume", "--cwd", str(self._opc_dir.parent), "--json"]),
-            "pause": (SCRIPTS_DIR / "opc_workflow.py", ["pause", "--cwd", str(self._opc_dir.parent), "--json"]),
-        }
+        return self._run_opc_fallback(decision.command)
 
-        entry = script_map.get(mode)
-        if not entry:
-            return {"success": False, "error": f"Unknown mode: {mode}"}
+    def _run_claude_agent(self, agent: str, decision: Decision) -> dict[str, Any]:
+        """Dispatch to a real agent via `claude --print --agent` — skill-first 契约唯一合法路径。"""
+        prompt = self._build_agent_prompt(agent, decision)
 
-        script_path, args = entry
-        return self._run_python_script(script_path, args)
+        self._bus.publish(
+            "cruise.agent_dispatch",
+            {
+                "agent": agent,
+                "action": decision.action.value,
+                "zone": decision.zone.value,
+                "command": decision.command,
+                "heartbeat": self._status.heartbeat_count,
+            },
+            source="cruise_controller",
+        )
+
+        try:
+            proc = subprocess.run(
+                ["claude", "--print", "--agent", agent, prompt],
+                capture_output=True,
+                text=True,
+                timeout=AGENT_EXECUTION_TIMEOUT_SECONDS,
+                cwd=str(self._opc_dir.parent),
+            )
+            return {
+                "success": proc.returncode == 0,
+                "returncode": proc.returncode,
+                "agent": agent,
+                "stdout": proc.stdout[:2000] if proc.stdout else "",
+                "stderr": proc.stderr[:500] if proc.stderr else "",
+                "dispatch_mode": "agent",
+            }
+        except FileNotFoundError:
+            return {
+                "success": False,
+                "agent": agent,
+                "error": "'claude' CLI not found — cannot dispatch agent. Install Claude Code or switch to watch mode.",
+                "dispatch_mode": "agent",
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "agent": agent,
+                "error": f"Agent {agent} timed out after {AGENT_EXECUTION_TIMEOUT_SECONDS}s",
+                "dispatch_mode": "agent",
+            }
+        except Exception as exc:
+            return {
+                "success": False,
+                "agent": agent,
+                "error": str(exc)[:200],
+                "dispatch_mode": "agent",
+            }
+
+    @staticmethod
+    def _build_agent_prompt(agent: str, decision: Decision) -> str:
+        """Construct a context-bounded prompt for agent dispatch in cruise mode."""
+        sections = [
+            "==== CRUISE MODE DISPATCH ====",
+            f"You are dispatched as `{agent}` by SuperOPC cruise controller.",
+            f"Zone: {decision.zone.value.upper()} | Action: {decision.action.value} | Confidence: {decision.confidence}",
+            f"Trigger reason: {decision.reason}",
+            f"Suggested command equivalent: {decision.command}",
+            "",
+            "Constraints:",
+            "- Follow your agent's full workflow (read agents/<you>.md if unsure).",
+            "- Respect all HARD-GATE entry conditions.",
+            "- Emit a concise final summary suitable for a heartbeat log.",
+            "- Do NOT wander outside your designated workflow.",
+        ]
+        if decision.context:
+            sections.append(f"\nDecision context: {json.dumps(decision.context, ensure_ascii=False)[:800]}")
+        return "\n".join(sections)
 
     def _run_python_script(self, script: Path, args: list[str]) -> dict[str, Any]:
         """Execute a Python script and capture its output."""
