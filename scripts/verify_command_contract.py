@@ -32,25 +32,39 @@ COMMANDS_DIR = REPO_ROOT / "commands" / "opc"
 SKILLS_REGISTRY = REPO_ROOT / "skills" / "registry.json"
 
 # ---------------------------------------------------------------------------
-# White-list for read-only CLI commands (AGENTS.md v1.4.2)
+# White-list for read-only CLI commands (AGENTS.md v1.4.2, two tiers)
 # ---------------------------------------------------------------------------
-# These commands ARE allowed to invoke `python scripts/...` directly because
-# they are pure read-only data queries with no side effects and no agent
-# workflow semantics. Any change that introduces writes to .opc/ state files,
-# agent dispatch, or skill rule execution MUST remove the command from this
-# list and route it through a dispatcher skill instead.
+# Tier 1: PURE_READ_ONLY_WHITELIST (6) — pure read-only, no side effects,
+#   command doc needs no special marker. Any change introducing writes MUST
+#   either downgrade the entry to MIXED tier or route through a dispatcher.
+#
+# Tier 2: MIXED_LOW_FRICTION_WHITELIST (3) — list/query mode is read-only,
+#   create mode writes ONE lightweight markdown entry under .opc/<dir>/.
+#   Command doc MUST carry `<!-- MIXED: ... -->` HTML comment in its ## 动作
+#   section so this lint can verify the contract is declared, not implicit.
 
-READ_ONLY_CLI_WHITELIST: set[str] = {
-    "opc-health",      # scripts/opc_health.py — 只读诊断
+PURE_READ_ONLY_WHITELIST: set[str] = {
+    "opc-health",      # scripts/opc_health.py — 只读诊断（--repair 走 agent）
     "opc-dashboard",   # scripts/opc_dashboard.py — 只读汇总
     "opc-stats",       # scripts/opc_stats.py — 只读计数
-    "opc-intel",       # bin/opc-tools intel — 只读查询（refresh 子命令走引擎）
-    "opc-profile",     # scripts/opc_profile.py — 本地 profile 读写
-    "opc-backlog",     # scripts/opc_backlog.py — 只读列表
-    "opc-seed",        # scripts/opc_seed.py — 只读查询
-    "opc-thread",      # scripts/opc_thread.py — 只读索引
-    "opc-research",    # scripts/opc_research.py — 只读索引
+    "opc-intel",       # bin/opc-tools intel — 只读查询（refresh 子命令走 agent）
+    "opc-profile",     # scripts/opc_profile.py — 本地 profile 读写（不写项目 .opc/）
+    "opc-research",    # scripts/opc_research.py — 只读索引（新研究走 opc-researcher）
 }
+
+MIXED_LOW_FRICTION_WHITELIST: set[str] = {
+    "opc-thread",      # scripts/opc_thread.py — list readonly, create writes .opc/threads/
+    "opc-seed",        # scripts/opc_seed.py — list readonly, create writes .opc/seeds/
+    "opc-backlog",     # scripts/opc_backlog.py — list readonly, create writes .opc/todos/
+}
+
+# Union for convenience; use the specific tier when checking contracts.
+READ_ONLY_CLI_WHITELIST: set[str] = PURE_READ_ONLY_WHITELIST | MIXED_LOW_FRICTION_WHITELIST
+
+_MIXED_MARKER_PATTERN = re.compile(
+    r"<!--\s*MIXED:\s*list\s*=\s*readonly\s*,\s*create\s*=\s*writes\s+\S+\s*-->",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -64,12 +78,18 @@ class Violation:
 @dataclass
 class Report:
     commands_checked: int = 0
-    whitelisted: int = 0
+    pure_readonly: int = 0
+    mixed_low_friction: int = 0
     dispatchers: int = 0
     violations: list[Violation] = field(default_factory=list)
 
+    @property
+    def whitelisted(self) -> int:
+        return self.pure_readonly + self.mixed_low_friction
+
     def as_dict(self) -> dict[str, Any]:
         d = asdict(self)
+        d["whitelisted"] = self.whitelisted
         return d
 
 
@@ -164,8 +184,26 @@ def verify() -> Report:
                 )
             )
 
-        if name in READ_ONLY_CLI_WHITELIST:
-            report.whitelisted += 1
+        if name in PURE_READ_ONLY_WHITELIST:
+            report.pure_readonly += 1
+            continue
+
+        if name in MIXED_LOW_FRICTION_WHITELIST:
+            report.mixed_low_friction += 1
+            # MIXED 命令必须携带 <!-- MIXED: ... --> 注释，让契约在命令层显式可读
+            if not _MIXED_MARKER_PATTERN.search(body):
+                report.violations.append(
+                    Violation(
+                        command=name,
+                        path=rel,
+                        issue="MIXED whitelist command missing <!-- MIXED: ... --> marker in ## 动作",
+                        hint=(
+                            "Add a single HTML comment on its own line inside ## 动作, e.g. "
+                            "'<!-- MIXED: list=readonly, create=writes .opc/threads/ -->'. "
+                            "This makes the read/write bifurcation machine-checkable per AGENTS.md §档二."
+                        ),
+                    )
+                )
             continue
 
         # Non-whitelist command: must dispatch a skill.
@@ -224,10 +262,11 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(
             f"# command contract verification\n"
-            f"  commands checked : {report.commands_checked}\n"
-            f"  whitelisted (RO) : {report.whitelisted}\n"
-            f"  dispatchers      : {report.dispatchers}\n"
-            f"  violations       : {len(report.violations)}"
+            f"  commands checked      : {report.commands_checked}\n"
+            f"  whitelist pure RO     : {report.pure_readonly}\n"
+            f"  whitelist mixed (RW)  : {report.mixed_low_friction}\n"
+            f"  dispatchers           : {report.dispatchers}\n"
+            f"  violations            : {len(report.violations)}"
         )
         if report.violations:
             print("\n# violations")

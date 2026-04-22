@@ -17,33 +17,55 @@ Command (<= 15 行入口) ──> Dispatcher Skill (<= 60 行派发器) ──> 
 - **Atomic Skill**（4 个）：tdd / agent-dispatch / verification-loop / git-worktrees —— 被 agent 按需调用
 - **references/**（v1.4 新增层）：技术栈 patterns / 商业 playbook / rubric / checklist —— 由 agent workflow 按子活动引用，不作为 skill 暴露
 
-### Read-only CLI 白名单例外（v1.4.2 明确）
+### Read-only CLI 白名单例外（v1.4.2 分两档）
 
-下列 slash 命令**允许**直接调用 Python 脚本，**不**派发 skill，因为它们是纯只读数据查询
-（`autonomous-ops` skill 的 GREEN zone 定义），无副作用、无状态变更：
+下列 slash 命令**允许**直接调用 Python 脚本，**不**派发 skill。分两档：
+
+#### 档一：PURE READ-ONLY（6 个，严格纯只读）
+
+完全无副作用，命令文档无需特殊标注。
 
 | 命令 | 脚本 | 用途 |
 |------|------|------|
-| `/opc-health` | `scripts/opc_health.py` | 健康检查（只读诊断） |
+| `/opc-health` | `scripts/opc_health.py` | 健康检查（只读诊断，`--repair` 走 agent） |
 | `/opc-dashboard` | `scripts/opc_dashboard.py` | 项目面板（只读汇总） |
 | `/opc-stats` | `scripts/opc_stats.py` | 统计指标（只读计数） |
 | `/opc-intel` | `scripts/opc_intel.py` | 代码库情报（只读查询；`/opc-intel refresh` 走 opc-intel-updater agent） |
-| `/opc-profile` | `scripts/opc_profile.py` | 开发者画像（只读读写本地 profile） |
-| `/opc-backlog` | `scripts/opc_backlog.py` | backlog 列表（只读；创建项应走 `/opc-plan`） |
-| `/opc-seed` | `scripts/opc_seed.py` | seed 查询（只读；孵化走 `business-advisory` skill） |
-| `/opc-thread` | `scripts/opc_thread.py` | 会话线程索引（只读） |
+| `/opc-profile` | `scripts/opc_profile.py` | 开发者画像（只读读写本地 profile，不写项目 .opc/） |
 | `/opc-research` | `scripts/opc_research.py` | 研究产物索引（只读；新研究走 opc-researcher） |
 
-**白名单进入条件：**
-1. 命令**完全**只读，不写入 `.opc/` 的任何 state/handoff/decision 文件
-2. 命令不触发任何 agent 派发或 skill 规则执行
-3. 命令输出可被人类直接消费或给 AI 做摘要
-4. 任何一条被违反 → 立即改为派发对应 dispatcher skill
+**档一进入条件：**
+1. **完全**只读，不写入 `.opc/` 任何 state/handoff/decision 文件
+2. 不触发任何 agent 派发或 skill 规则执行
+3. 输出可被人类直接消费或给 AI 做摘要
+4. 任何一条被违反 → 立即降级为档二或改为 dispatcher
 
-**白名单之外的所有命令**（/opc-plan, /opc-build, /opc-review, /opc-ship, /opc, /opc-pause,
-/opc-resume, /opc-progress, /opc-session-report, /opc-cruise, /opc-heartbeat, /opc-autonomous,
-/opc-start, /opc-debug, /opc-security, /opc-business 等）**必须**派发 dispatcher skill。
-`scripts/verify_command_contract.py` lint 在 CI 中强制此规则。
+#### 档二：MIXED LOW-FRICTION（3 个，列出只读 / 创建轻量写入）
+
+这类命令在 **"列出 + 查询现有"** 模式下是只读，在 **"创建新条目"** 模式下会写入 `.opc/threads/`、`.opc/seeds/`、`.opc/todos/`。
+
+| 命令 | 脚本 | 只读模式 | 写入模式 |
+|------|------|----------|----------|
+| `/opc-thread` | `scripts/opc_thread.py` | 列出 / 查询现有线程 | 创建新线程 → `.opc/threads/` |
+| `/opc-seed` | `scripts/opc_seed.py` | 列出 / 查询现有种子 | 创建新种子 → `.opc/seeds/` |
+| `/opc-backlog` | `scripts/opc_backlog.py` | 列出 / 查询现有待办 | 创建新待办 → `.opc/todos/` |
+
+**档二进入条件：**
+1. 写入**仅限轻量条目**（单个 markdown 文件，无状态转换、无 agent 调用）
+2. 写入模式**必须** stderr 输出建议性 notice，提示"CLI 快速路径 OK；需要规划评审时用 `/opc-plan`"
+3. 命令文档**必须**在 `## 动作` 段标注 `<!-- MIXED: list=readonly, create=writes <dir> -->`
+4. 命令不触发任何 agent 派发或 skill 规则执行
+5. `OPC_SUPPRESS_WRITE_ADVISORY=1` 环境变量可静音 notice（例如 CI 批量导入场景）
+6. 任何写入超出"单文件 markdown 条目"范围 → 立即改为 dispatcher
+
+**档二设计理由：** thread/seed/backlog 是"**快速捕获**"场景（想法 / 延后任务 / 跨会话笔记），强制走 agent workflow 会增加摩擦却不增加质量。但写入行为必须在协议层可见，不能伪装为纯只读。
+
+#### 白名单之外的命令必须派发 dispatcher skill
+
+`/opc-plan` `/opc-build` `/opc-review` `/opc-ship` `/opc` `/opc-pause` `/opc-resume`
+`/opc-progress` `/opc-session-report` `/opc-cruise` `/opc-heartbeat` `/opc-autonomous`
+`/opc-start` `/opc-debug` `/opc-security` `/opc-business` 等 **16 个命令**必须派发 dispatcher skill。
+`scripts/verify_command_contract.py` lint 在 CI 中强制此规则（档二命令会额外检查 stderr advisory 与 MIXED 注释标注）。
 
 ## Agent Registry
 

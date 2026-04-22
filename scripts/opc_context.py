@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -292,6 +293,23 @@ def format_existing(kind: str, file_path: Path, content: str) -> str:
     return f"SuperOPC {kind}\n路径: {file_path}\n\n{content.strip()}"
 
 
+def _emit_write_advisory(kind: str, target_dir: Path) -> None:
+    """Stderr 建议：提醒用户"创建模式会写入 .opc/"，符合 v1.4.2 mixed-path 约定。
+
+    v1.4.2 AGENTS.md §Read-only CLI 白名单例外 把 thread/seed/backlog 归类为
+    MIXED 路径（列出模式只读、创建模式轻量写入）。这里的 stderr 警告不阻断，
+    但让用户在 CLI 快速创建与 agent workflow 创建之间做出知情选择。
+    """
+    if os.environ.get("OPC_SUPPRESS_WRITE_ADVISORY") == "1":
+        return
+    sys.stderr.write(
+        f"[opc-{kind}] note: about to write to {target_dir}/.\n"
+        f"  CLI fast-path is OK for quick capture; for richer items "
+        f"(with planner review / agent workflow) use /opc-plan or /opc.\n"
+        f"  Set OPC_SUPPRESS_WRITE_ADVISORY=1 to silence this notice.\n"
+    )
+
+
 def handle_thread(opc_dir: Path, entry_text: str, as_json: bool) -> str:
     directory = opc_dir / "threads"
     if not entry_text:
@@ -303,6 +321,7 @@ def handle_thread(opc_dir: Path, entry_text: str, as_json: bool) -> str:
         payload = reopen_thread(existing)
         return json.dumps(payload, ensure_ascii=False, indent=2) if as_json else format_existing("Thread", existing, payload["content"])
 
+    _emit_write_advisory("thread", directory)
     payload = create_thread(opc_dir, entry_text)
     return json.dumps(payload, ensure_ascii=False, indent=2) if as_json else format_created("thread", payload)
 
@@ -319,6 +338,7 @@ def handle_seed(opc_dir: Path, entry_text: str, trigger: str, as_json: bool) -> 
         payload = {"path": str(existing), "content": content}
         return json.dumps(payload, ensure_ascii=False, indent=2) if as_json else format_existing("Seed", existing, content)
 
+    _emit_write_advisory("seed", directory)
     payload = create_seed(opc_dir, entry_text, trigger)
     return json.dumps(payload, ensure_ascii=False, indent=2) if as_json else format_created("seed", payload)
 
@@ -335,6 +355,7 @@ def handle_backlog(opc_dir: Path, entry_text: str, note: str, as_json: bool) -> 
         payload = {"path": str(existing), "content": content}
         return json.dumps(payload, ensure_ascii=False, indent=2) if as_json else format_existing("Backlog", existing, content)
 
+    _emit_write_advisory("backlog", directory)
     payload = create_backlog(opc_dir, entry_text, note)
     return json.dumps(payload, ensure_ascii=False, indent=2) if as_json else format_created("backlog", payload)
 

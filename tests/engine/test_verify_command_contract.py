@@ -80,6 +80,54 @@ def test_whitelisted_command_allowed_to_call_script_directly(lint_module, tmp_pa
     report = lint_module.verify()
     assert report.violations == []
     assert report.whitelisted == 1
+    assert report.pure_readonly == 1
+    assert report.mixed_low_friction == 0
+
+
+def test_mixed_whitelist_command_with_marker_passes(lint_module, tmp_path):
+    """档二 MIXED 命令：带 <!-- MIXED: ... --> 注释应通过。"""
+    _write_cmd(
+        tmp_path,
+        "thread",
+        "---\nname: opc-thread\ndescription: Thread\n---\n"
+        "## 动作\n"
+        "<!-- MIXED: list=readonly, create=writes .opc/threads/ -->\n"
+        "调用 `python scripts/opc_thread.py`。\n",
+    )
+    report = lint_module.verify()
+    assert report.violations == []
+    assert report.mixed_low_friction == 1
+    assert report.pure_readonly == 0
+
+
+def test_mixed_whitelist_command_without_marker_fails(lint_module, tmp_path):
+    """档二 MIXED 命令：缺少 <!-- MIXED: ... --> 注释应被 lint 拦截。"""
+    _write_cmd(
+        tmp_path,
+        "thread",
+        "---\nname: opc-thread\ndescription: Thread\n---\n"
+        "## 动作\n调用 `python scripts/opc_thread.py`。\n",
+    )
+    report = lint_module.verify()
+    assert report.mixed_low_friction == 1
+    assert len(report.violations) == 1
+    v = report.violations[0]
+    assert v.command == "opc-thread"
+    assert "MIXED" in v.issue
+
+
+def test_mixed_whitelist_marker_case_insensitive(lint_module, tmp_path):
+    """档二 MIXED 注释匹配应大小写不敏感。"""
+    _write_cmd(
+        tmp_path,
+        "seed",
+        "---\nname: opc-seed\ndescription: Seed\n---\n"
+        "## Action\n"
+        "<!-- mixed: LIST=readonly, CREATE=writes .opc/seeds/ -->\n"
+        "Calls `python scripts/opc_seed.py`.\n",
+    )
+    report = lint_module.verify()
+    assert report.violations == []
 
 
 def test_command_dispatching_skill_but_also_calling_script_is_flagged(lint_module, tmp_path):
