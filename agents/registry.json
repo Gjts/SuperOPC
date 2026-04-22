@@ -252,6 +252,26 @@
       "input": "Natural-language business question or one-person-company request",
       "output": "Sub-activity identification + domain agent delegation or reference-backed decision",
       "priority": 75
+    },
+    {
+      "id": "opc-session-manager",
+      "name": "Session Manager",
+      "type": "core",
+      "capability_tags": ["session", "handoff", "resume", "pause", "checkpoint", "progress", "session-report", "continuity"],
+      "scenarios": ["session pause with HANDOFF.json", "session resume from handoff", "project progress summary", "session report generation"],
+      "input": "Pause/resume/progress/report intent plus current .opc/ state",
+      "output": "HANDOFF.json update OR reconstructed context OR progress summary OR session-report.md",
+      "priority": 70
+    },
+    {
+      "id": "opc-cruise-operator",
+      "name": "Cruise Operator",
+      "type": "core",
+      "capability_tags": ["cruise", "autonomous", "heartbeat", "zones", "green-yellow-red", "watch-assist-cruise", "anti-build-trap", "bounded-advancement"],
+      "scenarios": ["cruise mode start/stop with permission zones", "heartbeat status inspection", "bounded autonomous roadmap advancement"],
+      "input": "Cruise mode intent, optional --mode/--hours bounds, or heartbeat query",
+      "output": "cruise_controller lifecycle transitions, heartbeat summary, or autonomous-advance loop with HARD-GATE enforcement",
+      "priority": 74
     }
   ]
 }

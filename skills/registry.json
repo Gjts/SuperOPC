@@ -2,7 +2,7 @@
   "$schema": "SuperOPC Skill Registry",
   "version": "2.0.0-phase-a",
   "description": "Generated from SKILL.md frontmatter. DO NOT EDIT MANUALLY.",
-  "generated_at": "2026-04-21T15:17:35Z",
+  "generated_at": "2026-04-22T03:45:12Z",
   "skills": [
     {
       "id": "agent-dispatch",
@@ -100,6 +100,48 @@
         "validation",
         "test-coverage"
       ]
+    },
+    {
+      "id": "autonomous-ops",
+      "name": "autonomous-ops",
+      "path": "skills/using-superopc/autonomous-ops/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use when the user explicitly wants to enter cruise mode, check heartbeat, or perform bounded autonomous roadmap advancement. Defines GREEN/YELLOW/RED permission zones. Dispatches opc-cruise-operator, which owns cruise/heartbeat/autonomous workflows.",
+      "version": "1.4.2",
+      "triggers": {
+        "keywords": [
+          "自主",
+          "autonomous",
+          "权限区",
+          "cruise",
+          "巡航",
+          "heartbeat",
+          "心跳",
+          "自动执行",
+          "green",
+          "yellow",
+          "red",
+          "升级"
+        ],
+        "phrases": [
+          "进入巡航",
+          "进入自主模式",
+          "帮我自动推进",
+          "查看心跳",
+          "看看 cruise 状态"
+        ]
+      },
+      "tags": [
+        "autonomous",
+        "cruise",
+        "heartbeat",
+        "zones",
+        "permission",
+        "green-yellow-red",
+        "escalation",
+        "anti-build-trap"
+      ],
+      "dispatches_to": "opc-cruise-operator"
     },
     {
       "id": "business-advisory",
@@ -329,6 +371,50 @@
       "dispatches_to": "opc-security-auditor"
     },
     {
+      "id": "session-management",
+      "name": "session-management",
+      "path": "skills/using-superopc/session-management/SKILL.md",
+      "type": "dispatcher",
+      "description": "Use when pausing, resuming, checkpointing, summarizing progress, or generating a session report for a SuperOPC project. Dispatches opc-session-manager, which owns the four sub-scenarios (pause / resume / progress / session-report).",
+      "version": "1.4.2",
+      "triggers": {
+        "keywords": [
+          "暂停",
+          "恢复",
+          "handoff",
+          "checkpoint",
+          "继续上次",
+          "上次到哪里",
+          "resume",
+          "pause",
+          "session",
+          "progress",
+          "进度",
+          "会话报告",
+          "session report"
+        ],
+        "phrases": [
+          "继续上次",
+          "从哪里开始",
+          "恢复上下文",
+          "暂停工作",
+          "现在进度",
+          "生成会话报告"
+        ]
+      },
+      "tags": [
+        "session",
+        "handoff",
+        "resume",
+        "pause",
+        "checkpoint",
+        "progress",
+        "session-report",
+        "recovery"
+      ],
+      "dispatches_to": "opc-session-manager"
+    },
+    {
       "id": "shipping",
       "name": "shipping",
       "path": "skills/product/shipping/SKILL.md",
@@ -430,35 +516,6 @@
       ]
     },
     {
-      "id": "autonomous-ops",
-      "name": "autonomous-ops",
-      "path": "skills/using-superopc/autonomous-ops/SKILL.md",
-      "type": "meta",
-      "description": "Autonomous operations skill — defines boundaries, permission zones, and escalation rules for AI self-directed execution.",
-      "version": "1.4.1",
-      "triggers": {
-        "keywords": [
-          "自主",
-          "autonomous",
-          "权限区",
-          "cruise",
-          "自动执行",
-          "green",
-          "yellow",
-          "red",
-          "升级"
-        ]
-      },
-      "tags": [
-        "autonomous",
-        "zones",
-        "permission",
-        "cruise",
-        "escalation",
-        "green-yellow-red"
-      ]
-    },
-    {
       "id": "developer-profile",
       "name": "developer-profile",
       "path": "skills/using-superopc/developer-profile/SKILL.md",
@@ -486,41 +543,6 @@
         "personalization",
         "questionnaire",
         "8-dimension"
-      ]
-    },
-    {
-      "id": "session-management",
-      "name": "session-management",
-      "path": "skills/using-superopc/session-management/SKILL.md",
-      "type": "meta",
-      "description": "Use when the task is about pausing, resuming, checkpointing, reporting, or recovering SuperOPC project context across sessions.",
-      "version": "1.4.1",
-      "triggers": {
-        "keywords": [
-          "暂停",
-          "恢复",
-          "handoff",
-          "checkpoint",
-          "继续上次",
-          "上次到哪里",
-          "resume",
-          "pause",
-          "session"
-        ],
-        "phrases": [
-          "继续上次",
-          "从哪里开始",
-          "恢复上下文",
-          "暂停工作"
-        ]
-      },
-      "tags": [
-        "session",
-        "handoff",
-        "resume",
-        "pause",
-        "checkpoint",
-        "recovery"
       ]
     },
     {

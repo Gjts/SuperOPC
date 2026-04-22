@@ -57,7 +57,8 @@ ACTION_AGENT_MAP: dict[str, str] = {
     "debug": "opc-debugger",
     "ship": "opc-shipper",
     "research": "opc-researcher",
-    # RESUME/PAUSE 预留 opc-session-manager（P1 上线后再接入）
+    "resume": "opc-session-manager",
+    "pause": "opc-session-manager",
 }
 
 READ_ONLY_SCRIPT_MAP: dict[str, tuple[str, list[str]]] = {
@@ -275,14 +276,6 @@ class CruiseController:
             script_path = SCRIPTS_DIR / script_name
             args = ["--cwd", str(self._opc_dir.parent)] + list(extra_args)
             return self._run_python_script(script_path, args)
-
-        # 路径 3：RESUME/PAUSE 暂时走 opc_workflow.py，等 opc-session-manager agent 上线后接入
-        # TODO(P1): 改为派发 opc-session-manager
-        if decision.action in (ActionType.RESUME, ActionType.PAUSE):
-            return self._run_python_script(
-                SCRIPTS_DIR / "opc_workflow.py",
-                [action_value, "--cwd", str(self._opc_dir.parent), "--json"],
-            )
 
         return self._run_opc_fallback(decision.command)
 

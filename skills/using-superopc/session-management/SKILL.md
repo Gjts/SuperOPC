@@ -1,64 +1,45 @@
 ---
 name: session-management
-description: Use when the task is about pausing, resuming, checkpointing, reporting, or recovering SuperOPC project context across sessions.
+description: Use when pausing, resuming, checkpointing, summarizing progress, or generating a session report for a SuperOPC project. Dispatches opc-session-manager, which owns the four sub-scenarios (pause / resume / progress / session-report).
 id: session-management
-type: meta
-tags: [session, handoff, resume, pause, checkpoint, recovery]
+type: dispatcher
+tags: [session, handoff, resume, pause, checkpoint, progress, session-report, recovery]
+dispatches_to: opc-session-manager
 triggers:
-  keywords: [暂停, 恢复, handoff, checkpoint, 继续上次, 上次到哪里, resume, pause, session]
-  phrases: ["继续上次", "从哪里开始", "恢复上下文", "暂停工作"]
-version: 1.4.1
+  keywords: [暂停, 恢复, handoff, checkpoint, 继续上次, 上次到哪里, resume, pause, session, progress, 进度, 会话报告, session report]
+  phrases: ["继续上次", "从哪里开始", "恢复上下文", "暂停工作", "现在进度", "生成会话报告"]
+version: 1.4.2
 ---
 
-# 会话管理
+# session-management — 会话连续性派发器
 
-当用户想暂停、恢复、查看当前位置、生成会话报告，或在跨会话之间保持连续性时使用本技能。
+**触发：** 暂停 / 恢复 / 查看进度 / 生成会话报告；跨会话上下文传递相关。
+**宣布：** "我调用 session-management 技能，派发给 opc-session-manager 管理会话连续性。"
 
-## 目标
+## 派发
+使用 Task 工具派发 `opc-session-manager` agent。
+- **输入：** 用户意图（pause / resume / progress / session-report）+ 当前 `.opc/` 状态
+- **输出：** HANDOFF.json 更新 / 重建的上下文 / 进度摘要 / session-report.md
 
-把当前工作压缩成对下一次会话真正有用的信息，而不是复制整段上下文。
+## 四个子场景
+| 场景 | 用户表达 | 输出 |
+|---|---|---|
+| Pause | "暂停一下" / "先停这里" | HANDOFF.json + 更新 STATE |
+| Resume | "继续上次" / "从哪里开始" | 重建当前位置 + 一个主下一步 |
+| Progress | "现在进度" / "到哪了" | 五段式摘要 + 一个推荐下一步 |
+| Session report | "生成会话报告" | `.opc/session-reports/*.md` |
 
-## 核心规则
+## 核心铁律（由 agent 强制执行）
+1. **STATE 优先，handoff 其次** —— 冲突以 STATE.md 最新事实为准
+2. **一个主下一步** —— 不给并列三选一
+3. **明确 validation debt** —— 未验证不伪装成完成
+4. **一次一个子场景** —— pause 不顺手 resume
 
-1. **优先读 `.opc/HANDOFF.json`**，没有再回退到 `.opc/STATE.md`
-2. **`STATE.md` 是项目真相源**，handoff 是会话级检查点
-3. **输出一个主下一步**，不要给很多并行建议
-4. **明确 validation debt**，不要把未验证内容伪装成完成
+## 边界
+- 本 skill **不执行** workflow；workflow 唯一事实源是 `agents/opc-session-manager.md`
+- 规则摘要在本文件；完整规则在 agent 内
 
-## 子场景
-
-### Pause
-- 记录当前停止点
-- 记录一个主下一步
-- 记录 blockers / todos / 恢复文件
-- 更新 `STATE.md` 的会话连续性字段
-
-### Resume
-- 重建当前位置
-- 检查 handoff 是否仍有效
-- 如果 handoff 与当前状态冲突，以最新事实为准
-
-### Progress
-- 输出位置、完成度、下一步、验证欠债
-
-### Session report
-- 汇总最近会话、当前状态、handoff、audit log
-
-## 反模式
-
-- 把 handoff 写成长篇流水账
-- 不区分项目状态和会话状态
-- 给出多个平行“下一步”导致分心
-- 忽略恢复文件是否仍存在
-
-## 压力测试
-
-### 高压场景
-- 会话快结束了，还想靠记忆接着做。
-
-### 常见偏差
-- 不写 handoff、resume file 和 stop point。
-
-### 使用技能后的纠正
-- 在暂停前固化恢复入口，保证下次能快速接续。
-
+## 关联
+- **相关 agent：** opc-session-manager（会话连续性 workflow 持有者）
+- **上游命令：** `/opc-pause` / `/opc-resume` / `/opc-progress` / `/opc-session-report`
+- **脚本协作：** `scripts/opc_workflow.py` 提供只读状态查询
