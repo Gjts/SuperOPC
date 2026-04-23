@@ -121,6 +121,80 @@ def _write_state(cwd: Path, content: str) -> None:
     state_path.write_text(content, encoding="utf-8")
 
 
+def _match_frontmatter_value(content: str, *field_names: str) -> str | None:
+    for field_name in field_names:
+        match = re.search(rf"^{re.escape(field_name)}:\s*(.+)$", content, re.MULTILINE)
+        if match:
+            return match.group(1).strip()
+    return None
+
+
+def _match_heading_title(content: str) -> str | None:
+    match = re.search(r"^#\s*(?:Backlog|Todo)\s*:\s*(.+)$", content, re.MULTILINE)
+    return match.group(1).strip() if match else None
+
+
+def _collect_flat_todos(cwd: Path, area: str | None) -> list[dict[str, str]]:
+    todos_dir = opc_dir(cwd) / "todos"
+    if not todos_dir.exists():
+        return []
+
+    requested_area = area.strip().lower() if area else None
+    todos: list[dict[str, str]] = []
+
+    for path in sorted(todos_dir.glob("*.md")):
+        content = safe_read(path)
+        todo_area = (_match_frontmatter_value(content, "area", "type") or "backlog").strip()
+        if requested_area and todo_area.lower() != requested_area:
+            continue
+
+        title = (
+            _match_heading_title(content)
+            or _match_frontmatter_value(content, "title", "name", "id")
+            or path.stem
+        )
+        todos.append(
+            {
+                "file": path.name,
+                "title": title,
+                "area": todo_area,
+                "created": _match_frontmatter_value(content, "createdAt", "created") or "unknown",
+                "status": _match_frontmatter_value(content, "status") or "",
+                "path": to_posix(path.relative_to(cwd)),
+            }
+        )
+
+    return todos
+
+
+def _collect_legacy_pending_todos(cwd: Path, area: str | None) -> list[dict[str, str]]:
+    todos_dir = opc_dir(cwd) / "todos" / "pending"
+    if not todos_dir.exists():
+        return []
+
+    requested_area = area.strip().lower() if area else None
+    todos: list[dict[str, str]] = []
+
+    for path in sorted(todos_dir.glob("*.md")):
+        content = safe_read(path)
+        todo_area = (_match_frontmatter_value(content, "area") or "general").strip()
+        if requested_area and todo_area.lower() != requested_area:
+            continue
+
+        todos.append(
+            {
+                "file": path.name,
+                "title": _match_frontmatter_value(content, "title") or "Untitled",
+                "area": todo_area,
+                "created": _match_frontmatter_value(content, "created") or "unknown",
+                "status": "pending",
+                "path": to_posix(path.relative_to(cwd)),
+            }
+        )
+
+    return todos
+
+
 # ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
@@ -356,29 +430,10 @@ def cmd_state_record_session(cwd: Path, named: dict[str, str | None], raw: bool)
 # ---------------------------------------------------------------------------
 
 def cmd_list_todos(cwd: Path, area: str | None, raw: bool) -> None:
-    """Count and enumerate pending todos."""
-    todos_dir = opc_dir(cwd) / "todos" / "pending"
-    todos: list[dict[str, str]] = []
-
-    if todos_dir.exists():
-        for f in sorted(todos_dir.glob("*.md")):
-            content = safe_read(f)
-            title_m = re.search(r"^title:\s*(.+)$", content, re.MULTILINE)
-            area_m = re.search(r"^area:\s*(.+)$", content, re.MULTILINE)
-            created_m = re.search(r"^created:\s*(.+)$", content, re.MULTILINE)
-
-            todo_area = area_m.group(1).strip() if area_m else "general"
-            if area and todo_area != area:
-                continue
-
-            todos.append({
-                "file": f.name,
-                "title": title_m.group(1).strip() if title_m else "Untitled",
-                "area": todo_area,
-                "created": created_m.group(1).strip() if created_m else "unknown",
-                "path": to_posix(f.relative_to(cwd)),
-            })
-
+    """Count and enumerate current backlog items plus legacy pending todos."""
+    todos = _collect_flat_todos(cwd, area)
+    todos.extend(_collect_legacy_pending_todos(cwd, area))
+    todos.sort(key=lambda item: item["path"])
     result = {"count": len(todos), "todos": todos}
     output(result, raw, str(len(todos)))
 

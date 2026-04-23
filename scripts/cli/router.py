@@ -145,7 +145,7 @@ Init (Compound) Operations:
 Utility Operations:
   generate-slug <text>                Convert text to URL-safe slug
   current-timestamp [full|date|filename]  Get formatted timestamp
-  list-todos [area]                   Count and enumerate pending todos
+  list-todos [area]                   Count and enumerate backlog items (plus legacy pending todos)
   path-exists <path>                  Check file/directory existence
 
 Security Operations:

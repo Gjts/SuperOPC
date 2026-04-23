@@ -216,7 +216,7 @@ def test_command_dispatching_skill_but_also_calling_script_is_flagged(lint_modul
     )
     report = lint_module.verify()
     assert len(report.violations) == 1
-    assert "direct 'python" in report.violations[0].issue
+    assert "direct local runtime invocation" in report.violations[0].issue
 
 
 def test_command_dispatching_non_dispatcher_skill_fails(lint_module, tmp_path):
@@ -228,6 +228,18 @@ def test_command_dispatching_non_dispatcher_skill_fails(lint_module, tmp_path):
     report = lint_module.verify()
     assert len(report.violations) == 1
     assert "does not dispatch" in report.violations[0].issue
+
+
+def test_command_dispatching_skill_but_also_calling_bin_opc_tools_is_flagged(lint_module, tmp_path):
+    _write_cmd(
+        tmp_path,
+        "build-runtime",
+        "---\nname: opc-build-runtime\ndescription: Build runtime\n---\n"
+        "## Action\nDispatches the `planning` skill, then directly runs `python bin/opc-tools verify health`.\n",
+    )
+    report = lint_module.verify()
+    assert len(report.violations) == 1
+    assert "direct local runtime invocation" in report.violations[0].issue
 
 
 def test_missing_frontmatter_is_flagged(lint_module, tmp_path):

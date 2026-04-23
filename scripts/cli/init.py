@@ -15,6 +15,7 @@ from typing import Any
 from cli.core import (
     error,
     extract_field,
+    extract_first_field,
     find_phase_dir,
     generate_slug,
     list_phase_dirs,
@@ -284,11 +285,11 @@ def cmd_init_resume(cwd: Path, raw: bool) -> None:
     state_content = safe_read(paths["state"])
 
     # Extract resume-relevant fields
-    stop_point = extract_field(state_content, "Stop Point") or ""
-    resume_file = extract_field(state_content, "Resume File") or ""
-    current_focus = extract_field(state_content, "Current Focus") or ""
-    status = extract_field(state_content, "Status") or ""
-    last_session = extract_field(state_content, "Last Session") or ""
+    stop_point = extract_first_field(state_content, "Stop Point", "停止于") or ""
+    resume_file = extract_first_field(state_content, "Resume File", "恢复文件") or ""
+    current_focus = extract_first_field(state_content, "Current Focus", "当前焦点") or ""
+    status = extract_first_field(state_content, "Status", "状态") or ""
+    last_session = extract_first_field(state_content, "Last Session", "上次会话") or ""
 
     # Load handoff
     handoff: dict[str, Any] = {}
@@ -352,9 +353,9 @@ def cmd_init_progress(cwd: Path, raw: bool) -> None:
     result = {
         "total_phases": len(phase_dirs),
         "complete_phases": complete,
-        "current_focus": extract_field(state_content, "Current Focus") or "",
-        "status": extract_field(state_content, "Status") or "",
-        "phase": extract_field(state_content, "Phase") or "",
+        "current_focus": extract_first_field(state_content, "Current Focus", "当前焦点") or "",
+        "status": extract_first_field(state_content, "Status", "状态") or "",
+        "phase": extract_first_field(state_content, "Phase", "阶段") or "",
     }
     output(_with_project_root(cwd, result), raw)
 

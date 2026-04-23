@@ -155,14 +155,14 @@ def _extract_skill_references(body: str) -> set[str]:
     return hits
 
 
-_SCRIPT_CALL_PATTERN = re.compile(
-    r"`(?:python(?:\s+-m)?|py|uv\s+run)\s+[\w/\\.-]+\.py",
+_DIRECT_LOCAL_RUNTIME_PATTERN = re.compile(
+    r"`(?:python(?:\s+-m)?|py|uv\s+run)\s+(?:[\w/\\.-]+\.py\b|(?:[\w./\\-]+[\\/])?bin[\\/]+opc-tools\b)",
     re.IGNORECASE,
 )
 
 
-def _mentions_direct_script(body: str) -> bool:
-    return bool(_SCRIPT_CALL_PATTERN.search(body))
+def _mentions_direct_local_runtime_call(body: str) -> bool:
+    return bool(_DIRECT_LOCAL_RUNTIME_PATTERN.search(body))
 
 
 def _line_count(md_path: Path) -> int:
@@ -346,7 +346,7 @@ def verify() -> Report:
         # Non-whitelist command: must dispatch a skill.
         refs = _extract_skill_references(body)
         dispatched = refs & dispatcher_ids
-        has_direct_script = _mentions_direct_script(body)
+        has_direct_script = _mentions_direct_local_runtime_call(body)
 
         if not dispatched:
             report.violations.append(
@@ -371,11 +371,12 @@ def verify() -> Report:
                 Violation(
                     command=name,
                     path=rel,
-                    issue="command body contains a direct 'python xxx.py' invocation",
+                    issue="command body contains a direct local runtime invocation",
                     hint=(
-                        "Commands must route through the skill; any script call must happen "
-                        "inside the agent workflow, not the command file. Remove the python "
-                        "invocation and let the dispatched skill/agent call the script."
+                        "Commands must route through the skill; any direct `python scripts/...` "
+                        "or `python bin/opc-tools ...` call must happen inside the agent workflow, "
+                        "not the command file. Remove the local runtime invocation and let the "
+                        "dispatched skill/agent call it."
                     ),
                 )
             )

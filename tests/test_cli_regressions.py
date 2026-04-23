@@ -111,6 +111,123 @@ def test_verify_health_matches_project_scaffold_from_opc_health(tmp_path: Path) 
     assert not any("todos/pending" in item or "todos/completed" in item for item in verify_payload["warnings"])
 
 
+def test_list_todos_reads_flat_backlog_entries_created_by_current_runtime(tmp_path: Path) -> None:
+    project_root = create_acceptance_project(tmp_path)
+
+    create = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "opc_backlog.py"),
+            "--cwd",
+            str(project_root),
+            "--json",
+            "补充 docs",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "bin" / "opc-tools"),
+            "--cwd",
+            str(project_root),
+            "--raw",
+            "list-todos",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+    init_result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "bin" / "opc-tools"),
+            "--cwd",
+            str(project_root),
+            "--raw",
+            "init",
+            "todos",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    create_payload = json.loads(create.stdout)
+    payload = json.loads(result.stdout)
+    init_payload = json.loads(init_result.stdout)
+
+    assert create.returncode == 0
+    assert result.returncode == 0
+    assert init_result.returncode == 0
+    assert create_payload["id"] == "BACKLOG-001"
+    assert payload["count"] == 1
+    assert init_payload["count"] == 1
+    assert payload["todos"][0]["file"].startswith("BACKLOG-001")
+    assert payload["todos"][0]["status"] == "PARKED"
+    assert payload["todos"][0]["title"] == "补充 docs"
+
+
+def test_init_progress_reads_current_chinese_state_labels(tmp_path: Path) -> None:
+    project_root = create_acceptance_project(tmp_path)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "bin" / "opc-tools"),
+            "--cwd",
+            str(project_root),
+            "--raw",
+            "init",
+            "progress",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.returncode == 0
+    assert payload["current_focus"] == "会话恢复"
+    assert payload["status"] == "执行中"
+    assert payload["phase"] == "[1] / [2]（基础）"
+
+
+def test_init_resume_reads_current_chinese_state_labels(tmp_path: Path) -> None:
+    project_root = create_acceptance_project(tmp_path)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "bin" / "opc-tools"),
+            "--cwd",
+            str(project_root),
+            "--raw",
+            "init",
+            "resume",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.returncode == 0
+    assert payload["current_focus"] == "会话恢复"
+    assert payload["status"] == "执行中"
+    assert payload["stop_point"] == "完成 progress 草稿"
+    assert payload["resume_file"] == ".opc/STATE.md"
+
+
 def test_parse_record_signals_accepts_relaxed_object_syntax() -> None:
     payload = parse_record_signals("{communication_style:terse,tech_stack:[python,nextjs],friction:quoting}")
 

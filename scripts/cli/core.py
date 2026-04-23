@@ -216,13 +216,22 @@ def safe_read(path: Path) -> str:
 
 
 def extract_field(content: str, field_name: str) -> str | None:
-    """Extract **Field:** value or Field: value from Markdown."""
+    """Extract **Field:** / **Field：** or Field: / Field： value from Markdown."""
     escaped = re.escape(field_name)
-    bold = re.search(rf"\*\*{escaped}:\*\*\s*(.+)", content, re.IGNORECASE)
+    bold = re.search(rf"\*\*{escaped}\s*[:：]\*\*\s*(.+)", content, re.IGNORECASE)
     if bold:
         return bold.group(1).strip()
-    plain = re.search(rf"^{escaped}:\s*(.+)", content, re.IGNORECASE | re.MULTILINE)
+    plain = re.search(rf"^{escaped}\s*[:：]\s*(.+)", content, re.IGNORECASE | re.MULTILINE)
     return plain.group(1).strip() if plain else None
+
+
+def extract_first_field(content: str, *field_names: str) -> str | None:
+    """Return the first matching field across multiple localized labels."""
+    for field_name in field_names:
+        value = extract_field(content, field_name)
+        if value:
+            return value
+    return None
 
 
 def normalize_phase_name(phase: str) -> str:
