@@ -7,7 +7,7 @@ description: Use when defining company culture, preparing to hire, or making fou
 
 **核心原则：** 你的价值观定义你的公司。一人公司的价值观就是创始人的价值观。
 
-**宣布：** "我正在使用 company-values 技能来帮你定义公司的核心价值观。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 价值观发现流程
 
@@ -57,6 +57,6 @@ description: Use when defining company culture, preparing to hire, or making fou
 ### 常见偏差
 - 为了现金流临时放弃先前写下的价值观。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先用价值观筛掉冲突机会，再决定是否接受。
 

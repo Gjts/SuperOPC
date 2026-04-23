@@ -7,7 +7,7 @@ description: Use when making decisions about spending, hiring, scaling, or major
 
 **核心原则：** 盈利优先。不要为了增长牺牲可持续性。
 
-**宣布：** "我正在使用 grow-sustainably 技能来评估增长决策。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 增长决策框架
 
@@ -66,6 +66,6 @@ description: Use when making decisions about spending, hiring, scaling, or major
 ### 常见偏差
 - 为了增速牺牲交付质量和现金流稳定性。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 优先保留可持续复利渠道，限制同时实验数量。
 

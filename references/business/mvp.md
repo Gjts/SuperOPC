@@ -7,7 +7,7 @@ description: Use when ready to build first product or struggling with scope. Man
 
 **核心原则：** 尽可能少构建。目标是尽快开始为社区交付价值。
 
-**宣布：** "我正在使用 MVP 技能，帮你用最小成本验证产品。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 三个阶段
 
@@ -67,6 +67,6 @@ description: Use when ready to build first product or struggling with scope. Man
 ### 常见偏差
 - 把“首个可卖版本”扩张成完整平台。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 只保留验证核心价值所需的最小功能集。
 

@@ -2,6 +2,8 @@
 
 Static landing page for SuperOPC — deployable to GitHub Pages, Vercel, or Cloudflare Pages.
 
+Keep the public copy in `website/index.html` aligned with the current source of truth in `README.md`, `AGENTS.md`, and active command / skill / agent docs. Historical launch messaging should live under `marketing/archive/`, not in the live site.
+
 ## Deploy to GitHub Pages
 
 1. Go to repo Settings → Pages

@@ -1,5 +1,7 @@
 # SuperOPC 架构重构提案 v2
 
+> Historical archive: this draft explains the refactor path that led to the current dispatcher architecture. It is kept for design history only. Current runtime contract lives in `AGENTS.md`, `README.md`, and the active command / skill / agent files.
+
 > **状态：** 待审核（draft，不含代码改动）
 > **日期：** 2026-04-17
 > **目标：** 清理 command / agent / skill 三层的职责重叠

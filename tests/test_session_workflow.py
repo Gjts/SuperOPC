@@ -5,20 +5,18 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
-
-sys.path.insert(0, str(SCRIPTS_DIR))
-
 from opc_context import handle_backlog, handle_seed, handle_thread  # noqa: E402
 from opc_insights import collect_project_insights  # noqa: E402
 from opc_workflow import (  # noqa: E402
     collect_autonomous_plan,
     collect_progress_snapshot,
     collect_session_report,
+    generate_session_report,
     pause_project,
     resume_project,
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def create_sample_project(tmp_path: Path) -> Path:
@@ -83,7 +81,7 @@ def test_progress_snapshot_exposes_validation_debt_and_resume_file(tmp_path: Pat
 
     assert snapshot["position"]["resumeFile"] == ".opc/STATE.md"
     assert "未运行 CLI 冒烟测试" in snapshot["validationDebt"]
-    assert snapshot["recommendation"]["command"] == "/opc-discuss"
+    assert snapshot["recommendation"]["command"] == "/opc discuss"
 
 
 def test_pause_and_resume_round_trip(tmp_path: Path) -> None:
@@ -116,7 +114,7 @@ def test_autonomous_plan_degrades_to_discuss_when_blocked(tmp_path: Path) -> Non
     plan = collect_autonomous_plan(project_root, from_index=2, to_index=4)
 
     assert plan["mode"] == "blocked"
-    assert plan["recommendation"]["command"] == "/opc-discuss"
+    assert plan["recommendation"]["command"] == "/opc discuss"
     assert plan["window"]["from"] == 2
     assert plan["window"]["to"] == 4
     assert ".opc/STATE.md" in plan["resumeFiles"]
@@ -129,6 +127,10 @@ def test_autonomous_plan_respects_only_range_and_interactive_mode(tmp_path: Path
     state_text = state_text.replace("- 等待验证输出格式\n", "")
     state_text = state_text.replace("- 未运行 CLI 冒烟测试\n", "")
     state_file.write_text(state_text, encoding="utf-8")
+    state_text = "\n".join(
+        line for line in state_file.read_text(encoding="utf-8").splitlines() if not line.lstrip().startswith("- ")
+    )
+    state_file.write_text(state_text + "\n", encoding="utf-8")
 
     plan = collect_autonomous_plan(project_root, only=3, interactive=True)
 
@@ -181,6 +183,54 @@ def test_context_commands_list_existing_entries(tmp_path: Path) -> None:
     assert "trigger=当 beta 结束时" in seeds_listing
     assert "SuperOPC Backlog" in backlog_listing
     assert "补充-docs" in backlog_listing
+
+
+def test_opc_thread_cli_json_create_emits_payload_and_advisory(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "opc_thread.py"), "--cwd", str(project_root), "--json", "pricing page copy"],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=True,
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert payload["created"] is True
+    assert payload["name"] == "pricing-page-copy"
+    assert "[opc-thread] note:" in result.stderr
+
+
+def test_generate_session_report_writes_markdown_file(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+
+    report = generate_session_report(project_root)
+    report_file = project_root / report["reportFile"]
+
+    assert report["reportFile"].startswith(".opc/session-reports/")
+    assert report_file.exists()
+    assert "SuperOPC Session Report" in report_file.read_text(encoding="utf-8")
+
+
+def test_opc_session_report_cli_json_writes_report_file(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "opc_session_report.py"), "--cwd", str(project_root), "--json"],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=True,
+    )
+
+    payload = json.loads(result.stdout)
+    report_file = project_root / payload["reportFile"]
+
+    assert payload["reportFile"].startswith(".opc/session-reports/")
+    assert report_file.exists()
+    assert "SuperOPC Session Report" in report_file.read_text(encoding="utf-8")
 
 
 def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: Path) -> None:
@@ -237,3 +287,19 @@ def test_convert_all_updates_generated_runtime_metadata_and_commands(tmp_path: P
     assert "planning" in plan_cmd or "opc-planner" in plan_cmd
 
 
+def test_opc_dashboard_json_outputs_structured_payload(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "opc_dashboard.py"), "--cwd", str(project_root), "--json"],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        check=True,
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert payload["projectName"] == "Sample Project"
+    assert payload["state"]["resumeFile"] == ".opc/STATE.md"
+    assert "未运行 CLI 冒烟测试" in payload["validationDebt"]

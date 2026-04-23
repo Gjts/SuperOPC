@@ -7,7 +7,7 @@ description: Use when you have a product idea and want to deliver value by hand 
 
 **核心原则：** 在写代码之前，先用手动流程为客户交付价值。证明流程有效后再自动化。
 
-**宣布：** "我正在使用 processize 技能，帮你把想法变成可手动交付的流程。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 流程化方法
 
@@ -61,6 +61,6 @@ description: Use when you have a product idea and want to deliver value by hand 
 ### 常见偏差
 - 把单次偶发操作也流程化，制造管理负担。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 只固化高频、可复用、会反复出错的流程。
 

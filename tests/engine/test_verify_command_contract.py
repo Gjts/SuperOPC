@@ -71,17 +71,94 @@ def test_command_without_skill_dispatch_fails(lint_module, tmp_path):
     assert "does not dispatch" in v.issue
 
 
-def test_whitelisted_command_allowed_to_call_script_directly(lint_module, tmp_path):
+def test_local_runtime_command_allowed_to_call_script_directly(lint_module, tmp_path):
+    _write_cmd(
+        tmp_path,
+        "health",
+        "---\nname: opc-health\ndescription: Health\n---\n"
+        "## 动作\n"
+        "调用 `python scripts/opc_health.py`。\n"
+        "默认诊断只读；`--repair` 会做受控本地修复。\n",
+    )
+    report = lint_module.verify()
+    assert report.violations == []
+    assert report.whitelisted == 1
+    assert report.local_runtime == 1
+    assert report.mixed_low_friction == 0
+
+
+def test_local_runtime_health_missing_repair_contract_is_flagged(lint_module, tmp_path):
     _write_cmd(
         tmp_path,
         "health",
         "---\nname: opc-health\ndescription: Health\n---\n## 动作\n调用 `python scripts/opc_health.py`。\n",
     )
     report = lint_module.verify()
+    assert len(report.violations) == 1
+    assert "--repair" in report.violations[0].issue
+
+
+def test_local_runtime_profile_missing_record_contract_is_flagged(lint_module, tmp_path):
+    _write_cmd(
+        tmp_path,
+        "profile",
+        "---\nname: opc-profile\ndescription: Profile\n---\n## 动作\n调用 `python bin/opc-tools profile $ARGUMENTS`。\n",
+    )
+    report = lint_module.verify()
+    assert len(report.violations) == 1
+    assert "record" in report.violations[0].issue
+
+
+def test_local_runtime_research_missing_feed_run_contract_is_flagged(lint_module, tmp_path):
+    _write_cmd(
+        tmp_path,
+        "research",
+        "---\nname: opc-research\ndescription: Research\n---\n"
+        "## 动作\n"
+        "调用 `python bin/opc-tools research $ARGUMENTS`。\n"
+        "支持 `insights`、`methods list/show`。\n",
+    )
+    report = lint_module.verify()
+    assert len(report.violations) == 1
+    assert "feed" in report.violations[0].issue
+    assert "run" in report.violations[0].issue
+
+
+def test_opc_intel_refresh_requires_dispatcher_guard(lint_module, tmp_path):
+    (tmp_path / "skills" / "registry.json").write_text(
+        '{"skills":['
+        '{"id":"planning","type":"dispatcher","dispatches_to":"opc-planner"},'
+        '{"id":"debugging","type":"dispatcher","dispatches_to":"opc-debugger"},'
+        '{"id":"workflow-modes","type":"dispatcher","dispatches_to":"opc-orchestrator"}'
+        "]}",
+        encoding="utf-8",
+    )
+    _write_cmd(
+        tmp_path,
+        "intel",
+        "---\nname: opc-intel\ndescription: Intel\n---\n"
+        "## 动作\n"
+        "查询类子命令调用本地 runtime：`python bin/opc-tools intel $ARGUMENTS`。\n"
+        "`refresh` 不走本地 runtime；调用 `workflow-modes` skill，并附加 `sub_scenario=intel-refresh`。\n",
+    )
+    report = lint_module.verify()
     assert report.violations == []
-    assert report.whitelisted == 1
-    assert report.pure_readonly == 1
-    assert report.mixed_low_friction == 0
+    assert report.local_runtime == 1
+
+
+def test_opc_intel_refresh_local_runtime_is_flagged(lint_module, tmp_path):
+    _write_cmd(
+        tmp_path,
+        "intel",
+        "---\nname: opc-intel\ndescription: Intel\n---\n"
+        "## 动作\n"
+        "调用本地 runtime：`python bin/opc-tools intel $ARGUMENTS`。\n"
+        "`refresh` 由 `scripts/engine/intel_engine.py` 重建 `.opc/intel/`。\n",
+    )
+    report = lint_module.verify()
+    assert len(report.violations) >= 1
+    issues = "\n".join(v.issue for v in report.violations)
+    assert "refresh" in issues
 
 
 def test_mixed_whitelist_command_with_marker_passes(lint_module, tmp_path):
@@ -97,7 +174,7 @@ def test_mixed_whitelist_command_with_marker_passes(lint_module, tmp_path):
     report = lint_module.verify()
     assert report.violations == []
     assert report.mixed_low_friction == 1
-    assert report.pure_readonly == 0
+    assert report.local_runtime == 0
 
 
 def test_mixed_whitelist_command_without_marker_fails(lint_module, tmp_path):
@@ -171,6 +248,22 @@ def test_english_dispatch_phrase_also_recognized(lint_module, tmp_path):
     assert report.violations == []
 
 
+def test_command_exceeding_line_budget_is_flagged(lint_module, tmp_path):
+    _write_cmd(
+        tmp_path,
+        "long",
+        "---\nname: opc-long\ndescription: Long\n---\n"
+        "# /opc-long\n"
+        "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\n"
+        "## Action\n"
+        "Dispatches the `planning` skill to run the workflow.\n"
+        "line 7\nline 8\nline 9\n",
+    )
+    report = lint_module.verify()
+    assert len(report.violations) == 1
+    assert "entry budget" in report.violations[0].issue
+
+
 def test_real_repo_commands_pass_contract():
     """Integration: run the actual script against the real repo."""
     import subprocess
@@ -186,3 +279,36 @@ def test_real_repo_commands_pass_contract():
         f"stdout:\n{result.stdout}\n"
         f"stderr:\n{result.stderr}"
     )
+
+
+def test_workflow_modes_docs_cover_guarded_sub_scenarios():
+    workflow_skill = (REPO_ROOT / "skills" / "using-superopc" / "workflow-modes" / "SKILL.md").read_text(encoding="utf-8")
+    orchestrator_agent = (REPO_ROOT / "agents" / "opc-orchestrator.md").read_text(encoding="utf-8")
+
+    assert "project-init" in workflow_skill
+    assert "intel-refresh" in workflow_skill
+    assert "project-init" in orchestrator_agent
+    assert "intel-refresh" in orchestrator_agent
+    assert "opc-intel-updater" in orchestrator_agent
+
+
+def test_opc_intel_refresh_requires_dispatcher_guard(lint_module, tmp_path):
+    (tmp_path / "skills" / "registry.json").write_text(
+        '{"skills":['
+        '{"id":"planning","type":"dispatcher","dispatches_to":"opc-planner"},'
+        '{"id":"debugging","type":"dispatcher","dispatches_to":"opc-debugger"},'
+        '{"id":"workflow-modes","type":"dispatcher","dispatches_to":"opc-orchestrator"}'
+        "]}",
+        encoding="utf-8",
+    )
+    _write_cmd(
+        tmp_path,
+        "intel",
+        "---\nname: opc-intel\ndescription: Intel\n---\n"
+        "## Actions\n"
+        "Query subcommands call the local runtime: `python bin/opc-tools intel $ARGUMENTS`.\n"
+        "For `refresh`, dispatch the `workflow-modes` skill with `sub_scenario=intel-refresh`.\n",
+    )
+    report = lint_module.verify()
+    assert report.violations == []
+    assert report.local_runtime == 1

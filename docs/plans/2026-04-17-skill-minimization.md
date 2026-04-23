@@ -10,7 +10,7 @@
 <opc-plan>
   <metadata>
     <goal>把 SuperOPC 的 skill 空间精简为 14 个纯派发器 / 原子技能；workflow 全部归属 agent；知识库全部下沉到 references/</goal>
-    <spec-url>docs/REFACTOR-PLAN.md + docs/plans/2026-04-17-architecture-refactor.md（前置 v1.3 重构）</spec-url>
+    <spec-url>docs/archive/REFACTOR-PLAN.md + docs/plans/2026-04-17-architecture-refactor.md（前置 v1.3 重构）</spec-url>
     <estimated-time>4-6h（5 waves × 原子 commit）</estimated-time>
   </metadata>
 
@@ -305,7 +305,7 @@
 
 ## 参考
 
-- `docs/REFACTOR-PLAN.md` — v1.3 架构重构总体方案（前置）
+- `docs/archive/REFACTOR-PLAN.md` — v1.3 架构重构总体方案（前置）
 - `docs/plans/2026-04-17-architecture-refactor.md` — v1.3 执行计划（前置）
 - `references/plan-template.md` — 本 PLAN.md 结构规范
 - `agents/opc-planner.md` — 本 PLAN.md 的 workflow 持有者

@@ -7,11 +7,17 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from opc_insights import find_opc_dir
+from opc_common import find_opc_dir, now_iso, read_text
+from context_helpers import (
+    list_entries,
+    next_index,
+    resolve_existing,
+    slugify,
+    write_text,
+)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -25,101 +31,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
 def ensure_opc_dir(start_dir: Path) -> Path:
     opc_dir = find_opc_dir(start_dir)
     if opc_dir is None:
         raise RuntimeError("未找到 .opc/ 目录。请在项目根目录运行，或使用 --cwd 指向包含 .opc 的项目。")
     return opc_dir
-
-
-def slugify(value: str) -> str:
-    normalized = re.sub(r"[^a-zA-Z0-9\u4e00-\u9fff]+", "-", value.strip().lower())
-    normalized = re.sub(r"-+", "-", normalized).strip("-")
-    return normalized or "item"
-
-
-def read_text(file_path: Path) -> str:
-    try:
-        return file_path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-
-
-def write_text(file_path: Path, content: str) -> None:
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text(content, encoding="utf-8")
-
-
-def parse_frontmatter(markdown: str) -> dict[str, str]:
-    if not markdown.startswith("---\n"):
-        return {}
-
-    parts = markdown.split("\n---\n", 1)
-    if len(parts) != 2:
-        return {}
-
-    meta: dict[str, str] = {}
-    for line in parts[0].splitlines()[1:]:
-        if ":" not in line:
-            continue
-        key, value = line.split(":", 1)
-        meta[key.strip()] = value.strip()
-    return meta
-
-
-def parse_title(markdown: str) -> str:
-    match = re.search(r"^#\s+(.+)$", markdown, re.MULTILINE)
-    return match.group(1).strip() if match else "未命名"
-
-
-def entry_summary(file_path: Path) -> dict[str, str]:
-    content = read_text(file_path)
-    meta = parse_frontmatter(content)
-    return {
-        "path": str(file_path),
-        "name": meta.get("name", file_path.stem),
-        "status": meta.get("status", "UNKNOWN"),
-        "updatedAt": meta.get("updatedAt", ""),
-        "trigger": meta.get("trigger", ""),
-        "title": parse_title(content),
-    }
-
-
-def list_entries(directory: Path) -> list[dict[str, str]]:
-    if not directory.exists():
-        return []
-    entries = [entry_summary(path) for path in sorted(directory.glob("*.md"), key=lambda item: item.stat().st_mtime, reverse=True)]
-    return entries
-
-
-def resolve_existing(directory: Path, raw_name: str) -> Path | None:
-    if not directory.exists():
-        return None
-
-    query = slugify(raw_name)
-    for path in directory.glob("*.md"):
-        summary = entry_summary(path)
-        if summary["name"] == query:
-            return path
-        stem = path.stem.lower()
-        if stem == query or stem.endswith(f"-{query}"):
-            return path
-    return None
-
-
-def next_index(directory: Path, prefix: str) -> int:
-    if not directory.exists():
-        return 1
-    highest = 0
-    for path in directory.glob(f"{prefix}-*.md"):
-        match = re.match(rf"{re.escape(prefix)}-(\d+)", path.stem)
-        if match:
-            highest = max(highest, int(match.group(1)))
-    return highest + 1
 
 
 def create_thread(opc_dir: Path, description: str) -> dict[str, Any]:
@@ -202,7 +118,7 @@ updatedAt: {timestamp}
 
 ## First Move When Surfaced
 
-- 先用 `/opc-discuss` 或 `/opc-thread` 澄清范围，再决定是否进入规划
+- 先用 `/opc discuss` 或 `/opc-thread` 澄清范围，再决定是否进入规划
 """
     write_text(file_path, content)
     return {"created": True, "path": str(file_path), "id": f"SEED-{number:03d}", "status": "DORMANT"}
@@ -248,7 +164,7 @@ updatedAt: {timestamp}
 
 ## First Planning Step
 
-- 使用 `/opc-thread` 补全上下文，或直接进入 `/opc-discuss`
+- 使用 `/opc-thread` 补全上下文，或直接进入 `/opc discuss`
 """
     write_text(file_path, content)
     return {"created": True, "path": str(file_path), "id": f"BACKLOG-{number:03d}", "status": "PARKED"}
@@ -296,7 +212,7 @@ def format_existing(kind: str, file_path: Path, content: str) -> str:
 def _emit_write_advisory(kind: str, target_dir: Path) -> None:
     """Stderr 建议：提醒用户"创建模式会写入 .opc/"，符合 v1.4.2 mixed-path 约定。
 
-    v1.4.2 AGENTS.md §Read-only CLI 白名单例外 把 thread/seed/backlog 归类为
+    v1.4.2 AGENTS.md §本地 runtime 白名单例外 把 thread/seed/backlog 归类为
     MIXED 路径（列出模式只读、创建模式轻量写入）。这里的 stderr 警告不阻断，
     但让用户在 CLI 快速创建与 agent workflow 创建之间做出知情选择。
     """

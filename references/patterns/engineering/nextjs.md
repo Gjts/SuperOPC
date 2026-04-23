@@ -5,7 +5,7 @@ description: Use when building with Next.js 14 App Router. Covers Server Compone
 
 ## Next.js 14 App Router 模式
 
-**宣布：** "我正在使用 nextjs-patterns 技能。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -226,6 +226,6 @@ lib/
 ### 常见偏差
 - Server/Client 组件边界混乱，数据流不清。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先定渲染边界，再选择 Server Components、Actions 和 Route Handlers。
 

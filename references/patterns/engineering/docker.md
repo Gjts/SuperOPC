@@ -5,7 +5,7 @@ description: Use when containerizing applications, writing Dockerfiles, or setti
 
 ## Docker 容器化模式
 
-**宣布：** "我正在使用 docker-patterns 技能来容器化应用。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -168,6 +168,6 @@ tests/
 ### 常见偏差
 - 单阶段构建塞满调试依赖与密钥。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 使用多阶段构建并最小化镜像内容和权限。
 

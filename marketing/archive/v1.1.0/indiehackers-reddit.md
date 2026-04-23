@@ -1,5 +1,7 @@
 # IndieHackers + Reddit 帖子内容
 
+> Archived launch asset for SuperOPC v1.1.0. Counts, feature lists, and release framing in this file are historical and should be refreshed before reuse.
+
 ---
 
 ## 一、IndieHackers — 产品发布帖
@@ -307,4 +309,3 @@ routing architecture.
 ```
 
 ```
-

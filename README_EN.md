@@ -100,15 +100,14 @@ Hooks follow the **advisory-first principle** — most hooks warn rather than bl
 
 ```
 SuperOPC/
-├── skills/                    # Skill system (core)
-│   ├── using-superopc/        # Meta-skills: how to use the system
-│   ├── product/               # Product development (5 skills)
-│   ├── engineering/           # Engineering quality (19 skills)
-│   ├── business/              # Business operations (18 skills)
-│   ├── intelligence/          # Market intelligence (2 skills)
-│   └── learning/              # Learning & evolution (3 skills)
-├── agents/                    # Professional agents (15)
-├── commands/opc/              # Slash commands (23)
+├── skills/                    # Skill layer (17 total)
+│   ├── using-superopc/        # Dispatcher + meta skills
+│   ├── product/               # Product dispatchers
+│   ├── engineering/           # Engineering dispatchers + atomic skills
+│   ├── business/              # Business dispatcher
+│   └── learning/              # Continuous learning
+├── agents/                    # Professional agents (27)
+├── commands/opc/              # Slash commands (25)
 ├── hooks/                     # Quality gate hooks
 ├── rules/                     # Coding rules (4 languages)
 ├── references/                # Reference documents
@@ -147,26 +146,26 @@ AI executes task-by-task TDD → two-stage review → atomic commits.
 ```
 Run tests → merge/PR → cleanup.
 
-### 5. Business decisions
+### 5. Run market research
 ```
-/opc-research AI writing tools market
+/opc-research run --query "AI writing tools market"
 ```
-Multi-source research → competitive analysis → action recommendations.
+Feed -> insights -> methodology summary -> `.opc/research/` report. If you need an actual business decision, continue with `/opc-business`.
 
 ### 6. View dashboard
-```bash
-python scripts/opc_dashboard.py --cwd /path/to/your/project
+```
+/opc-dashboard
 ```
 
 ### 7. Pause and resume
-```bash
-python scripts/opc_pause.py --cwd . --note "stopping here for today"
-python scripts/opc_resume.py --cwd .
+```
+/opc-pause --note "stopping here for today"
+/opc-resume
 ```
 
 ### 8. Health check
-```bash
-python scripts/opc_health.py --cwd . --repair
+```
+/opc-health --repair
 ```
 
 ## Project Templates
@@ -186,14 +185,13 @@ Each template includes pre-configured `.opc/` files (PROJECT.md, REQUIREMENTS.md
 
 ### Product Development Pipeline
 ```
-brainstorming → planning → implementing → reviewing → shipping
-   (design)     (plan)     (TDD execute)   (review)    (ship)
+planning → implementing → reviewing → shipping
+ (clarify / compare / plan)  (TDD execute)   (review)    (ship)
 ```
 
 ### Business Decision Pipeline
 ```
-find-community → validate-idea → mvp → first-customers → pricing → grow
-  (community)    (validate)     (MVP)  (acquire)       (price)   (growth)
+business-advisory → opc-business-advisor → validate-idea / find-community / mvp / pricing / growth
 ```
 
 ### Quality Assurance
@@ -205,13 +203,11 @@ TDD (test first) + debugging (root cause) + reviewing (5-dimension) + verifier (
 
 | Category | Count | Core Concept |
 |----------|-------|-------------|
-| Product Development | 5 | brainstorm → plan → implement → review → ship |
-| Engineering Quality | 19 | TDD discipline + debugging + parallel execution + patterns |
-| Business Operations | 18 | Lean startup + finance / legal / content / SEO / interviews |
-| Market Intelligence | 2 | Multi-source research + builder tracking |
-| Learning & Evolution | 3 | Learn from masters + create skills + continuous improvement |
-| Meta-skills | 3 | How to correctly use SuperOPC in projects |
-| **Total** | **51** | |
+| Dispatcher skills | 10 | planning / implementing / reviewing / shipping / debugging / security-review / business-advisory / workflow-modes / session-management / autonomous-ops |
+| Atomic skills | 4 | tdd / verification-loop / agent-dispatch / git-worktrees |
+| Meta skills | 2 | using-superopc / developer-profile |
+| Learning skills | 1 | continuous-learning |
+| **Total** | **17** | |
 
 ## Design Principles
 

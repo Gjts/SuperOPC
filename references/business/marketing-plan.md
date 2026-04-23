@@ -7,7 +7,7 @@ description: Use when you have product-market fit and are ready to scale with co
 
 **核心原则：** 教学就是营销。分享你的知识，吸引你的社区。
 
-**宣布：** "我正在使用 marketing-plan 技能来制定增长策略。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 一人公司营销框架
 
@@ -65,6 +65,6 @@ description: Use when you have product-market fit and are ready to scale with co
 ### 常见偏差
 - 列一堆渠道动作，却没有核心目标和节奏。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先明确目标受众、主渠道和可衡量里程碑，再排动作。
 

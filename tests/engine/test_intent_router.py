@@ -31,7 +31,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def router_module():
     """Attempt to import the router. In RED stage this raises."""
     try:
-        import intent_router  # type: ignore
+        from engine import intent_router
     except ImportError as exc:
         pytest.fail(
             f"Cannot import intent_router: {exc}; Wave 2.2 not yet done."
@@ -124,10 +124,10 @@ def test_route_appends_jsonl_log(isolated_router):
 
 def test_route_emits_event(isolated_router, router_module):
     """(f) route() publishes a skill.routed event on the event bus."""
-    from event_bus import EventBus, reset_event_bus
+    from engine.event_bus import EventBus, reset_event_bus
     reset_event_bus()
     received: list[object] = []
-    from event_bus import get_event_bus
+    from engine.event_bus import get_event_bus
     bus = get_event_bus()
     bus.subscribe("skill.routed", lambda e: received.append(e))
 

@@ -31,8 +31,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-# conftest.py puts scripts/engine on sys.path, so bare imports work in tests.
-from event_bus import get_event_bus  # type: ignore
+from engine.event_bus import get_event_bus
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_REGISTRY = REPO_ROOT / "skills" / "registry.json"

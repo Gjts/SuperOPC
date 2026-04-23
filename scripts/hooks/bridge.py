@@ -18,26 +18,26 @@ import sys
 from pathlib import Path
 from typing import Any
 
-ENGINE_DIR = Path(__file__).resolve().parent.parent / "engine"
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 
 _bus_initialized = False
 
 
-def _ensure_engine_path() -> None:
+def _ensure_scripts_path() -> None:
     global _bus_initialized
     if _bus_initialized:
         return
-    engine_path = str(ENGINE_DIR)
-    if engine_path not in sys.path:
-        sys.path.insert(0, engine_path)
+    scripts_path = str(SCRIPTS_DIR)
+    if scripts_path not in sys.path:
+        sys.path.insert(0, scripts_path)
     _bus_initialized = True
 
 
 def emit_hook_event(topic: str, payload: dict[str, Any] | None = None, *, source: str = "hook") -> None:
     """Publish an event to the v2 event bus. Silently no-ops on failure."""
     try:
-        _ensure_engine_path()
-        from event_bus import get_event_bus
+        _ensure_scripts_path()
+        from engine.event_bus import get_event_bus
         opc_events_dir = _find_opc_events_dir()
         bus = get_event_bus(journal_dir=opc_events_dir)
         bus.publish(topic, payload or {}, source=source)

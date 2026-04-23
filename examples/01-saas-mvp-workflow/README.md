@@ -33,13 +33,13 @@ SuperOPC 会引导你回答以下问题：
 ### 第二步：市场研究（可选）
 
 ```
-/opc-research 自由职业者发票工具市场
+/opc-research run --query "自由职业者发票工具市场"
 ```
 
-SuperOPC 的 `opc-researcher` 代理会：
+SuperOPC 会运行 feed → insights → methodology pipeline：
 1. 分析竞品（FreshBooks, Wave, Bonsai）
 2. 识别市场缺口
-3. 生成 `.opc/research/market-analysis.md`
+3. 生成 `.opc/research/YYYY-MM-DD-freelancer-invoicing-tools.md`
 
 ### 第三步：规划第一个功能
 

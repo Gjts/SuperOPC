@@ -7,7 +7,7 @@ description: Use when setting prices, considering price changes, or deciding on 
 
 **核心原则：** 从第一天就收费。免费和 1 元之间的差距比 1 元和 100 元之间大得多。
 
-**宣布：** "我正在使用 pricing 技能来分析定价策略。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 定价框架
 
@@ -58,6 +58,6 @@ description: Use when setting prices, considering price changes, or deciding on 
 ### 常见偏差
 - 用低价掩盖价值表达不清。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 按客户获得的价值定价，并预留后续提价路径。
 

@@ -5,11 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
-
-sys.path.insert(0, str(SCRIPTS_DIR))
-
 from cli import verify as verify_cli  # noqa: E402
 from opc_quality import (  # noqa: E402
     collect_project_quality_report,
@@ -17,6 +12,8 @@ from opc_quality import (  # noqa: E402
     collect_repo_quality_report,
     format_quality_report,
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def create_quality_project(tmp_path: Path) -> Path:
@@ -119,7 +116,9 @@ def create_quality_repo(
         ".claude-plugin",
         "agents",
         "commands/opc",
+        "docs",
         "hooks",
+        "integrations",
         "references",
         "rules/common",
         "scripts/hooks",
@@ -144,6 +143,38 @@ def create_quality_repo(
         "---\nname: example-skill\ndescription: Example skill\n---\n\n# Skill\n",
         encoding="utf-8",
     )
+    (repo_root / "integrations" / "README.md").write_text(
+        "# Integrations Output\n\n"
+        "`integrations/` is a generated-output directory.\n\n"
+        "Source of truth lives in `agents/`, `commands/`, `skills/`, and `scripts/convert.py`.\n\n"
+        "Do not manually edit runtime files under `integrations/<tool>/`.\n\n"
+        "Regenerate them with `python scripts/convert.py --tool all`.\n",
+        encoding="utf-8",
+    )
+    (repo_root / "docs" / "DIRECTORY-MAP.md").write_text(
+        "# Directory Map\n\n"
+        "| Path | Notes |\n"
+        "| --- | --- |\n"
+        "| `marketing/` | launch assets |\n"
+        "| `website/` | landing page |\n"
+        "| `integrations/` | generated runtime output |\n"
+        "| `.manual_verify/` | manual verification temp files |\n"
+        "| `.pytest_tmp/` | legacy pytest temp files |\n"
+        "| `.test_tmp/` | controlled test workspace |\n"
+        "| `pytest-cache-files-*` | transient pytest cache directories |\n",
+        encoding="utf-8",
+    )
+    (repo_root / ".gitignore").write_text(
+        "integrations/*\n"
+        "!integrations/\n"
+        "!integrations/README.md\n"
+        ".manual_verify/\n"
+        ".pytest_tmp/\n"
+        ".test_tmp/\n"
+        "pytest-cache-files-*/\n",
+        encoding="utf-8",
+    )
+    (repo_root / "scripts" / "convert.py").write_text("print('convert')\n", encoding="utf-8")
     (repo_root / "scripts" / "hooks" / "mock.py").write_text("print('ok')\n", encoding="utf-8")
     (repo_root / "README.md").write_text(
         "# Repo\n\n[Broken](docs/missing.md)\n" if broken_link else "# Repo\n",
@@ -427,6 +458,72 @@ def test_repo_quality_report_flags_broken_links_missing_workflows_and_version(tm
     assert report["qualitySignals"]["regressionDebt"] >= 1
 
 
+def test_repo_quality_report_warns_on_transient_workspace_artifacts(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    (repo_root / ".manual_verify").mkdir()
+    (repo_root / "pytest-cache-files-temp").mkdir()
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is True
+    assert checks["repo.transient-dirs"]["status"] == "warn"
+    assert ".manual_verify" in checks["repo.transient-dirs"]["details"]
+    assert "pytest-cache-files-temp" in checks["repo.transient-dirs"]["details"]
+
+
+def test_repo_quality_report_repair_removes_transient_workspace_artifacts(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    (repo_root / ".manual_verify").mkdir()
+    (repo_root / "pytest-cache-files-temp").mkdir()
+
+    report = collect_repo_quality_report(repo_root, repair=True)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is True
+    assert checks["repo.transient-dirs"]["status"] == "fixed"
+    assert not (repo_root / ".manual_verify").exists()
+    assert not (repo_root / "pytest-cache-files-temp").exists()
+    assert "removed .manual_verify" in report["repairs"]
+    assert "removed pytest-cache-files-temp" in report["repairs"]
+
+
+def test_repo_quality_report_fails_on_missing_generated_artifact_policy(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    (repo_root / "integrations" / "README.md").unlink()
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["repo.generated-artifacts"]["status"] == "fail"
+    assert "missing generated artifact policy integrations/README.md" in checks["repo.generated-artifacts"]["details"][0]
+
+
+def test_repo_quality_report_fails_on_missing_gitignore_workspace_policy(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    (repo_root / ".gitignore").write_text("integrations/*\n", encoding="utf-8")
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["repo.gitignore-policy"]["status"] == "fail"
+    assert any(".manual_verify/" in detail for detail in checks["repo.gitignore-policy"]["details"])
+
+
+def test_repo_quality_report_fails_on_incomplete_directory_map(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    (repo_root / "docs" / "DIRECTORY-MAP.md").write_text("# Directory Map\n\n| Path | Notes |\n| --- | --- |\n| `integrations/` | generated |\n", encoding="utf-8")
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["repo.directory-map"]["status"] == "fail"
+    assert any("`website/`" in detail for detail in checks["repo.directory-map"]["details"])
+
+
 def test_repo_quality_report_fails_on_invalid_hook_registry_reference(tmp_path: Path) -> None:
     repo_root = create_quality_repo(tmp_path)
     hooks_file = repo_root / "hooks" / "hooks.json"
@@ -512,6 +609,7 @@ def test_repo_quality_report_fails_on_missing_description_in_domain_agent(tmp_pa
     assert any("agents/domain/bad-agent.md: missing description" in detail.replace("\\", "/") for detail in checks["repo.frontmatter"]["details"])
 
 
+def test_opc_health_cli_fails_for_missing_opc_dir(tmp_path: Path) -> None:
     project_root = tmp_path / "cli-fail-project"
     project_root.mkdir()
 
@@ -559,7 +657,7 @@ def test_format_quality_report_includes_repairs_for_fixed_project(tmp_path: Path
     assert "[FIXED]" in rendered
 
 
-def test_opc_health_cli_repair_scaffolds_project_but_keeps_semantic_failures(tmp_path: Path) -> None:
+def test_opc_health_cli_repair_scaffolds_a_healthy_starter_project(tmp_path: Path) -> None:
     project_root = tmp_path / "cli-repair-project"
     project_root.mkdir()
 
@@ -579,12 +677,14 @@ def test_opc_health_cli_repair_scaffolds_project_but_keeps_semantic_failures(tmp
     )
 
     payload = json.loads(result.stdout)
+    checks = {check["id"]: check for check in payload["results"][0]["checks"]}
 
-    assert result.returncode == 1
-    assert payload["ok"] is False
+    assert result.returncode == 0
+    assert payload["ok"] is True
     assert payload["results"][0]["summary"]["fixed"] >= 3
     assert (project_root / ".opc" / "HANDOFF.json").exists()
-    assert any(check["id"] == "project.requirements-coverage" and check["status"] == "fail" for check in payload["results"][0]["checks"])
+    assert checks["project.requirements-coverage"]["status"] == "pass"
+    assert checks["project.core-files"]["status"] == "fixed"
 
 
 def test_verify_plan_structure_passes_for_gate_approved_plan(tmp_path: Path, monkeypatch) -> None:

@@ -7,7 +7,7 @@ description: Use when gut-checking any business decision through the minimalist 
 
 **核心原则：** 用极简创业者的思维框架检验任何商业决策。
 
-**宣布：** "我正在使用 minimalist-review 技能来审查这个决策。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 极简审查清单
 
@@ -62,6 +62,6 @@ description: Use when gut-checking any business decision through the minimalist 
 ### 常见偏差
 - 把“忙”误认为“有效进展”。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 按 ROI 和复杂度复盘，删掉不能带来复利的项目。
 

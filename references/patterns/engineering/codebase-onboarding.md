@@ -5,7 +5,7 @@ description: Use when joining a new project, analyzing an unfamiliar codebase, o
 
 ## 代码库上手（棕地映射）
 
-**宣布：** "我正在使用 codebase-onboarding 技能来分析此代码库。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -135,6 +135,6 @@ src/
 ### 常见偏差
 - 没建立地图就做结论和重构。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先完成代码库地图和关键路径识别，再动实现。
 

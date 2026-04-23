@@ -1,5 +1,7 @@
 # SuperOPC 融合蓝图 — 九大来源项目深度融合计划
 
+> Historical archive: this document captures the pre-v1.4 fusion plan and old repo counts. It is kept for project history only. Current source of truth lives in `README.md`, `AGENTS.md`, and `docs/DIRECTORY-MAP.md`.
+
 > 生成时间: 2026-04-12 | 当前版本: v1.0.0 | 目标: v2.0.0
 
 ---

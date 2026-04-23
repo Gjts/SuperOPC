@@ -11,34 +11,35 @@ Command (<= 15 行入口) ──> Dispatcher Skill (<= 60 行派发器) ──> 
                                                                       └─> references/ (知识库手册)
 ~~~
 
-- **Command**：用户手动 slash 入口，**必须**派发对应 dispatcher skill；不允许直接 `python scripts/*.py`（read-only CLI 白名单除外，见下）
+- **Command**：用户手动 slash 入口，**必须**派发对应 dispatcher skill；不允许直接 `python scripts/*.py`（本地 runtime 白名单除外，见下）
 - **Dispatcher Skill**：auto-trigger 识别场景，`Task()` 派发 agent（共 10 个：planning / implementing / reviewing / shipping / debugging / security-review / business-advisory / workflow-modes / session-management / autonomous-ops）
 - **Agent**：完整 workflow 持有者（唯一 source of truth）
 - **Atomic Skill**（4 个）：tdd / agent-dispatch / verification-loop / git-worktrees —— 被 agent 按需调用
 - **references/**（v1.4 新增层）：技术栈 patterns / 商业 playbook / rubric / checklist —— 由 agent workflow 按子活动引用，不作为 skill 暴露
 
-### Read-only CLI 白名单例外（v1.4.2 分两档）
+### 本地 runtime 白名单例外（v1.4.2 分两档）
 
-下列 slash 命令**允许**直接调用 Python 脚本，**不**派发 skill。分两档：
+下列 slash 命令**允许**直接调用 Python 脚本或 `bin/opc-tools` 本地 runtime，**不**默认派发 skill。分两档：
 
-#### 档一：PURE READ-ONLY（6 个，严格纯只读）
+#### 档一：LOCAL RUNTIME（6 个，以查询为主）
 
-完全无副作用，命令文档无需特殊标注。
+这组命令提供低摩擦本地入口。`/opc-dashboard` 与 `/opc-stats` 是严格只读；`/opc-health`、`/opc-profile`、`/opc-research` 带受控本地写入子动作；`/opc-intel refresh` 仍必须走 agent。
 
 | 命令 | 脚本 | 用途 |
 |------|------|------|
-| `/opc-health` | `scripts/opc_health.py` | 健康检查（只读诊断，`--repair` 走 agent） |
-| `/opc-dashboard` | `scripts/opc_dashboard.py` | 项目面板（只读汇总） |
-| `/opc-stats` | `scripts/opc_stats.py` | 统计指标（只读计数） |
-| `/opc-intel` | `scripts/opc_intel.py` | 代码库情报（只读查询；`/opc-intel refresh` 走 opc-intel-updater agent） |
-| `/opc-profile` | `scripts/opc_profile.py` | 开发者画像（只读读写本地 profile，不写项目 .opc/） |
-| `/opc-research` | `scripts/opc_research.py` | 研究产物索引（只读；新研究走 opc-researcher） |
+| `/opc-health` | `scripts/opc_health.py` | 健康检查与安全修复（诊断默认只读；`--repair` 做受控本地修复） |
+| `/opc-dashboard` | `scripts/opc_dashboard.py` | 项目面板（纯只读汇总） |
+| `/opc-stats` | `scripts/opc_stats.py` | 统计指标（纯只读计数） |
+| `/opc-intel` | `scripts/opc_intel.py` | 代码库情报（query/status/validate/snapshot/diff 走本地 runtime；`refresh` 走 `opc-intel-updater`） |
+| `/opc-profile` | `scripts/opc_profile.py` | 开发者画像（读写本地 profile，不写项目 `.opc/`） |
+| `/opc-research` | `scripts/opc_research.py` | 研究 runtime（`methods` / `insights` 可直接消费；`feed` / `run` 会写 `.opc/` 研究产物） |
 
 **档一进入条件：**
-1. **完全**只读，不写入 `.opc/` 任何 state/handoff/decision 文件
-2. 不触发任何 agent 派发或 skill 规则执行
-3. 输出可被人类直接消费或给 AI 做摘要
-4. 任何一条被违反 → 立即降级为档二或改为 dispatcher
+1. 默认用于低摩擦查询、索引或本地工具动作；任何受控写入都必须在命令文档显式声明
+2. 不触发**未声明的** agent 派发；若存在受控例外（如 `/opc-intel refresh`）必须写明 dispatcher 路径
+3. 写入范围必须局限于本地 profile、`.opc/` 工具产物或安全脚手架修复；不得偷偷升级成复杂 workflow
+4. 输出可被人类直接消费或给 AI 做摘要
+5. 任何一条被违反 → 立即降级为档二或改为 dispatcher
 
 #### 档二：MIXED LOW-FRICTION（3 个，列出只读 / 创建轻量写入）
 

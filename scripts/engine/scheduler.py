@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from event_bus import Event, EventBus, get_event_bus
+from engine.event_bus import Event, EventBus, get_event_bus
 
 
 # ---------------------------------------------------------------------------
@@ -151,8 +151,6 @@ def _make_health_check(opc_dir: Path) -> Callable[[], None]:
     def _run() -> None:
         bus = get_event_bus()
         try:
-            import sys
-            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
             from opc_quality import collect_project_quality_report
             report = collect_project_quality_report(opc_dir.parent, repair=False)
             findings = report.get("findings", [])
@@ -169,9 +167,7 @@ def _make_market_intel(opc_dir: Path, query: str) -> Callable[[], None]:
     def _run() -> None:
         bus = get_event_bus()
         try:
-            import sys
-            sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "intelligence"))
-            from feed_scraper import compose_intelligence_report
+            from intelligence.feed_scraper import compose_intelligence_report
             compose_intelligence_report(query, opc_dir=opc_dir)
             bus.publish("market.update", {"query": query, "status": "complete"}, source="scheduler.intel")
         except Exception as exc:
@@ -196,7 +192,7 @@ def _make_instinct_evolution(opc_dir: Path) -> Callable[[], None]:
     def _run() -> None:
         bus = get_event_bus()
         try:
-            from instinct_generator import InstinctGenerator
+            from engine.instinct_generator import InstinctGenerator
             repo_root = opc_dir.parent
             gen = InstinctGenerator(repo_root=repo_root, bus=bus)
             instincts = gen.run(min_occurrences=5)

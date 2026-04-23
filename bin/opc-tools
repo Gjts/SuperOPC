@@ -20,14 +20,6 @@ _SCRIPT_DIR = Path(__file__).resolve().parent.parent / "scripts"
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-# Ensure engine/ and intelligence/ are importable for domain commands
-_ENGINE_DIR = _SCRIPT_DIR / "engine"
-_INTEL_DIR = _SCRIPT_DIR / "intelligence"
-for _p in (_ENGINE_DIR, _INTEL_DIR):
-    _s = str(_p)
-    if _s not in sys.path:
-        sys.path.insert(0, _s)
-
 from cli.router import main
 
 if __name__ == "__main__":

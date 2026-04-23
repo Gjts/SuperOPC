@@ -1,5 +1,7 @@
 # SuperOPC generated files
-integrations/
+integrations/*
+!integrations/
+!integrations/README.md
 # All runtime state under .opc/ is local-only (sessions/audit.log/routing/intelligence/…)
 .opc/
 
@@ -54,7 +56,9 @@ coverage.xml
 *.py.cover
 .hypothesis/
 .pytest_cache/
+.pytest_tmp/
 .test_tmp/
+pytest-cache-files-*/
 cover/
 
 # Translations
@@ -220,3 +224,4 @@ __marimo__/
 worktrees/
 docs/plans/*.draft.md
 docs/research/*.draft.md
+.manual_verify/

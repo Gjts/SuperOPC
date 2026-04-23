@@ -5,7 +5,7 @@ description: Use when writing end-to-end tests with Playwright. Covers test stru
 
 ## E2E 测试（Playwright）
 
-**宣布：** "我正在使用 e2e-testing 技能来编写端到端测试。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -184,6 +184,6 @@ test('首页截图匹配', async ({ page }) => {
 ### 常见偏差
 - 不覆盖关键旅程，只依赖局部测试。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 用端到端场景验证真实用户路径和回归。
 

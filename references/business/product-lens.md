@@ -7,7 +7,7 @@ description: Use when reviewing a product from the user's perspective: value pro
 
 **核心原则：** 不要只问“功能做了吗”，要问“用户有没有更快得到结果”。产品视角关注结果速度、认知成本和持续价值。
 
-**宣布：** "我正在使用 product-lens 技能从产品角度审查当前方案。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 五个审查维度
 
@@ -80,6 +80,6 @@ description: Use when reviewing a product from the user's perspective: value pro
 ### 常见偏差
 - 把产出当成价值，把忙碌当成进展。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 用激活、留存和 PMF 信号审视产品优先级。
 

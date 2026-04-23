@@ -1,5 +1,7 @@
 # SuperOPC 发布作战手册
 
+> Archived launch asset for SuperOPC v1.1.0. Counts, feature lists, and release framing in this file are historical and should be refreshed before reuse.
+
 > 版本：v1.1.0 发布
 > 目标：7天内获得前100个 GitHub Stars + 前10个真实用户反馈
 
@@ -152,5 +154,4 @@ This is exactly the kind of feedback that makes SuperOPC better.
 | `chinese-community-posts.md` | 即刻/知乎/V2EX/掘金/小红书内容      |
 | `producthunt-launch.md`      | PH 发布文案 + Show HN + 评论模板 |
 | `LAUNCH-PLAYBOOK.md`         | 本文件，总指挥手册                |
-
 

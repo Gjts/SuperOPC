@@ -1,6 +1,6 @@
 ---
 name: workflow-modes
-description: Use when the task is ambiguous and the key question is "which mode should I enter?" rather than "what should I do?". Dispatches opc-orchestrator agent which owns the 7-mode decision tree (autonomous/discuss/explore/fast/quick/do/next) and the full pipeline orchestration.
+description: Use when the task is ambiguous and the key question is "which mode should I enter?" rather than "what should I do?". Dispatches opc-orchestrator agent which owns the 7-mode decision tree (autonomous/discuss/explore/fast/quick/do/next), guarded sub-scenarios (`project-init`, `intel-refresh`), and the full pipeline orchestration.
 id: workflow-modes
 type: dispatcher
 tags: [orchestration, mode, routing, meta-routing, pipeline]
@@ -10,6 +10,9 @@ triggers:
   phrases: ["该用什么流程", "帮我决定下一步", "不确定怎么做", "走哪条路"]
 version: 1.4.1
 ---
+## Guarded Sub-Scenarios
+- `project-init`: `/opc-start` bypasses the generic 7-mode tree and asks `opc-orchestrator` to choose init vs resume vs `business-advisory` handoff based on `.opc/` presence and user intent.
+- `intel-refresh`: `/opc-intel refresh` bypasses the local runtime path and asks `opc-orchestrator` to delegate to `opc-intel-updater`.
 # workflow-modes — 模式路由派发器
 **触发条件：** 用户请求的目标清晰度不确定，或需要决定"现在该用哪种工作方式"。适用于 `/opc` 命令以及 "该用什么流程"、"帮我决定下一步"、"不确定怎么做" 等场景。
 **宣布：** "我调用 workflow-modes 技能，派发给 opc-orchestrator 选择最合适的工作模式。"

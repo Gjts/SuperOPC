@@ -16,27 +16,62 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from opc_common import write_console_text
+
 
 # ---------------------------------------------------------------------------
 # Output helpers
 # ---------------------------------------------------------------------------
 
+_PICK_FIELD: str | None = None
+
+
+def set_pick_field(field: str | None) -> None:
+    """Configure a top-level/dotted field to extract from raw JSON output."""
+    global _PICK_FIELD
+    _PICK_FIELD = field.strip() if field else None
+
+
 def output(data: dict[str, Any], raw: bool = False, text: str | None = None) -> None:
     """Print result: JSON when --raw, human-friendly text otherwise."""
     if raw:
-        json.dump(data, sys.stdout, ensure_ascii=False, indent=None)
-        sys.stdout.write("\n")
+        payload = _pick_value(data, _PICK_FIELD) if _PICK_FIELD else data
+        rendered = _render_raw_value(payload)
     else:
-        sys.stdout.write(text if text is not None else json.dumps(data, ensure_ascii=False, indent=2))
-        if not (text or "").endswith("\n"):
-            sys.stdout.write("\n")
+        rendered = text if text is not None else json.dumps(data, ensure_ascii=False, indent=2)
+    write_console_text(rendered, stream=sys.stdout)
+    if not rendered.endswith("\n"):
+        write_console_text("\n", stream=sys.stdout)
     sys.exit(0)
 
 
 def error(message: str, code: int = 1) -> None:
     """Print error to stderr and exit."""
-    sys.stderr.write(f"opc-tools error: {message}\n")
+    write_console_text(f"opc-tools error: {message}\n", stream=sys.stderr)
     sys.exit(code)
+
+
+def _pick_value(data: Any, field: str) -> Any:
+    value = data
+    for segment in field.split("."):
+        if isinstance(value, dict) and segment in value:
+            value = value[segment]
+            continue
+        if isinstance(value, list) and segment.isdigit():
+            index = int(segment)
+            if 0 <= index < len(value):
+                value = value[index]
+                continue
+        error(f"Field not found for --pick: {field}")
+    return value
+
+
+def _render_raw_value(value: Any) -> str:
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=True, indent=None)
+    if value is None or isinstance(value, bool):
+        return json.dumps(value, ensure_ascii=True)
+    return str(value)
 
 
 # ---------------------------------------------------------------------------

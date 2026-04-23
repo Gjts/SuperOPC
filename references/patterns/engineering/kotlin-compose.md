@@ -5,7 +5,7 @@ description: Use when building Android apps with Kotlin and Jetpack Compose. Cov
 
 ## Kotlin + Jetpack Compose 模式
 
-**宣布：** "我正在使用 kotlin-compose 技能。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -234,6 +234,6 @@ app/src/main/java/com/myapp/
 ### 常见偏差
 - 把业务状态直接塞进可组合函数。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 使用 state hoisting 和 ViewModel 管理状态。
 

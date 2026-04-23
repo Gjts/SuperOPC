@@ -5,7 +5,7 @@ description: Use when researching markets, analyzing trends, competitive analysi
 
 ## 市场研究
 
-**宣布：** "我正在使用 market-research 技能来进行多源市场调研。"
+**使用方式：** 由 `opc-researcher` 或 `/opc-research run` 在研究流程中引用此参考手册。
 
 ## 研究框架
 
@@ -90,6 +90,6 @@ description: Use when researching markets, analyzing trends, competitive analysi
 ### 常见偏差
 - 只引用单一来源或社交平台热帖。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 交叉验证论坛、竞品、搜索需求和用户原话再下判断。
 

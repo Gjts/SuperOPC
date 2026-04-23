@@ -7,7 +7,7 @@ description: Use when preparing fundraising narrative, pitch deck, investor memo
 
 **核心原则：** 投资人买的不是幻灯片，而是“问题重要 + 解法可信 + 你能执行”的组合。
 
-**宣布：** "我正在使用 investor-materials 技能准备融资材料。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 先判断是否该融资
 
@@ -92,6 +92,6 @@ description: Use when preparing fundraising narrative, pitch deck, investor memo
 ### 常见偏差
 - 材料只讲愿景，不讲数据和证据。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 提前维护 deck、memo、KPI snapshot 和 data room。
 

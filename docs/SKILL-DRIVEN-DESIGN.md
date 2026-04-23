@@ -3,7 +3,7 @@
 > **状态：** 设计草案（draft，不含代码改动）
 > **日期：** 2026-04-21
 > **作者：** 审查现状 + 对齐 "Skill Registry / Intent Router / Loader / Orchestration Engine" 四组件架构
-> **依据：** `docs/REFACTOR-PLAN.md`（v1.3/v1.4 skill-dispatcher 契约已落地）
+> **依据：** `docs/archive/REFACTOR-PLAN.md`（v1.3/v1.4 skill-dispatcher 契约已落地）
 > **范围：** 仅本文档一份产出。涉及代码的落地动作均在评审结论后另行立项。
 > **决策点：** 见文末 §10。
 
@@ -12,7 +12,7 @@
 ## 0. 一页摘要（TL;DR）
 
 当前 SuperOPC 运行在 **v1.4 契约**：`Command → Dispatcher Skill → Agent (workflow 持有者) → Atomic Skill + references/`。
-**Agent 是工作流的事实源**；skill 分两种角色——派发器（8 个）与原子纪律（4 个）+ 元层（4 个）+ 学习（1 个）。
+**Agent 是工作流的事实源**；skill 分四类角色——派发器（10 个）+ 原子纪律（4 个）+ 元层（2 个）+ 学习（1 个）。
 
 对照参考架构的四组件理想态：
 
@@ -31,7 +31,7 @@
 
 ### 1.1 为什么此时提
 
-- **v1.4 契约已稳定**：`AGENTS.md:1-18` 的四层契约已落地，skill 职责被清洗得很干净（17 个 skill，派发器 8、原子 4、元层 4、学习 1）。这是讨论"skill 如何进一步驱动 agent workflow"的**最佳时间点**——结构清晰，改造面可控。
+- **v1.4 契约已稳定**：`AGENTS.md:1-18` 的四层契约已落地，skill 职责被清洗得很干净（17 个 skill，派发器 10、原子 4、元层 2、学习 1）。这是讨论"skill 如何进一步驱动 agent workflow"的**最佳时间点**——结构清晰，改造面可控。
 - **上下文预算压力**：参考架构图 5 给出的量级是 **40 个 skill 全量注入 ≈ 3200 tokens**，按需加载 **≈ 200 + 500–1000 tokens**，节省约 **70%**。SuperOPC 的 `context_assembler.py` 虽已按 phase 做了初级裁剪，但**未把"skill 发现"从 LLM 侧转移到可审计的结构化索引**，仍有较大优化空间。
 - **路由可审计性**：目前 skill 选择完全由 LLM 自由匹配 description，**不可复现、不可回放**。引入 registry + 三级路由后，选择过程可解释、可单测、可 A/B。
 - **与现有 `agents/registry.json` 对称**：agents 已有 registry，skills 没有。对称化后同一条路由决策链可以横跨 skill 和 agent。
@@ -373,7 +373,7 @@ class SkillLoader:
 
 | v1.4 事实 | v2 新增动作 | 是否破坏 |
 |---|---|---|
-| 8 个 Dispatcher Skill 仍由 LLM 读 description 触发 | 新增 `skills/registry.json` 作为**旁路加速**；LLM 仍可走原路径 | ❌ 不破坏 |
+| 10 个 Dispatcher Skill 仍由 LLM 读 description 触发 | 新增 `skills/registry.json` 作为**旁路加速**；LLM 仍可走原路径 | ❌ 不破坏 |
 | 4 个 Atomic Skill 由 agent 调用 | registry 记录 `type:atomic`；Loader 支持 agent 显式调用 | ❌ 不破坏 |
 | Agent 是 workflow 事实源 | **保持**；skill registry 的 `dispatches_to` 指向 agent | ❌ 不破坏 |
 | `<opc-plan>` XML 无 `<skill>` 字段 | v2 允许可选 `<skill>`，缺省时维持现状 | ❌ 向后兼容 |
@@ -538,7 +538,7 @@ assembler       loader          router         (已有)
 
 ## 11. 评审 Checklist
 
-- [ ] 本文档是否与 `docs/REFACTOR-PLAN.md` v2 的三层契约保持一致？
+- [ ] 本文档是否与 `docs/archive/REFACTOR-PLAN.md` v2 的三层契约保持一致？
 - [ ] 本文档是否**没有**搬运任何 workflow 细节到 skill（保持 agent 为事实源）？
 - [ ] 路线 A 的改动清单是否确实控制在 ≈ 6 个文件以内？
 - [ ] `skills/registry.json` 字段是否对称于 `agents/registry.json`？
@@ -568,9 +568,9 @@ assembler       loader          router         (已有)
 
 ## 附录 A：术语
 
-- **Dispatcher Skill**：`type=dispatcher`；`Task()` 派发给 agent；v1.4 有 8 个
+- **Dispatcher Skill**：`type=dispatcher`；`Task()` 派发给 agent；v1.4 有 10 个
 - **Atomic Skill**：`type=atomic`；agent 内部调用的单一纪律；v1.4 有 4 个
-- **Meta Skill**：`type=meta`；系统元层规则；v1.4 有 4 个
+- **Meta Skill**：`type=meta`；系统元层规则；v1.4 有 2 个
 - **Learning Skill**：`type=learning`；观察与自我进化；v1.4 有 1 个
 - **Intent Router**：将用户自然语言请求转为结构化 skill_id 的解析器
 - **L1 / L2 / L3**：规则 / Embedding / LLM 三级路由
@@ -582,7 +582,7 @@ assembler       loader          router         (已有)
 - `skills/using-superopc/SKILL.md:36-93` — v1.4 skill 清单
 - `AGENTS.md:3-18` — v1.4 契约四层定义
 - `CLAUDE.md:103-145` — skill-first 规则 + 17 skill 分类
-- `docs/REFACTOR-PLAN.md` — v2 契约完整推导
+- `docs/archive/REFACTOR-PLAN.md` — v2 契约完整推导
 - `agents/registry.json` — agent 侧 registry（对称样本）
 - `scripts/engine/dag_engine.py:120-157` — agent 关键词路由现实现
 - `scripts/engine/context_assembler.py:66-89` — phase 级 skill 优先级现实现

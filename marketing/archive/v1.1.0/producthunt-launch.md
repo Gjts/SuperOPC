@@ -1,5 +1,7 @@
 # ProductHunt Launch — SuperOPC
 
+> Archived launch asset for SuperOPC v1.1.0. Counts, feature lists, and release framing in this file are historical and should be refreshed before reuse.
+
 > Target launch: Tuesday (highest traffic day)
 > Category: Developer Tools / Productivity
 > Goal: #1 Product of the Day
@@ -138,9 +140,9 @@ Happy to answer any questions 🙏
 ### Launch day (12:01am PST)
 
 - Submit product to Product Hunt
-- Post Twitter thread (marketing/twitter-launch-thread.md)
+- Post Twitter thread (`twitter-launch-thread.md`)
 - Notify communities: r/ClaudeAI, r/cursor, IndieHackers
-- Post on 即刻, 知乎 (marketing/chinese-community-posts.md)
+- Post on 即刻, 知乎 (`chinese-community-posts.md`)
 - Reply to every PH comment within 1 hour
 - DM personal network to upvote
 
@@ -198,4 +200,3 @@ What I think is different:
 
 MIT licensed. Feedback welcome.
 ```
-

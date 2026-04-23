@@ -3,7 +3,7 @@
 **日期**: 2026-04-21
 **状态**: proposed
 **决策者**: 项目 owner
-**关联**: `docs/SKILL-DRIVEN-DESIGN.md` §3.4、`docs/REFACTOR-PLAN.md` §2、`scripts/engine/dag_engine.py`
+**关联**: `docs/SKILL-DRIVEN-DESIGN.md` §3.4、`docs/archive/REFACTOR-PLAN.md` §2、`scripts/engine/dag_engine.py`
 
 ## 背景
 

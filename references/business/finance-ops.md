@@ -7,7 +7,7 @@ description: Use when setting up bookkeeping, invoicing, tax hygiene, cash track
 
 **核心原则：** 财务不是月底回忆，而是每周一次的真实反馈回路。看不见现金流，就做不好产品决策。
 
-**宣布：** "我正在使用 finance-ops 技能梳理财务运营。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 最小财务系统
 
@@ -80,6 +80,6 @@ description: Use when setting up bookkeeping, invoicing, tax hygiene, cash track
 ### 常见偏差
 - 收入、成本、跑道没有固定节奏追踪。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 按周/月维护财务节奏，持续更新 MRR、Burn 和 Runway。
 

@@ -5,7 +5,7 @@ description: Use when planning deployment strategy, setting up CI/CD pipelines, 
 
 ## 部署模式
 
-**宣布：** "我正在使用 deployment-patterns 技能来规划部署策略。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -138,6 +138,6 @@ jobs:
 ### 常见偏差
 - 没有回滚路径和发布验证。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 选择合适部署策略并明确回滚与观测信号。
 

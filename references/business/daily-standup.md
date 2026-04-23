@@ -7,7 +7,7 @@ description: Use for daily 5-minute check-ins during a 30-day sprint. Tracks pro
 
 **核心原则：** 每天 5 分钟，保持节奏和方向感。不是汇报，是自我对话。
 
-**宣布：** "我正在使用 daily-standup 技能，做今天的 5 分钟站会。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 站会流程
 
@@ -91,7 +91,7 @@ description: Use for daily 5-minute check-ins during a 30-day sprint. Tracks pro
 1. **本周检查点达标了吗？** 逐项核对
 2. **本周最大的意外是什么？**
 3. **下周需要调整什么？**
-4. **是否需要调用 `minimalist-review` 技能重新评估方向？**
+4. **是否需要参考 `minimalist-review` 手册重新评估方向？**
 
 ## 输出
 
@@ -106,5 +106,5 @@ description: Use for daily 5-minute check-ins during a 30-day sprint. Tracks pro
 ### 常见偏差
 - 敷衍打卡而不诚实面对阻塞。
 
-### 使用技能后的纠正
-- 如果连续 2 天阻塞未解决，自动建议调用 `debugging` 或 `minimalist-review` 技能重新评估。
+### 应用本手册后的纠正
+- 如果连续 2 天阻塞未解决，自动建议调用 `debugging` skill 或参考 `minimalist-review` 手册重新评估。

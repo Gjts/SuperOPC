@@ -7,7 +7,7 @@ description: Use when you have a product and need to find your first 100 custome
 
 **核心原则：** 不做规模化。一个一个地找客户。
 
-**宣布：** "我正在使用 first-customers 技能，帮你制定获客策略。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 获客阶梯
 
@@ -57,6 +57,6 @@ description: Use when you have a product and need to find your first 100 custome
 ### 常见偏差
 - 在没有明确 ICP 和成交脚本前盲目获客。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先锁定少量高匹配用户，逐个成交并提炼重复话术。
 

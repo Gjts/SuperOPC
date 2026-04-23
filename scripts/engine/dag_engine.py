@@ -32,7 +32,8 @@ if sys.stdout and sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8"
     except AttributeError:
         pass
 
-from event_bus import EventBus, get_event_bus
+from engine.event_bus import EventBus, get_event_bus
+from opc_common import find_opc_dir
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 REGISTRY_PATH = REPO_ROOT / "agents" / "registry.json"
@@ -220,13 +221,17 @@ class DAGEngine:
         bus: EventBus | None = None,
         log_dir: Path | None = None,
         dry_run: bool = False,
+        project_root: Path | None = None,
     ):
         self._registry = registry or AgentRegistry()
         self._bus = bus or get_event_bus()
         self._log_dir = log_dir
         self._dry_run = dry_run
+        self._project_root = (project_root or REPO_ROOT).resolve()
+        self._completed_task_ids: set[str] = set()
 
     def execute(self, plan: ExecutionPlan) -> ExecutionResult:
+        self._completed_task_ids = set()
         result = ExecutionResult(
             plan_id=plan.plan_id,
             goal=plan.goal,
@@ -261,21 +266,38 @@ class DAGEngine:
         for task in wave.tasks:
             task.agent = self._registry.route(task)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(wave.tasks), MAX_WORKERS)) as pool:
-            futures = {pool.submit(self._execute_task_with_retry, task, result): task for task in wave.tasks}
-            for future in concurrent.futures.as_completed(futures):
-                task = futures[future]
-                try:
-                    success = future.result()
-                    if success:
-                        result.tasks_completed += 1
-                    else:
+        pending: dict[str, Task] = {task.id: task for task in wave.tasks}
+        while pending:
+            ready = [
+                task for task in pending.values()
+                if set(task.depends_on).issubset(self._completed_task_ids)
+            ]
+            if not ready:
+                unresolved = [
+                    f"{task.id} -> missing {sorted(set(task.depends_on) - self._completed_task_ids)}"
+                    for task in pending.values()
+                ]
+                result.tasks_failed += len(pending)
+                self._log(result, f"[FATAL] Wave {wave.id} has unresolved in-wave dependencies: {'; '.join(unresolved)}")
+                return False
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(ready), MAX_WORKERS)) as pool:
+                futures = {pool.submit(self._execute_task_with_retry, task, result): task for task in ready}
+                for future in concurrent.futures.as_completed(futures):
+                    task = futures[future]
+                    pending.pop(task.id, None)
+                    try:
+                        success = future.result()
+                        if success:
+                            result.tasks_completed += 1
+                            self._completed_task_ids.add(task.id)
+                        else:
+                            result.tasks_failed += 1
+                            return False
+                    except Exception as exc:
                         result.tasks_failed += 1
+                        self._log(result, f"[FATAL] Task {task.id} exception: {exc}")
                         return False
-                except Exception as exc:
-                    result.tasks_failed += 1
-                    self._log(result, f"[FATAL] Task {task.id} exception: {exc}")
-                    return False
 
         self._log(result, f"Wave {wave.id} completed successfully.")
         return True
@@ -328,6 +350,7 @@ class DAGEngine:
             proc = subprocess.run(
                 ["claude", "--print", "--agent", task.agent, prompt],
                 capture_output=True, text=True, timeout=300,
+                cwd=str(self._project_root),
             )
             task.result = proc.stdout[:2000] if proc.stdout else ""
             return proc.returncode == 0
@@ -392,6 +415,16 @@ def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def resolve_project_root(plan_path: Path) -> Path:
+    start = plan_path if plan_path.is_dir() else plan_path.parent
+    opc_dir = find_opc_dir(start.resolve())
+    return opc_dir.parent if opc_dir is not None else start.resolve()
+
+
+def resolve_default_log_dir(plan_path: Path) -> Path:
+    return resolve_project_root(plan_path) / ".opc" / "execution-log"
+
+
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="SuperOPC DAG Engine v2")
@@ -410,8 +443,9 @@ def main() -> None:
         print("Error: Could not parse <opc-plan> from the file.")
         sys.exit(1)
 
-    log_dir = args.log_dir or plan_path.parent / ".opc" / "execution-log"
-    engine = DAGEngine(dry_run=args.dry_run, log_dir=log_dir)
+    project_root = resolve_project_root(plan_path)
+    log_dir = args.log_dir or resolve_default_log_dir(plan_path)
+    engine = DAGEngine(dry_run=args.dry_run, log_dir=log_dir, project_root=project_root)
     result = engine.execute(plan)
 
     print(f"\n=> Execution {result.status}: {result.tasks_completed}/{result.tasks_total} tasks completed, {result.tasks_failed} failed.")

@@ -20,8 +20,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from event_bus import Event, EventBus, get_event_bus
-from state_engine import ProjectPhase, ProjectState, StateEngine
+from engine.event_bus import Event, EventBus, get_event_bus
+from engine.state_engine import ProjectPhase, ProjectState, StateEngine
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ class RuleEngine:
             return Decision(
                 action=ActionType.DISCUSS,
                 zone=ActionZone.YELLOW,
-                command="/opc-discuss",
+                command="/opc discuss",
                 reason=f"{len(state.blockers)} blocker(s) detected — must resolve before execution.",
                 confidence=0.95,
                 requires_approval=False,
@@ -149,8 +149,8 @@ class RuleEngine:
             return Decision(
                 action=ActionType.HEALTH_CHECK,
                 zone=ActionZone.GREEN,
-                command="/opc-health --repair",
-                reason=f"{len(violations)} quality issue(s) found — auto-repair recommended.",
+                command="/opc-health",
+                reason=f"{len(violations)} quality issue(s) found — inspect health before proceeding.",
                 confidence=0.85,
             )
 
@@ -158,7 +158,7 @@ class RuleEngine:
             return Decision(
                 action=ActionType.DEBUG,
                 zone=ActionZone.YELLOW,
-                command="/opc-build",
+                command="/opc-debug",
                 reason="Test failures detected — triggering debugger pipeline.",
                 confidence=0.88,
             )
@@ -167,9 +167,9 @@ class RuleEngine:
             return Decision(
                 action=ActionType.RUN_TESTS,
                 zone=ActionZone.GREEN,
-                command="/opc-progress",
+                command="opc-tools verify health",
                 reason=f"{len(state.validation_debt)} validation debt item(s) — verify before proceeding.",
-                confidence=0.82,
+                confidence=0.86,
             )
 
         return None
@@ -195,7 +195,7 @@ class StateMachineEngine:
     def evaluate(self, state: ProjectState) -> Decision:
         action_type, command, reason = self.PHASE_ACTIONS.get(
             state.status,
-            (ActionType.DISCUSS, "/opc-discuss", "Unknown state — discuss to clarify direction."),
+            (ActionType.DISCUSS, "/opc discuss", "Unknown state — discuss to clarify direction."),
         )
         zone = ZONE_MAP.get(action_type, ActionZone.YELLOW)
         return Decision(
@@ -244,8 +244,8 @@ class HeuristicEngine:
 
             options.append(ScoredOption(
                 action=ActionType.COLLECT_INTEL,
-                command="/opc-research",
-                reason="Gather market intelligence before planning.",
+                command="/opc-intel status",
+                reason="Inspect current codebase intelligence before planning.",
                 impact=0.6, confidence=0.8, ease=0.9,
             ))
 

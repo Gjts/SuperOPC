@@ -2,7 +2,7 @@
   "$schema": "SuperOPC Skill Registry",
   "version": "2.0.0-phase-a",
   "description": "Generated from SKILL.md frontmatter. DO NOT EDIT MANUALLY.",
-  "generated_at": "2026-04-22T03:45:12Z",
+  "generated_at": "2026-04-23T09:59:53Z",
   "skills": [
     {
       "id": "agent-dispatch",
@@ -457,7 +457,7 @@
       "name": "workflow-modes",
       "path": "skills/using-superopc/workflow-modes/SKILL.md",
       "type": "dispatcher",
-      "description": "Use when the task is ambiguous and the key question is \"which mode should I enter?\" rather than \"what should I do?\". Dispatches opc-orchestrator agent which owns the 7-mode decision tree (autonomous/discuss/explore/fast/quick/do/next) and the full pipeline orchestration.",
+      "description": "Use when the task is ambiguous and the key question is \"which mode should I enter?\" rather than \"what should I do?\". Dispatches opc-orchestrator agent which owns the 7-mode decision tree (autonomous/discuss/explore/fast/quick/do/next), guarded sub-scenarios (`project-init`, `intel-refresh`), and the full pipeline orchestration.",
       "version": "1.4.1",
       "triggers": {
         "keywords": [

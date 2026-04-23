@@ -6,6 +6,10 @@ import sys
 import tempfile
 from pathlib import Path
 
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
 PASS = 0
 FAIL = 0
 
@@ -26,7 +30,7 @@ print("=" * 60)
 print("TEST SUITE 1: EventBus")
 print("=" * 60)
 
-from event_bus import EventBus, Event, get_event_bus, reset_event_bus, CORE_EVENTS
+from engine.event_bus import EventBus, Event, get_event_bus, reset_event_bus, CORE_EVENTS
 
 reset_event_bus()
 bus = EventBus()
@@ -69,7 +73,7 @@ print("\n" + "=" * 60)
 print("TEST SUITE 2: StateEngine")
 print("=" * 60)
 
-from state_engine import StateEngine, ProjectState, ProjectPhase, VALID_TRANSITIONS
+from engine.state_engine import StateEngine, ProjectState, ProjectPhase, VALID_TRANSITIONS
 
 reset_event_bus()
 
@@ -123,7 +127,7 @@ print("\n" + "=" * 60)
 print("TEST SUITE 3: DecisionEngine")
 print("=" * 60)
 
-from decision_engine import (
+from engine.decision_engine import (
     DecisionEngine, RuleEngine, StateMachineEngine, HeuristicEngine,
     ActionZone, ActionType, Decision, ZONE_MAP,
 )
@@ -142,7 +146,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
 
     se.add_blocker("Payment down")
     d = de.decide()
-    report("blocker -> /opc-discuss", d.action == ActionType.DISCUSS)
+    report("blocker -> /opc discuss", d.action == ActionType.DISCUSS)
 
     se.resolve_blocker("Payment down")
     d = de.decide({"handoff_exists": True})
@@ -177,7 +181,7 @@ print("\n" + "=" * 60)
 print("TEST SUITE 4: DAG Engine v2")
 print("=" * 60)
 
-from dag_engine import (
+from engine.dag_engine import (
     DAGEngine, ExecutionPlan, Wave, Task as DTask, AgentRegistry,
     parse_plan_file, ExecutionResult,
 )
@@ -253,7 +257,7 @@ print("\n" + "=" * 60)
 print("TEST SUITE 5: ProfileEngine")
 print("=" * 60)
 
-from profile_engine import ProfileEngine, DeveloperProfile
+from engine.profile_engine import ProfileEngine, DeveloperProfile
 
 reset_event_bus()
 
@@ -286,7 +290,7 @@ print("\n" + "=" * 60)
 print("TEST SUITE 6: LearningStore")
 print("=" * 60)
 
-from learning_store import LearningStore, LearningCategory
+from engine.learning_store import LearningStore, LearningCategory
 
 reset_event_bus()
 
@@ -331,7 +335,7 @@ print("\n" + "=" * 60)
 print("TEST SUITE 7: Notification")
 print("=" * 60)
 
-from notification import NotificationDispatcher, Notification, FileChannel
+from engine.notification import NotificationDispatcher, Notification, FileChannel
 
 reset_event_bus()
 
@@ -420,7 +424,7 @@ print("\n" + "=" * 60)
 print("TEST SUITE 10: ContextAssembler")
 print("=" * 60)
 
-from context_assembler import ContextAssembler, BUDGET_PROFILES, PHASE_SKILL_PRIORITY
+from engine.context_assembler import ContextAssembler, BUDGET_PROFILES, PHASE_SKILL_PRIORITY
 
 reset_event_bus()
 

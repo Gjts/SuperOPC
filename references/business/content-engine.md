@@ -7,7 +7,7 @@ description: Use when building a repeatable content system from research to publ
 
 **核心原则：** 内容不是一次性创作，而是把市场洞察变成可复用资产。目标不是“持续发”，而是“持续产生有效线索和信任”。
 
-**宣布：** "我正在使用 content-engine 技能搭建内容引擎。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 引擎结构
 
@@ -83,6 +83,6 @@ description: Use when building a repeatable content system from research to publ
 ### 常见偏差
 - 没有输入源、生产节奏和复用路径。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 建立输入→生产→分发→复用的内容流水线。
 

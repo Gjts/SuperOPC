@@ -5,7 +5,7 @@ description: Use when creating, modifying, or reviewing database migrations. Cov
 
 ## 数据库迁移
 
-**宣布：** "我正在使用 database-migrations 技能来管理数据库变更。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -141,6 +141,6 @@ CREATE INDEX idx_users_email ON users(email);
 ### 常见偏差
 - 把 ORM 模型修改当成数据库已同步。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 每次 schema 变更都补迁移并做 drift 检查。
 

@@ -6,86 +6,29 @@ import argparse
 import json
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-PROJECT_TEMPLATE_FILES = {
-    "PROJECT.md": "project.md",
-    "REQUIREMENTS.md": "requirements.md",
-    "ROADMAP.md": "roadmap.md",
-    "STATE.md": "state.md",
-}
-
-PROJECT_SUPPORT_DIRS = [
-    "phases",
-    "research",
-    "debug",
-    "quick",
-    "todos",
-    "threads",
-    "seeds",
-    "sessions",
-]
-
-REQUIRED_WORKFLOWS = [
-    ".github/workflows/quality.yml",
-    ".github/workflows/release.yml",
-]
-
-TRACEABILITY_HEADINGS = ("声明溯源", "Claim Traceability", "Sources", "来源")
-
-REPO_REQUIRED_PATHS = [
-    ".claude-plugin/plugin.json",
-    "agents",
-    "commands/opc",
-    "hooks/hooks.json",
-    "references",
-    "rules",
-    "scripts",
-    "skills",
-    "templates",
-    "tests",
-]
-
-SOURCE_MARKDOWN_GLOBS = [
-    "agents/*.md",
-    "agents/domain/*.md",
-    "commands/opc/*.md",
-    "skills/**/SKILL.md",
-]
-
-LINK_CHECK_GLOBS = [
-    "README.md",
-    "CHANGELOG.md",
-    "CONTRIBUTING.md",
-    "SECURITY.md",
-    "COMMIT_STYLE.md",
-    "AGENTS.md",
-    "CLAUDE.md",
-    "agents/*.md",
-    "agents/domain/*.md",
-    "commands/opc/*.md",
-    "references/*.md",
-    "rules/**/*.md",
-    "skills/**/SKILL.md",
-    "templates/*.md",
-]
-
-
-def find_opc_dir(start_dir: Path) -> Path | None:
-    current = start_dir.resolve()
-
-    if current.name == ".opc" and current.exists():
-        return current
-
-    for candidate in (current, *current.parents):
-        opc_dir = candidate / ".opc"
-        if opc_dir.exists() and opc_dir.is_dir():
-            return opc_dir
-
-    return None
-
+from opc_common import now_iso, read_json
+from quality_helpers import (
+    REPO_REQUIRED_PATHS,
+    REQUIRED_WORKFLOWS,
+    cleanup_transient_workspace_paths,
+    find_transient_workspace_paths,
+    find_repo_root,
+    make_check,
+    merge_summaries,
+    resolve_targets,
+    summarize_checks,
+    validate_directory_map_coverage,
+    validate_generated_artifact_policy,
+    validate_frontmatter_files,
+    validate_gitignore_workspace_policy,
+    validate_hook_registry,
+    validate_internal_links,
+    validate_plugin_manifest,
+)
+from quality_project_checks import validate_project_checks
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(add_help=True)
@@ -97,791 +40,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def read_text(file_path: Path) -> str:
-    try:
-        return file_path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-
-
-def read_json(file_path: Path) -> dict[str, Any]:
-    try:
-        payload = json.loads(file_path.read_text(encoding="utf-8"))
-        return payload if isinstance(payload, dict) else {}
-    except Exception:
-        return {}
-
-
-def write_json(file_path: Path, payload: dict[str, Any]) -> None:
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def parse_inline_list(value: str) -> list[str]:
-    inner = value[1:-1].strip()
-    if not inner:
-        return []
-    items = [item.strip() for item in inner.split(",") if item.strip()]
-    return [item.strip('"').strip("'") for item in items]
-
-
-def parse_scalar(value: str) -> Any:
-    value = value.strip()
-    if value.startswith("[") and value.endswith("]"):
-        return parse_inline_list(value)
-    if value == "true":
-        return True
-    if value == "false":
-        return False
-    return value.strip('"').strip("'")
-
-
-def parse_frontmatter(content: str) -> dict[str, Any]:
-    match = re.match(r"^---\n([\s\S]*?)\n---\n?([\s\S]*)$", content)
-    if not match:
-        return {}
-
-    meta: dict[str, Any] = {}
-    current_key: str | None = None
-    for raw_line in match.group(1).splitlines():
-        stripped = raw_line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if stripped.startswith("- ") and current_key and isinstance(meta.get(current_key), list):
-            meta[current_key].append(parse_scalar(stripped[2:]))
-            continue
-        if ":" not in raw_line:
-            continue
-        key, value = raw_line.split(":", 1)
-        key = key.strip()
-        value = value.strip()
-        if not value:
-            meta[key] = []
-            current_key = key
-            continue
-        meta[key] = parse_scalar(value)
-        current_key = None
-    return meta
-
-
-def make_check(
-    check_id: str,
-    status: str,
-    message: str,
-    *,
-    severity: str = "info",
-    repairable: bool = False,
-    files: list[str] | None = None,
-    details: list[str] | None = None,
-) -> dict[str, Any]:
-    return {
-        "id": check_id,
-        "status": status,
-        "severity": severity,
-        "message": message,
-        "repairable": repairable,
-        "files": files or [],
-        "details": details or [],
-    }
-
-
-def summarize_checks(checks: list[dict[str, Any]]) -> dict[str, int]:
-    summary = {"pass": 0, "warn": 0, "fail": 0, "fixed": 0}
-    for check in checks:
-        status = check["status"]
-        if status in summary:
-            summary[status] += 1
-    return summary
-
-
-def merge_summaries(results: list[dict[str, Any]]) -> dict[str, int]:
-    merged = {"pass": 0, "warn": 0, "fail": 0, "fixed": 0}
-    for result in results:
-        for key in merged:
-            merged[key] += result["summary"][key]
-    return merged
-
-
-def split_csv_like(value: str) -> list[str]:
-    return [item.strip() for item in re.split(r"[,，]", value) if item.strip()]
-
-
-def find_repo_root(start_dir: Path) -> Path | None:
-    current = start_dir.resolve()
-    for candidate in (current, *current.parents):
-        if (candidate / ".claude-plugin" / "plugin.json").exists() and (candidate / "commands" / "opc").is_dir():
-            return candidate
-    return None
-
-
-def resolve_targets(start_dir: Path, target: str) -> list[str]:
-    if target == "project":
-        return ["project"]
-    if target == "repo":
-        return ["repo"]
-    if target == "all":
-        results = ["project"]
-        if find_repo_root(start_dir):
-            results.append("repo")
-        return results
-    if find_opc_dir(start_dir):
-        return ["project"]
-    if find_repo_root(start_dir):
-        return ["repo"]
-    return ["project"]
-
-
-def template_dir() -> Path:
-    return Path(__file__).resolve().parents[1] / "templates"
-
-
-def load_template(template_name: str) -> str:
-    return read_text(template_dir() / template_name)
-
-
-def scaffold_project_file(file_path: Path, template_name: str) -> bool:
-    content = load_template(template_name)
-    if not content:
-        return False
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text(content, encoding="utf-8")
-    return True
-
-
-def ensure_project_handoff(project_root: Path) -> dict[str, Any]:
-    return {
-        "version": "1.0.0",
-        "updatedAt": now_iso(),
-        "project": {
-            "name": project_root.name,
-            "root": str(project_root),
-        },
-        "session": {
-            "id": "",
-            "mode": "",
-            "source": "opc-health --repair",
-        },
-        "location": {
-            "phase": "",
-            "plan": "",
-            "status": "",
-        },
-        "summary": {
-            "completed": "",
-            "stopPoint": "通过 /opc-health 自动补齐 HANDOFF.json",
-            "reasonForPause": "directory integrity repair",
-        },
-        "nextSteps": [],
-        "blockers": [],
-        "validationDebt": [],
-        "resumeFiles": [".opc/STATE.md"],
-        "notes": ["auto-generated by /opc-health --repair"],
-    }
-
-
-def merge_missing_keys(current: Any, default: Any) -> Any:
-    if isinstance(current, dict) and isinstance(default, dict):
-        merged = dict(current)
-        for key, value in default.items():
-            if key not in merged:
-                merged[key] = value
-            else:
-                merged[key] = merge_missing_keys(merged[key], value)
-        return merged
-    return current
-
-
-def extract_inline_value(markdown: str, label: str) -> str:
-    variants = [
-        rf"\*\*{re.escape(label)}：\*\*\s*(.+)$",
-        rf"\*\*{re.escape(label)}:\*\*\s*(.+)$",
-        rf"{re.escape(label)}：\s*(.+)$",
-        rf"{re.escape(label)}:\s*(.+)$",
-    ]
-    for variant in variants:
-        match = re.search(variant, markdown, re.MULTILINE)
-        if match:
-            return match.group(1).strip()
-    return ""
-
-
-def parse_requirement_ids(requirements_text: str) -> list[str]:
-    return re.findall(r"^- \[(?: |x)\]\s+\*\*([A-Z0-9_-]+)\*\*", requirements_text, re.MULTILINE | re.IGNORECASE)
-
-
-def parse_roadmap_requirement_ids(roadmap_text: str) -> list[str]:
-    collected: list[str] = []
-    for match in re.finditer(r"\*\*需求\*\*[：:]\s*\[([^\]]*)\]", roadmap_text):
-        collected.extend(split_csv_like(match.group(1)))
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for item in collected:
-        normalized = item.strip()
-        if normalized and normalized not in seen:
-            deduped.append(normalized)
-            seen.add(normalized)
-    return deduped
-
-
-def gather_summary_files(opc_dir: Path) -> list[Path]:
-    phases_dir = opc_dir / "phases"
-    if not phases_dir.exists():
-        return []
-    return sorted(phases_dir.rglob("*SUMMARY.md"))
-
-
-def gather_verification_files(opc_dir: Path) -> list[Path]:
-    phases_dir = opc_dir / "phases"
-    if not phases_dir.exists():
-        return []
-    return sorted(phases_dir.rglob("*VERIFICATION.md"))
-
-
-def heading_exists(markdown: str, headings: tuple[str, ...]) -> bool:
-    for heading in headings:
-        if re.search(rf"^##\s+{re.escape(heading)}\s*$", markdown, re.MULTILINE):
-            return True
-    return False
-
-
-def detect_schema_drift(project_root: Path) -> list[str]:
-    findings: list[str] = []
-
-    prisma_schema = project_root / "prisma" / "schema.prisma"
-    if prisma_schema.exists() and not (project_root / "prisma" / "migrations").exists():
-        findings.append("Prisma schema 存在但缺少 prisma/migrations。")
-
-    alembic_ini = project_root / "alembic.ini"
-    alembic_versions = project_root / "migrations" / "versions"
-    if alembic_ini.exists() and not alembic_versions.exists():
-        findings.append("Alembic 配置存在但缺少 migrations/versions。")
-
-    supabase_dir = project_root / "supabase"
-    if supabase_dir.exists() and not (supabase_dir / "migrations").exists():
-        findings.append("Supabase 目录存在但缺少 supabase/migrations。")
-
-    ef_migrations = list(project_root.rglob("Migrations"))
-    db_contexts = list(project_root.rglob("*DbContext*.cs"))
-    if db_contexts and not ef_migrations:
-        findings.append("检测到 EF Core DbContext，但未找到 Migrations 目录。")
-
-    return findings
-
-
-def parse_summary_requirements(summary_file: Path) -> tuple[str, list[str]]:
-    meta = parse_frontmatter(read_text(summary_file))
-    value = meta.get("requirements-completed")
-    if isinstance(value, list):
-        return "ok", [str(item) for item in value]
-    if value is None:
-        return "missing", []
-    if isinstance(value, str) and not value.strip():
-        return "missing", []
-    return "ok", [str(value)]
-
-
-def parse_verification_requirements(verification_file: Path) -> list[str]:
-    meta = parse_frontmatter(read_text(verification_file))
-    value = meta.get("requirements-verified")
-    if isinstance(value, list):
-        return [str(item) for item in value]
-    if isinstance(value, str) and value.strip():
-        return [value]
-    return []
-
-
-def validate_project_checks(start_dir: Path, repair: bool) -> dict[str, Any]:
-    original_opc_dir = find_opc_dir(start_dir)
-    opc_dir = original_opc_dir if original_opc_dir is not None else start_dir.resolve() / ".opc"
-    project_root = opc_dir.parent
-    checks: list[dict[str, Any]] = []
-    repairs: list[str] = []
-
-    if original_opc_dir is None:
-        if repair:
-            opc_dir.mkdir(parents=True, exist_ok=True)
-            repairs.append(f"created {opc_dir}")
-            checks.append(make_check("project.opc-dir", "fixed", "已创建 .opc 目录。", files=[str(opc_dir)]))
-        else:
-            checks.append(
-                make_check(
-                    "project.opc-dir",
-                    "fail",
-                    "未找到 .opc 目录。",
-                    severity="error",
-                    repairable=True,
-                    files=[str(opc_dir)],
-                    details=["运行 /opc-start 初始化项目，或使用 /opc-health --repair 自动补齐基础结构。"],
-                )
-            )
-            return {
-                "target": "project",
-                "root": str(project_root),
-                "ok": False,
-                "summary": summarize_checks(checks),
-                "checks": checks,
-                "repairs": repairs,
-            }
-    else:
-        checks.append(make_check("project.opc-dir", "pass", "检测到 .opc 目录。", files=[str(opc_dir)]))
-
-    missing_files = [name for name in PROJECT_TEMPLATE_FILES if not (opc_dir / name).exists()]
-    if missing_files and repair:
-        created: list[str] = []
-        for name in missing_files:
-            if scaffold_project_file(opc_dir / name, PROJECT_TEMPLATE_FILES[name]):
-                created.append(str(opc_dir / name))
-                repairs.append(f"scaffolded {opc_dir / name}")
-        status = "fixed" if len(created) == len(missing_files) else "fail"
-        checks.append(
-            make_check(
-                "project.core-files",
-                status,
-                "已补齐缺失的 .opc 核心文件。" if status == "fixed" else "部分核心文件模板缺失，无法完成补齐。",
-                severity="error" if status == "fail" else "info",
-                repairable=status != "fixed",
-                files=created or [str(opc_dir / name) for name in missing_files],
-                details=missing_files,
-            )
-        )
-    elif missing_files:
-        checks.append(
-            make_check(
-                "project.core-files",
-                "fail",
-                "缺少 .opc 核心文件。",
-                severity="error",
-                repairable=True,
-                files=[str(opc_dir / name) for name in missing_files],
-                details=missing_files,
-            )
-        )
-    else:
-        checks.append(make_check("project.core-files", "pass", "核心项目文件完整。"))
-
-    missing_dirs = [name for name in PROJECT_SUPPORT_DIRS if not (opc_dir / name).exists()]
-    if missing_dirs and repair:
-        for name in missing_dirs:
-            (opc_dir / name).mkdir(parents=True, exist_ok=True)
-            repairs.append(f"created {opc_dir / name}")
-        checks.append(
-            make_check(
-                "project.support-dirs",
-                "fixed",
-                "已补齐 .opc 支撑目录。",
-                files=[str(opc_dir / name) for name in missing_dirs],
-                details=missing_dirs,
-            )
-        )
-    elif missing_dirs:
-        checks.append(
-            make_check(
-                "project.support-dirs",
-                "warn",
-                "缺少部分 .opc 支撑目录。",
-                severity="warning",
-                repairable=True,
-                files=[str(opc_dir / name) for name in missing_dirs],
-                details=missing_dirs,
-            )
-        )
-    else:
-        checks.append(make_check("project.support-dirs", "pass", ".opc 支撑目录完整。"))
-
-    config_file = opc_dir / "config.json"
-    config_payload = read_json(config_file)
-    if not config_file.exists() and repair:
-        template_text = load_template("config.json")
-        if template_text:
-            config_file.write_text(template_text, encoding="utf-8")
-            repairs.append(f"scaffolded {config_file}")
-            checks.append(make_check("project.config", "fixed", "已创建 .opc/config.json。", files=[str(config_file)]))
-            config_payload = read_json(config_file)
-        else:
-            checks.append(make_check("project.config", "fail", "缺少 config.json 模板，无法自动创建配置。", severity="error", repairable=True))
-    elif not config_file.exists():
-        checks.append(make_check("project.config", "warn", "缺少 .opc/config.json。", severity="warning", repairable=True, files=[str(config_file)]))
-    elif not config_payload:
-        checks.append(make_check("project.config", "fail", ".opc/config.json 不是有效 JSON。", severity="error", files=[str(config_file)]))
-    else:
-        workflow = config_payload.get("workflow")
-        if not isinstance(workflow, dict):
-            checks.append(make_check("project.config", "fail", ".opc/config.json 缺少 workflow 配置。", severity="error", files=[str(config_file)]))
-        else:
-            missing_workflow_keys = [key for key in ("nyquist", "node_repair") if key not in workflow]
-            if missing_workflow_keys and repair:
-                default_payload = read_json(template_dir() / "config.json")
-                merged = merge_missing_keys(config_payload, default_payload)
-                write_json(config_file, merged)
-                repairs.append(f"updated {config_file}")
-                checks.append(
-                    make_check(
-                        "project.config-quality-flags",
-                        "fixed",
-                        "已补齐质量工作流配置项。",
-                        files=[str(config_file)],
-                        details=missing_workflow_keys,
-                    )
-                )
-            elif missing_workflow_keys:
-                checks.append(
-                    make_check(
-                        "project.config-quality-flags",
-                        "warn",
-                        "workflow 配置缺少质量开关（nyquist/node_repair）。",
-                        severity="warning",
-                        repairable=True,
-                        files=[str(config_file)],
-                        details=missing_workflow_keys,
-                    )
-                )
-            else:
-                checks.append(make_check("project.config-quality-flags", "pass", "质量工作流配置完整。"))
-
-    handoff_file = opc_dir / "HANDOFF.json"
-    handoff_payload = read_json(handoff_file)
-    if not handoff_file.exists() and repair:
-        write_json(handoff_file, ensure_project_handoff(project_root))
-        repairs.append(f"scaffolded {handoff_file}")
-        handoff_payload = read_json(handoff_file)
-        checks.append(make_check("project.handoff", "fixed", "已创建 HANDOFF.json。", files=[str(handoff_file)]))
-    elif not handoff_file.exists():
-        checks.append(make_check("project.handoff", "warn", "缺少 HANDOFF.json。", severity="warning", repairable=True, files=[str(handoff_file)]))
-    elif not handoff_payload:
-        checks.append(make_check("project.handoff", "fail", "HANDOFF.json 不是有效 JSON。", severity="error", files=[str(handoff_file)]))
-    else:
-        checks.append(make_check("project.handoff", "pass", "HANDOFF.json 可读取。", files=[str(handoff_file)]))
-
-    requirements_text = read_text(opc_dir / "REQUIREMENTS.md")
-    roadmap_text = read_text(opc_dir / "ROADMAP.md")
-    requirement_ids = parse_requirement_ids(requirements_text)
-    roadmap_ids = parse_roadmap_requirement_ids(roadmap_text)
-    if requirement_ids:
-        uncovered = [item for item in requirement_ids if item not in roadmap_ids]
-        if uncovered:
-            checks.append(
-                make_check(
-                    "project.requirements-coverage",
-                    "fail",
-                    "存在未映射到路线图的 v1 需求。",
-                    severity="error",
-                    files=[str(opc_dir / "REQUIREMENTS.md"), str(opc_dir / "ROADMAP.md")],
-                    details=uncovered,
-                )
-            )
-        else:
-            checks.append(make_check("project.requirements-coverage", "pass", "v1 需求已映射到路线图。"))
-    else:
-        checks.append(
-            make_check(
-                "project.requirements-coverage",
-                "warn",
-                "未找到带 ID 的 v1 需求，无法执行覆盖率检查。",
-                severity="warning",
-                files=[str(opc_dir / "REQUIREMENTS.md")],
-            )
-        )
-
-    summary_files = gather_summary_files(opc_dir)
-    verification_files = gather_verification_files(opc_dir)
-    verification_map = {file.stem.replace('-VERIFICATION', ''): file for file in verification_files}
-    if not summary_files:
-        checks.append(make_check("project.summary-traceability", "pass", "尚无阶段 SUMMARY 文件需要检查。"))
-    else:
-        missing_requirements: list[str] = []
-        unknown_requirements: list[str] = []
-        missing_traceability: list[str] = []
-        missing_verifications: list[str] = []
-        for summary_file in summary_files:
-            summary_text = read_text(summary_file)
-            state, completed = parse_summary_requirements(summary_file)
-            if state != "ok" or not completed:
-                missing_requirements.append(str(summary_file))
-            else:
-                unknown_requirements.extend(f"{summary_file}:{item}" for item in completed if item not in requirement_ids)
-            if not heading_exists(summary_text, TRACEABILITY_HEADINGS):
-                missing_traceability.append(str(summary_file))
-            summary_prefix = summary_file.stem.replace('-SUMMARY', '')
-            if summary_prefix not in verification_map:
-                missing_verifications.append(str(summary_file))
-
-        if missing_requirements:
-            checks.append(
-                make_check(
-                    "project.summary-traceability",
-                    "warn",
-                    "部分 SUMMARY 文件缺少 requirements-completed。",
-                    severity="warning",
-                    files=missing_requirements,
-                )
-            )
-        elif unknown_requirements:
-            checks.append(
-                make_check(
-                    "project.summary-traceability",
-                    "fail",
-                    "部分 SUMMARY 文件引用了未知需求 ID。",
-                    severity="error",
-                    details=unknown_requirements,
-                )
-            )
-        else:
-            checks.append(make_check("project.summary-traceability", "pass", "SUMMARY 需求追踪字段有效。"))
-
-        if missing_traceability:
-            checks.append(
-                make_check(
-                    "project.claim-traceability",
-                    "warn",
-                    "部分 SUMMARY 文件缺少声明溯源区块。",
-                    severity="warning",
-                    files=missing_traceability,
-                )
-            )
-        else:
-            checks.append(make_check("project.claim-traceability", "pass", "SUMMARY 声明溯源区块完整。"))
-
-        if missing_verifications:
-            checks.append(
-                make_check(
-                    "project.verification-files",
-                    "warn",
-                    "部分 SUMMARY 尚未对应 VERIFICATION 文件。",
-                    severity="warning",
-                    files=missing_verifications,
-                )
-            )
-        else:
-            checks.append(make_check("project.verification-files", "pass", "SUMMARY 与 VERIFICATION 已配对。"))
-
-    schema_findings = detect_schema_drift(project_root)
-    if schema_findings:
-        checks.append(
-            make_check(
-                "project.schema-drift",
-                "warn",
-                "检测到潜在 schema drift 风险。",
-                severity="warning",
-                details=schema_findings,
-            )
-        )
-    else:
-        checks.append(make_check("project.schema-drift", "pass", "未检测到明显 schema drift 风险。"))
-
-    verification_missing_requirements: list[str] = []
-    verification_unknown_requirements: list[str] = []
-    verification_missing_traceability: list[str] = []
-    for verification_file in verification_files:
-        verification_text = read_text(verification_file)
-        verified = parse_verification_requirements(verification_file)
-        if not verified:
-            verification_missing_requirements.append(str(verification_file))
-        else:
-            verification_unknown_requirements.extend(
-                f"{verification_file}:{item}" for item in verified if item not in requirement_ids
-            )
-        if not heading_exists(verification_text, TRACEABILITY_HEADINGS):
-            verification_missing_traceability.append(str(verification_file))
-
-    if verification_missing_requirements:
-        checks.append(
-            make_check(
-                "project.verification-requirements",
-                "warn",
-                "部分 VERIFICATION 文件缺少 requirements-verified。",
-                severity="warning",
-                files=verification_missing_requirements,
-            )
-        )
-    elif verification_unknown_requirements:
-        checks.append(
-            make_check(
-                "project.verification-requirements",
-                "fail",
-                "部分 VERIFICATION 文件引用了未知需求 ID。",
-                severity="error",
-                details=verification_unknown_requirements,
-            )
-        )
-    elif verification_files:
-        checks.append(make_check("project.verification-requirements", "pass", "VERIFICATION 需求字段有效。"))
-    else:
-        checks.append(make_check("project.verification-requirements", "pass", "尚无 VERIFICATION 文件需要检查。"))
-
-    if verification_missing_traceability:
-        checks.append(
-            make_check(
-                "project.verification-traceability",
-                "warn",
-                "部分 VERIFICATION 文件缺少声明溯源区块。",
-                severity="warning",
-                files=verification_missing_traceability,
-            )
-        )
-    elif verification_files:
-        checks.append(make_check("project.verification-traceability", "pass", "VERIFICATION 声明溯源区块完整。"))
-    else:
-        checks.append(make_check("project.verification-traceability", "pass", "尚无 VERIFICATION 文件需要检查。"))
-
-    state_text = read_text(opc_dir / "STATE.md")
-    state_resume = extract_inline_value(state_text, "恢复文件")
-    missing_resume_files: list[str] = []
-    if state_resume and state_resume not in {"无", "未记录"}:
-        candidate = Path(state_resume)
-        resolved = candidate if candidate.is_absolute() else project_root / candidate
-        if not resolved.exists():
-            missing_resume_files.append(state_resume)
-
-    handoff_resume = handoff_payload.get("resumeFiles") if isinstance(handoff_payload.get("resumeFiles"), list) else []
-    for item in handoff_resume:
-        candidate = Path(str(item))
-        resolved = candidate if candidate.is_absolute() else project_root / str(item)
-        if str(item).strip() and not resolved.exists():
-            missing_resume_files.append(str(item))
-
-    if missing_resume_files:
-        checks.append(
-            make_check(
-                "project.resume-files",
-                "warn",
-                "检测到不存在的恢复文件引用。",
-                severity="warning",
-                details=sorted(set(missing_resume_files)),
-            )
-        )
-    else:
-        checks.append(make_check("project.resume-files", "pass", "恢复文件引用有效。"))
-
-    summary = summarize_checks(checks)
-    return {
-        "target": "project",
-        "root": str(project_root),
-        "ok": summary["fail"] == 0,
-        "summary": summary,
-        "checks": checks,
-        "repairs": repairs,
-    }
-
-
-def validate_frontmatter_files(repo_root: Path) -> list[str]:
-    errors: list[str] = []
-    for pattern in SOURCE_MARKDOWN_GLOBS:
-        for file_path in sorted(repo_root.glob(pattern)):
-            content = read_text(file_path)
-            meta = parse_frontmatter(content)
-            if not meta:
-                errors.append(f"{file_path}: missing frontmatter")
-                continue
-            for field in ("name", "description"):
-                value = meta.get(field)
-                if not isinstance(value, str) or not value.strip():
-                    errors.append(f"{file_path}: missing {field}")
-    return errors
-
-
-def validate_plugin_manifest(repo_root: Path) -> list[str]:
-    plugin_file = repo_root / ".claude-plugin" / "plugin.json"
-    payload = read_json(plugin_file)
-    errors: list[str] = []
-    if not payload:
-        return [f"{plugin_file}: invalid JSON"]
-
-    agents = payload.get("agents")
-    if not isinstance(agents, list):
-        errors.append(f"{plugin_file}: agents must be a list")
-    else:
-        for entry in agents:
-            target = repo_root / str(entry).lstrip("./")
-            if not target.exists():
-                errors.append(f"{plugin_file}: missing referenced path {entry}")
-
-    hooks = payload.get("hooks")
-    if hooks is not None:
-        if not isinstance(hooks, list):
-            errors.append(f"{plugin_file}: hooks must be a list")
-        else:
-            for entry in hooks:
-                target = repo_root / str(entry).lstrip("./")
-                if not target.exists():
-                    errors.append(f"{plugin_file}: missing referenced path {entry}")
-    return errors
-
-
-def validate_hook_registry(repo_root: Path) -> list[str]:
-    hooks_file = repo_root / "hooks" / "hooks.json"
-    payload = read_json(hooks_file)
-    errors: list[str] = []
-    if not payload:
-        return [f"{hooks_file}: invalid JSON"]
-
-    hooks = payload.get("hooks")
-    if not isinstance(hooks, dict):
-        return [f"{hooks_file}: missing hooks object"]
-
-    for stage, items in hooks.items():
-        if not isinstance(items, list):
-            errors.append(f"{hooks_file}: {stage} must be a list")
-            continue
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            nested = item.get("hooks")
-            if not isinstance(nested, list):
-                continue
-            for hook in nested:
-                if not isinstance(hook, dict):
-                    continue
-                command = str(hook.get("command", "")).strip()
-                if not command:
-                    errors.append(f"{hooks_file}: empty command in {stage}")
-                    continue
-                match = re.search(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"]+\.py)", command)
-                if not match:
-                    continue
-                target = repo_root / match.group(1)
-                if not target.exists():
-                    errors.append(f"{hooks_file}: missing hook script {match.group(1)}")
-    return errors
-
-
-def collect_relative_markdown_links(markdown: str) -> list[str]:
-    links = re.findall(r"(?<!!)\[[^\]]+\]\(([^)]+)\)", markdown)
-    results: list[str] = []
-    for link in links:
-        normalized = link.strip().strip("<>")
-        if not normalized or normalized.startswith("#"):
-            continue
-        if re.match(r"^[a-z]+://", normalized, re.IGNORECASE) or normalized.startswith("mailto:"):
-            continue
-        results.append(normalized)
-    return results
-
-
-def validate_internal_links(repo_root: Path) -> list[str]:
-    broken: list[str] = []
-    seen_files: set[Path] = set()
-    for pattern in LINK_CHECK_GLOBS:
-        for file_path in sorted(repo_root.glob(pattern)):
-            if file_path in seen_files or not file_path.is_file():
-                continue
-            seen_files.add(file_path)
-            for raw_link in collect_relative_markdown_links(read_text(file_path)):
-                path_part = raw_link.split("#", 1)[0].strip()
-                if not path_part:
-                    continue
-                candidate = (repo_root / path_part.lstrip("/")) if raw_link.startswith("/") else (file_path.parent / path_part)
-                if not candidate.exists():
-                    broken.append(f"{file_path}: {raw_link}")
-    return broken
-
-
-def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
+def validate_repo_checks(start_dir: Path, repair: bool = False) -> dict[str, Any]:
     repo_root = find_repo_root(start_dir) or start_dir.resolve()
     checks: list[dict[str, Any]] = []
+    repairs: list[str] = []
 
     missing_paths = [str(repo_root / path) for path in REPO_REQUIRED_PATHS if not (repo_root / path).exists()]
     if missing_paths:
@@ -896,6 +58,62 @@ def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
         )
     else:
         checks.append(make_check("repo.required-paths", "pass", "仓库关键目录完整。"))
+
+    transient_paths = find_transient_workspace_paths(repo_root)
+    if transient_paths and repair:
+        removed, cleanup_errors = cleanup_transient_workspace_paths(repo_root, transient_paths)
+        if removed and not cleanup_errors:
+            checks.append(
+                make_check(
+                    "repo.transient-dirs",
+                    "fixed",
+                    "Removed transient local workspace artifacts from the repo root.",
+                    severity="warning",
+                    files=[str(repo_root / name) for name in removed],
+                    details=removed,
+                )
+            )
+            repairs.extend(f"removed {name}" for name in removed)
+        elif cleanup_errors:
+            checks.append(
+                make_check(
+                    "repo.transient-dirs",
+                    "warn",
+                    "Some transient local workspace artifacts could not be removed automatically.",
+                    severity="warning",
+                    repairable=True,
+                    files=[str(path) for path in transient_paths],
+                    details=cleanup_errors,
+                )
+            )
+        else:
+            checks.append(
+                make_check(
+                    "repo.transient-dirs",
+                    "pass",
+                    "No transient local workspace artifacts detected at the repo root.",
+                )
+            )
+    elif transient_paths:
+        checks.append(
+            make_check(
+                "repo.transient-dirs",
+                "warn",
+                "Detected transient local workspace artifacts at the repo root; keep them ignored and clean them before review.",
+                severity="warning",
+                repairable=True,
+                files=[str(path) for path in transient_paths],
+                details=[path.name for path in transient_paths],
+            )
+        )
+    else:
+        checks.append(
+            make_check(
+                "repo.transient-dirs",
+                "pass",
+                "No transient local workspace artifacts detected at the repo root.",
+            )
+        )
 
     frontmatter_errors = validate_frontmatter_files(repo_root)
     if frontmatter_errors:
@@ -955,6 +173,72 @@ def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
     else:
         checks.append(make_check("repo.internal-links", "pass", "内部 Markdown 链接有效。"))
 
+    gitignore_policy_errors = validate_gitignore_workspace_policy(repo_root)
+    if gitignore_policy_errors:
+        checks.append(
+            make_check(
+                "repo.gitignore-policy",
+                "fail",
+                "Workspace ignore policy is missing required generated/temp directory rules.",
+                severity="error",
+                details=gitignore_policy_errors,
+                files=[str(repo_root / ".gitignore")],
+            )
+        )
+    else:
+        checks.append(
+            make_check(
+                "repo.gitignore-policy",
+                "pass",
+                "Workspace ignore policy covers generated and transient directories.",
+                files=[str(repo_root / ".gitignore")],
+            )
+        )
+
+    directory_map_errors = validate_directory_map_coverage(repo_root)
+    if directory_map_errors:
+        checks.append(
+            make_check(
+                "repo.directory-map",
+                "fail",
+                "Directory map is missing required top-level directory coverage.",
+                severity="error",
+                details=directory_map_errors,
+                files=[str(repo_root / "docs" / "DIRECTORY-MAP.md")],
+            )
+        )
+    else:
+        checks.append(
+            make_check(
+                "repo.directory-map",
+                "pass",
+                "Directory map documents the key source, generated, and local-runtime directories.",
+                files=[str(repo_root / "docs" / "DIRECTORY-MAP.md")],
+            )
+        )
+
+    generated_artifact_policy_errors = validate_generated_artifact_policy(repo_root)
+    if generated_artifact_policy_errors:
+        checks.append(
+            make_check(
+                "repo.generated-artifacts",
+                "fail",
+                "Generated artifact policy for integrations/ is missing or incomplete.",
+                severity="error",
+                details=generated_artifact_policy_errors,
+                files=[str(repo_root / "integrations" / "README.md")],
+            )
+        )
+    else:
+        checks.append(
+            make_check(
+                "repo.generated-artifacts",
+                "pass",
+                "Generated artifact policy for integrations/ is documented and points to scripts/convert.py.",
+                files=[str(repo_root / "integrations" / "README.md")],
+            )
+        )
+
     missing_workflows = [str(repo_root / path) for path in REQUIRED_WORKFLOWS if not (repo_root / path).exists()]
     if missing_workflows:
         checks.append(
@@ -996,7 +280,7 @@ def validate_repo_checks(start_dir: Path) -> dict[str, Any]:
         "ok": summary["fail"] == 0,
         "summary": summary,
         "checks": checks,
-        "repairs": [],
+        "repairs": repairs,
     }
 
 
@@ -1080,7 +364,7 @@ def collect_project_quality_report(start_dir: Path, repair: bool = False) -> dic
 
 
 def collect_repo_quality_report(start_dir: Path, repair: bool = False) -> dict[str, Any]:
-    result = validate_repo_checks(start_dir)
+    result = validate_repo_checks(start_dir, repair)
     findings = [check for check in result["checks"] if check["status"] in {"warn", "fail", "fixed"}]
     quality_signals = {
         "requirementsCoverageDebt": 0,
@@ -1107,7 +391,7 @@ def collect_quality_report(start_dir: Path, *, target: str = "auto", repair: boo
         if resolved_target == "project":
             results.append(validate_project_checks(start_dir, repair))
         elif resolved_target == "repo":
-            results.append(validate_repo_checks(start_dir))
+            results.append(validate_repo_checks(start_dir, repair))
 
     summary = merge_summaries(results)
     return {

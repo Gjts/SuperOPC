@@ -46,15 +46,15 @@ npm install @supabase/supabase-js @supabase/ssr stripe @stripe/stripe-js
   config.json         # 适合 SaaS 的工作流配置
 ```
 
-## 推荐技能组合
+## 推荐入口与参考组合
 
-| 阶段 | 技能 |
+| 阶段 | 入口 / 参考 |
 |------|------|
-| 验证 | `validate-idea` → `user-interview` → `product-lens` |
-| 开发 | `nextjs-patterns` → `postgres-patterns` → `api-design` |
-| 支付 | `pricing` → `finance-ops` |
-| 增长 | `seo` → `content-engine` → `first-customers` |
-| 运维 | `deployment-patterns` → `security-review` |
+| 验证 | `/opc-business`（validate-idea / user-interview / product-lens 子活动） |
+| 开发 | `/opc-plan` / `/opc-build` + `nextjs-patterns.md` + `postgres-patterns.md` + `api-design.md` |
+| 支付 | `/opc-business`（pricing / finance-ops 子活动） |
+| 增长 | `/opc-business`（seo / content-engine / first-customers 子活动） |
+| 运维 | `references/patterns/engineering/deployment-patterns.md` + `Skill("security-review")` |
 
 ## 适配的规则
 

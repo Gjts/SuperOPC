@@ -79,7 +79,7 @@ def _with_project_root(cwd: Path, result: dict[str, Any]) -> dict[str, Any]:
     result["agents_installed"] = agents_dir.exists() and any(agents_dir.glob("*.md"))
 
     # Inject response_language
-    config = load_config(cwd)
+    config = load_config(cwd) if find_opc_exists(cwd) else {}
     if config.get("response_language"):
         result["response_language"] = config["response_language"]
 
@@ -254,6 +254,7 @@ def cmd_init_new_project(cwd: Path, raw: bool) -> None:
         "default_config": CONFIG_DEFAULTS,
         "cwd": to_posix(cwd),
         "timestamp": now_iso(),
+        "recommended_command": "/opc-start",
     }
     output(_with_project_root(cwd, result), raw)
 

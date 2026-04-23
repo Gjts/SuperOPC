@@ -5,7 +5,7 @@ description: Use when building UI components, managing state, handling forms, or
 
 ## 前端开发模式
 
-**宣布：** "我正在使用 frontend-patterns 技能。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -147,6 +147,6 @@ export function LoginForm() {
 ### 常见偏差
 - 组件职责不清，状态到处散落。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 按组件边界和状态流设计，保持可组合和可测。
 

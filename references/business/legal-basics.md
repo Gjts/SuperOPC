@@ -1,13 +1,13 @@
 ---
 name: legal-basics
-description: Use when making basic legal decisions for a solo business: naming, trademark checks, contracts, privacy policy, terms, and GDPR-style data handling. Advisory skill, not legal counsel.
+description: Use when making basic legal decisions for a solo business: naming, trademark checks, contracts, privacy policy, terms, and GDPR-style data handling. Advisory reference, not legal counsel.
 ---
 
 ## 法务基础
 
 **核心原则：** 先把关键风险降到足够低，再继续推进。法务在一人公司里不是“最后再补”，而是避免返工的边界系统。
 
-**宣布：** "我正在使用 legal-basics 技能识别基础法务风险。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 适用场景
 
@@ -98,6 +98,6 @@ description: Use when making basic legal decisions for a solo business: naming, 
 ### 常见偏差
 - 拖到出事后才补合同、隐私和条款。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 优先补齐高风险法务底线，降低早期暴雷概率。
 

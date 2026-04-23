@@ -5,7 +5,7 @@ description: Use when designing backend architecture, implementing repository/se
 
 ## 后端开发模式
 
-**宣布：** "我正在使用 backend-patterns 技能。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -181,6 +181,6 @@ function errorHandler(err: Error, req: Request, res: Response) {
 ### 常见偏差
 - 把路由、业务、存储逻辑混在一起。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 按分层职责拆分 controller/service/repository。
 

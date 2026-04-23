@@ -15,10 +15,10 @@
 #### 1. 找到你的社区
 
 ```
-/opc-do 找到 FocusBlock 的目标用户社区
+/opc "找到 FocusBlock 的目标用户社区"
 ```
 
-SuperOPC 使用 `find-community` 技能：
+SuperOPC 会通过 `workflow-modes` → `business-advisory` 路径，按 `references/business/find-community.md` 产出：
 
 ```
 ## 社区调研结果
@@ -42,10 +42,10 @@ SuperOPC 使用 `find-community` 技能：
 #### 2. 用户访谈
 
 ```
-/opc-do 准备 FocusBlock 的用户访谈提纲
+/opc "准备 FocusBlock 的用户访谈提纲"
 ```
 
-SuperOPC 使用 `user-interview` 技能（The Mom Test 方法）：
+SuperOPC 会按 `references/business/user-interview.md`（The Mom Test）产出：
 
 ```
 ## 访谈提纲（The Mom Test）
@@ -70,18 +70,18 @@ SuperOPC 使用 `user-interview` 技能（The Mom Test 方法）：
 #### 3. 竞品分析
 
 ```
-/opc-research 浏览器专注力工具竞品分析
+/opc-research run --query "浏览器专注力工具竞品分析"
 ```
 
-SuperOPC 使用 `market-research` + `follow-builders` 技能生成深度分析。
+research runtime 会抓取 feed、生成 insights，并把研究报告写入 `.opc/research/`。
 
 ### 第二阶段：定价策略
 
 ```
-/opc-do 设计 FocusBlock 的定价策略
+/opc-business "设计 FocusBlock 的定价策略"
 ```
 
-SuperOPC 使用 `pricing` 技能：
+`opc-business-advisor` 会按 `references/business/pricing.md` 输出：
 
 ```
 ## 定价策略分析
@@ -107,10 +107,10 @@ SuperOPC 使用 `pricing` 技能：
 ### 第三阶段：MVP 构建
 
 ```
-/opc-do 构建 FocusBlock MVP
+/opc-business "定义 FocusBlock MVP 范围"
 ```
 
-SuperOPC 使用 `mvp` 技能确定最小功能集：
+`opc-business-advisor` 会按 `references/business/mvp.md` 确定最小功能集：
 
 ```
 ## MVP 范围（2 周可完成）
@@ -135,10 +135,10 @@ SuperOPC 使用 `mvp` 技能确定最小功能集：
 ### 第四阶段：增长
 
 ```
-/opc-do 设计 FocusBlock 的增长策略
+/opc-business "设计 FocusBlock 的增长策略"
 ```
 
-SuperOPC 使用 `first-customers` + `content-engine` + `seo` 技能：
+`opc-business-advisor` 会结合 `references/business/first-customers.md`、`content-engine.md`、`seo.md`：
 
 ```
 ## 前 100 个用户获取策略
@@ -159,21 +159,21 @@ SuperOPC 使用 `first-customers` + `content-engine` + `seo` 技能：
 3. 推荐奖励：邀请 3 人升级获得 1 个月免费 Pro
 ```
 
-## 商业技能总结
+## 商业方法论总结
 
-| 技能 | 产出 |
+| 方法论 / 子活动 | 产出 |
 |------|------|
-| `find-community` | 3 个目标社区 + 参与策略 |
-| `validate-idea` | 想法验证框架 + Go/No-Go 决策 |
-| `user-interview` | The Mom Test 访谈提纲 + 信号识别 |
-| `market-research` | 竞品矩阵 + 市场规模估算 |
-| `mvp` | 最小功能集定义 + 时间估算 |
-| `pricing` | 价值阶梯 + 里程碑目标 |
-| `first-customers` | 前 100 用户获取策略 |
-| `content-engine` | 内容日历 + 分发渠道 |
-| `seo` | 关键词策略 + 内容集群 |
-| `brand-voice` | 品牌语调 + 写作指南 |
-| `legal-basics` | 隐私政策 + 服务条款 |
+| `references/business/find-community.md` | 3 个目标社区 + 参与策略 |
+| `references/business/validate-idea.md` | 想法验证框架 + Go/No-Go 决策 |
+| `references/business/user-interview.md` | The Mom Test 访谈提纲 + 信号识别 |
+| `/opc-research run` + `references/intelligence/market-research.md` | 竞品矩阵 + 市场规模估算 |
+| `references/business/mvp.md` | 最小功能集定义 + 时间估算 |
+| `references/business/pricing.md` | 价值阶梯 + 里程碑目标 |
+| `references/business/first-customers.md` | 前 100 用户获取策略 |
+| `references/business/content-engine.md` | 内容日历 + 分发渠道 |
+| `references/business/seo.md` | 关键词策略 + 内容集群 |
+| `references/business/brand-voice.md` | 品牌语调 + 写作指南 |
+| `references/business/legal-basics.md` | 隐私政策 + 服务条款 |
 | `finance-ops` | MRR 追踪 + 财务仪表盘 |
 
 ## 一人公司时间分配建议
@@ -189,5 +189,5 @@ SuperOPC 使用 `first-customers` + `content-engine` + `seo` 技能：
 
 周末: 学习和规划（10%）
   复盘本周进展（/opc-session-report）
-  规划下周目标（/opc-next）
+  规划下周目标（/opc-progress）
 ```

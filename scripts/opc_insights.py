@@ -4,21 +4,24 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
-import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
-
-@dataclass
-class RoadmapRow:
-    phase: str
-    completed_plans: int
-    total_plans: int
-    status: str
-    completed_date: str
+from opc_common import find_opc_dir, read_json, read_text, write_console_text
+from insights_helpers import (
+    count_checklist_items,
+    count_files,
+    extract_first_heading,
+    extract_metric,
+    parse_git_info,
+    parse_next_roadmap_task,
+    parse_roadmap_progress,
+    parse_risky_decisions,
+    parse_state,
+    parse_validation_debt,
+    read_recent_sessions,
+)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -27,296 +30,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--cwd", default=".")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args(argv)
-
-
-def find_opc_dir(start_dir: Path) -> Path | None:
-    current = start_dir.resolve()
-
-    if current.name == ".opc" and current.exists():
-        return current
-
-    for candidate in (current, *current.parents):
-        opc_dir = candidate / ".opc"
-        if opc_dir.exists() and opc_dir.is_dir():
-            return opc_dir
-
-    return None
-
-
-def read_text(file_path: Path) -> str:
-    try:
-        return file_path.read_text(encoding="utf-8")
-    except OSError:
-        return ""
-
-
-def read_json(file_path: Path) -> dict[str, Any]:
-    try:
-        payload = json.loads(file_path.read_text(encoding="utf-8"))
-        return payload if isinstance(payload, dict) else {}
-    except Exception:
-        return {}
-
-
-def read_recent_sessions(sessions_dir: Path, limit: int = 5) -> list[dict[str, Any]]:
-    if not sessions_dir.exists():
-        return []
-
-    sessions: list[dict[str, Any]] = []
-    for session_file in sorted(
-        sessions_dir.glob("session-*.json"),
-        key=lambda item: item.stat().st_mtime,
-        reverse=True,
-    ):
-        payload = read_json(session_file)
-        if payload:
-            payload["file"] = str(session_file)
-            sessions.append(payload)
-        if len(sessions) >= limit:
-            break
-    return sessions
-
-
-def get_section(markdown: str, heading: str) -> str:
-    pattern = re.compile(
-        rf"^#{{2,3}}\s+{re.escape(heading)}\s*$([\s\S]*?)(?=^#{{2,3}}\s+|\Z)",
-        re.MULTILINE,
-    )
-    match = pattern.search(markdown)
-    return match.group(1).strip() if match else ""
-
-
-def extract_first_heading(markdown: str) -> str:
-    match = re.search(r"^#\s+(.+)$", markdown, re.MULTILINE)
-    return match.group(1).strip() if match else "未命名项目"
-
-
-def extract_inline_value(markdown: str, label: str) -> str:
-    variants = [
-        rf"\*\*{re.escape(label)}：\*\*\s*(.+)$",
-        rf"\*\*{re.escape(label)}:\*\*\s*(.+)$",
-        rf"{re.escape(label)}：\s*(.+)$",
-        rf"{re.escape(label)}:\s*(.+)$",
-    ]
-    for variant in variants:
-        match = re.search(variant, markdown, re.MULTILINE)
-        if match:
-            return match.group(1).strip()
-    return ""
-
-
-def count_checklist_items(markdown: str) -> tuple[int, int]:
-    total = len(re.findall(r"^- \[(?: |x)\]\s+", markdown, re.MULTILINE | re.IGNORECASE))
-    completed = len(re.findall(r"^- \[x\]\s+", markdown, re.MULTILINE | re.IGNORECASE))
-    return total, completed
-
-
-def parse_roadmap_progress(roadmap_text: str) -> list[RoadmapRow]:
-    section = get_section(roadmap_text, "进度")
-    rows: list[RoadmapRow] = []
-
-    if not section:
-        return rows
-
-    for raw_line in section.splitlines():
-        line = raw_line.strip()
-        if (
-            not line.startswith("|")
-            or re.match(r"^(\|\-)+", line)
-            or "阶段 | 已完成计划" in line
-        ):
-            continue
-
-        cells = [cell.strip() for cell in line.split("|")[1:-1]]
-        if len(cells) < 4:
-            continue
-
-        plan_match = re.search(r"(\d+)\s*/\s*(\d+)", cells[1])
-        rows.append(
-            RoadmapRow(
-                phase=cells[0],
-                completed_plans=int(plan_match.group(1)) if plan_match else 0,
-                total_plans=int(plan_match.group(2)) if plan_match else 0,
-                status=cells[2],
-                completed_date=cells[3],
-            )
-        )
-
-    return rows
-
-
-def parse_next_roadmap_task(roadmap_text: str) -> str:
-    for line in roadmap_text.splitlines():
-        if not re.match(r"^- \[ \]", line):
-            continue
-        if re.search(r"阶段\s+\d", line):
-            continue
-        return re.sub(r"\*\*", "", re.sub(r"^- \[ \]\s*", "", line)).strip()
-    return "未在 ROADMAP.md 中找到未完成计划"
-
-
-def extract_list_items(section_text: str) -> list[str]:
-    if not section_text or "暂无" in section_text:
-        return []
-
-    items: list[str] = []
-    for raw_line in section_text.splitlines():
-        line = raw_line.strip()
-        match = re.match(r"^(?:-|\d+\.)\s+(.+)$", line)
-        if match:
-            items.append(match.group(1).strip())
-    return items
-
-
-def count_list_items(section_text: str) -> int:
-    return len(extract_list_items(section_text))
-
-
-def count_files(dir_path: Path) -> int:
-    if not dir_path.exists():
-        return 0
-
-    total = 0
-    for entry in dir_path.iterdir():
-        if entry.name.startswith("."):
-            continue
-        total += count_files(entry) if entry.is_dir() else 1
-    return total
-
-
-def extract_metric(texts: Iterable[str], labels: Iterable[str]) -> str:
-    for text in texts:
-        if not text:
-            continue
-        for label in labels:
-            variants = [
-                rf"^\s*-\s*{re.escape(label)}\s*[:：]\s*(.+)$",
-                rf"^\s*\*\*{re.escape(label)}\*\*\s*[:：]\s*(.+)$",
-                rf"^\s*{re.escape(label)}\s*[:：]\s*(.+)$",
-            ]
-            for variant in variants:
-                match = re.search(variant, text, re.MULTILINE)
-                if match:
-                    return match.group(1).strip()
-    return "未记录"
-
-
-def parse_risky_decisions(project_text: str) -> int:
-    return sum(
-        1
-        for line in project_text.splitlines()
-        if "|" in line and "⚠️" in line
-    )
-
-
-def parse_state(state_text: str) -> dict:
-    phase_match = re.search(r"阶段：\[(.+?)\]\s*/\s*\[(.+?)\]\s*（(.+?)）", state_text)
-    plan_match = re.search(r"计划：\[(.+?)\]\s*/\s*\[(.+?)\]\s*", state_text)
-    progress_match = re.search(r"进度：.*?(\d+)%", state_text)
-    todos = extract_list_items(get_section(state_text, "待办事项"))
-    blockers = extract_list_items(get_section(state_text, "阻塞/关注"))
-
-    return {
-        "currentFocus": extract_inline_value(state_text, "当前焦点") or "未记录",
-        "coreValue": extract_inline_value(state_text, "核心价值") or "未记录",
-        "status": extract_inline_value(state_text, "状态") or "未记录",
-        "recentActivity": extract_inline_value(state_text, "最近活动") or "未记录",
-        "lastSession": extract_inline_value(state_text, "上次会话") or "未记录",
-        "stopPoint": extract_inline_value(state_text, "停止于") or "未记录",
-        "resumeFile": extract_inline_value(state_text, "恢复文件") or "未记录",
-        "phase": (
-            {
-                "current": phase_match.group(1),
-                "total": phase_match.group(2),
-                "name": phase_match.group(3),
-            }
-            if phase_match
-            else None
-        ),
-        "plan": (
-            {
-                "current": plan_match.group(1),
-                "total": plan_match.group(2),
-            }
-            if plan_match
-            else None
-        ),
-        "progressPercent": int(progress_match.group(1)) if progress_match else None,
-        "blockerCount": len(blockers),
-        "blockers": blockers,
-        "todoCountFromState": len(todos),
-        "todos": todos,
-    }
-
-
-def parse_git_info(project_root: Path) -> dict:
-    try:
-        subprocess.run(
-            ["git", "rev-parse", "--is-inside-work-tree"],
-            cwd=project_root,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=True,
-        )
-
-        branch = subprocess.check_output(
-            ["git", "branch", "--show-current"],
-            cwd=project_root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip() or "DETACHED"
-
-        status_output = subprocess.check_output(
-            ["git", "status", "--short"],
-            cwd=project_root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-        dirty_files = len(status_output.splitlines()) if status_output else 0
-
-        last_commit = subprocess.check_output(
-            ["git", "log", "-1", "--pretty=format:%h %cs %s"],
-            cwd=project_root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip() or "无提交"
-
-        return {
-            "available": True,
-            "branch": branch,
-            "dirtyFiles": dirty_files,
-            "lastCommit": last_commit,
-        }
-    except Exception:
-        return {
-            "available": False,
-            "branch": "未知",
-            "dirtyFiles": 0,
-            "lastCommit": "不可用",
-        }
-
-
-def parse_validation_debt(state_text: str, git_info: dict, warnings: list[str], extra_items: list[str] | None = None) -> list[str]:
-    debt: list[str] = []
-
-    validation_section = get_section(state_text, "验证欠债")
-    debt.extend(extract_list_items(validation_section))
-
-    if git_info.get("available") and git_info.get("dirtyFiles", 0) > 0:
-        debt.append(f"未提交工作区变更：{git_info['dirtyFiles']} 个文件")
-
-    debt.extend(warnings)
-    if extra_items:
-        debt.extend(extra_items)
-
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for item in debt:
-        normalized = item.strip()
-        if normalized and normalized not in seen:
-            deduped.append(normalized)
-            seen.add(normalized)
-    return deduped
 
 
 def collect_project_insights(start_dir: Path) -> dict:
@@ -510,8 +223,8 @@ def format_dashboard(insights: dict) -> str:
     return "\n".join(lines)
 
 
-def format_stats(insights: dict) -> str:
-    payload = {
+def build_stats_payload(insights: dict[str, Any]) -> dict[str, Any]:
+    return {
         "project": {
             "name": insights["projectName"],
             "root": insights["projectRoot"],
@@ -528,7 +241,10 @@ def format_stats(insights: dict) -> str:
         "git": insights["git"],
         "warnings": insights["warnings"],
     }
-    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def format_stats(insights: dict) -> str:
+    return json.dumps(build_stats_payload(insights), ensure_ascii=True, indent=2)
 
 
 def run_cli(default_mode: str) -> int:
@@ -536,11 +252,16 @@ def run_cli(default_mode: str) -> int:
         args = parse_args(sys.argv[1:])
         mode = args.mode or default_mode
         insights = collect_project_insights(Path(args.cwd))
-        output = format_dashboard(insights) if mode == "dashboard" else format_stats(insights)
-        sys.stdout.write(output if args.json or mode == "stats" else f"{output}\n")
+        if args.json:
+            payload: dict[str, Any] = insights if mode == "dashboard" else build_stats_payload(insights)
+            write_console_text(json.dumps(payload, ensure_ascii=True, indent=2), stream=sys.stdout)
+            return 0
+
+        rendered = format_dashboard(insights) if mode == "dashboard" else format_stats(insights)
+        write_console_text(rendered if mode == "stats" else f"{rendered}\n", stream=sys.stdout)
         return 0
     except Exception as exc:
-        sys.stderr.write(f"SuperOPC insights error: {exc}\n")
+        write_console_text(f"SuperOPC insights error: {exc}\n", stream=sys.stderr)
         return 1
 
 

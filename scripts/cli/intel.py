@@ -16,7 +16,7 @@ def dispatch_intel(args: list[str], cwd: Path, raw: bool) -> None:
     rest = args[1:]
 
     root = opc_root(cwd)
-    from intel_engine import IntelEngine
+    from engine.intel_engine import IntelEngine
 
     eng = IntelEngine(project_dir=root)
 

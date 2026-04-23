@@ -44,15 +44,15 @@
   config.json         # 移动开发工作流配置
 ```
 
-## 推荐技能组合
+## 推荐入口与参考组合
 
-| 阶段 | 技能 |
+| 阶段 | 入口 / 参考 |
 |------|------|
-| 设计 | `product-lens` → `validate-idea` |
-| 开发 | `kotlin-compose` → `api-design` → `backend-patterns` |
-| 测试 | `tdd` → `e2e-testing` |
-| 发布 | `deployment-patterns` |
-| 增长 | `first-customers` → `content-engine` |
+| 设计 | `/opc-business`（product-lens / validate-idea 子活动） |
+| 开发 | `/opc-plan` / `/opc-build` + `kotlin-compose.md` + `api-design.md` + `backend-patterns.md` |
+| 测试 | `Skill("tdd")` + `references/patterns/engineering/e2e-testing.md` |
+| 发布 | `references/patterns/engineering/deployment-patterns.md` |
+| 增长 | `/opc-business`（first-customers / content-engine 子活动） |
 
 ## 适配的规则
 

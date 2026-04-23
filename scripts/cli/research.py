@@ -8,6 +8,7 @@ from pathlib import Path
 
 from cli.core import error, opc_dir, output
 from cli.router import parse_named_args
+from research_helpers import build_research_preview, render_insights_preview
 
 
 def dispatch_research(args: list[str], cwd: Path, raw: bool) -> None:
@@ -29,7 +30,7 @@ def dispatch_research(args: list[str], cwd: Path, raw: bool) -> None:
 
 
 def cmd_research_feed(cwd: Path, rest: list[str], raw: bool) -> None:
-    from feed_scraper import compose_intelligence_report
+    from intelligence.feed_scraper import compose_intelligence_report
 
     named = parse_named_args(
         rest,
@@ -66,14 +67,17 @@ def cmd_research_feed(cwd: Path, rest: list[str], raw: bool) -> None:
 
 
 def cmd_research_insights(cwd: Path, rest: list[str], raw: bool) -> None:
-    from insight_generator import InsightGenerator
+    from intelligence.insight_generator import InsightGenerator
 
     named = parse_named_args(rest, value_flags=["feed"], bool_flags=[])
     opc_d = opc_dir(cwd)
     gen = InsightGenerator(opc_d)
     feed_arg = named.get("feed")
     if isinstance(feed_arg, str) and feed_arg.strip():
-        insights = gen.process_feed(Path(feed_arg.strip()))
+        feed_path = Path(feed_arg.strip())
+        if not feed_path.is_absolute():
+            feed_path = cwd / feed_path
+        insights = gen.process_feed(feed_path)
     else:
         insights = gen.process_latest()
     payload = {
@@ -89,11 +93,11 @@ def cmd_research_insights(cwd: Path, rest: list[str], raw: bool) -> None:
             for i in insights[:30]
         ],
     }
-    output(payload, raw, str(payload["count"]))
+    output(payload, raw, render_insights_preview(payload))
 
 
 def cmd_research_methods(cwd: Path, rest: list[str], raw: bool) -> None:
-    from methodology_database import MethodologyDatabase
+    from intelligence.methodology_database import MethodologyDatabase
 
     if not rest:
         error("research methods requires: list | show <id>")
@@ -159,6 +163,5 @@ def cmd_research_run(cwd: Path, rest: list[str], raw: bool) -> None:
         extract_skills=extract_skills,
         quiet=True,
     )
-    slim = {k: v for k, v in result.items() if k != "insights"}
-    slim["insights_preview_count"] = len(result.get("insights", []))
+    slim = build_research_preview(result, preview_key="insights_preview_count")
     output(slim, raw, result.get("markdown_path", "ok"))

@@ -1,5 +1,7 @@
 # 中文社区发布内容
 
+> Archived launch asset for SuperOPC v1.1.0. Counts, feature lists, and release framing in this file are historical and should be refreshed before reuse.
+
 ---
 
 ## 一、即刻首发帖（核心帖）
@@ -195,4 +197,3 @@ GitHub 搜 SuperOPC 就能找到
 
 #独立开发者 #AI编程 #Cursor #Claude #一人公司 #程序员副业
 ```
-

@@ -5,7 +5,9 @@ profile.py — Developer profile via ProfileEngine (opc-tools domain).
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+from typing import Any
 
 from cli.core import error, output
 from cli.router import parse_named_args
@@ -28,12 +30,100 @@ def dispatch_profile(args: list[str], cwd: Path, raw: bool) -> None:
 
 
 def _profile_engine(rest: list[str]):
-    from profile_engine import ProfileEngine
+    from engine.profile_engine import ProfileEngine
 
     named = parse_named_args(rest, value_flags=["profile-dir"], bool_flags=[])
     pdir = named.get("profile-dir")
     profile_dir = Path(pdir).resolve() if isinstance(pdir, str) and pdir else None
     return ProfileEngine(profile_dir=profile_dir)
+
+
+def _split_relaxed_pairs(raw: str) -> list[str]:
+    parts: list[str] = []
+    current: list[str] = []
+    depth = 0
+    quote: str | None = None
+
+    for char in raw:
+        if quote:
+            current.append(char)
+            if char == quote:
+                quote = None
+            continue
+        if char in {"'", '"'}:
+            quote = char
+            current.append(char)
+            continue
+        if char == "[":
+            depth += 1
+            current.append(char)
+            continue
+        if char == "]":
+            depth = max(0, depth - 1)
+            current.append(char)
+            continue
+        if char == "," and depth == 0:
+            item = "".join(current).strip()
+            if item:
+                parts.append(item)
+            current = []
+            continue
+        current.append(char)
+
+    item = "".join(current).strip()
+    if item:
+        parts.append(item)
+    return parts
+
+
+def _parse_signal_value(raw: str) -> Any:
+    value = raw.strip().strip('"').strip("'")
+    if not value:
+        return ""
+    if value.startswith("[") and value.endswith("]"):
+        inner = value[1:-1].strip()
+        if not inner:
+            return []
+        return [item for item in (_parse_signal_value(part) for part in _split_relaxed_pairs(inner)) if item != ""]
+    lowered = value.lower()
+    if lowered == "true":
+        return True
+    if lowered == "false":
+        return False
+    if re.fullmatch(r"-?\d+", value):
+        return int(value)
+    if re.fullmatch(r"-?\d+\.\d+", value):
+        return float(value)
+    return value
+
+
+def parse_record_signals(raw: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        payload = None
+    if isinstance(payload, dict):
+        return payload
+
+    body = raw.strip()
+    if body.startswith("{") and body.endswith("}"):
+        body = body[1:-1].strip()
+    if not body:
+        return {}
+
+    parsed: dict[str, Any] = {}
+    for part in _split_relaxed_pairs(body):
+        if ":" in part:
+            key, value = part.split(":", 1)
+        elif "=" in part:
+            key, value = part.split("=", 1)
+        else:
+            raise ValueError(part)
+        normalized_key = key.strip().strip('"').strip("'")
+        if not normalized_key:
+            raise ValueError(part)
+        parsed[normalized_key] = _parse_signal_value(value)
+    return parsed
 
 
 def cmd_profile_show(cwd: Path, rest: list[str], raw: bool) -> None:
@@ -84,9 +174,9 @@ def cmd_profile_record(cwd: Path, rest: list[str], raw: bool) -> None:
     sig = named.get("signals")
     if isinstance(sig, str) and sig.strip():
         try:
-            signals = json.loads(sig)
-        except json.JSONDecodeError:
-            error("profile record: --signals must be JSON object")
+            signals = parse_record_signals(sig)
+        except ValueError:
+            error("profile record: --signals must be a JSON object or key:value pairs")
     pe = _profile_engine(rest)
     pe.record_interaction(command=cmd, project=proj or "", signals=signals)
     output({"recorded": True, "command": cmd, "project": proj}, raw, "ok")

@@ -10,15 +10,12 @@ event bus and learning store.
 from __future__ import annotations
 
 import json
-import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "engine"))
-
-from event_bus import EventBus, get_event_bus
+from engine.event_bus import EventBus, get_event_bus
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +51,7 @@ class InsightGenerator:
 
     def process_feed(self, feed_path: Path) -> list[Insight]:
         try:
-            data = json.loads(feed_path.read_text(encoding="utf-8"))
+            data = json.loads(feed_path.read_text(encoding="utf-8-sig"))
         except (json.JSONDecodeError, OSError):
             return []
 

@@ -7,7 +7,7 @@ description: Use when you want to track what top builders in your industry are s
 
 **核心理念：** 关注真正在构建产品、有原创观点的人，而不是重复信息的影响者。
 
-**宣布：** "我正在使用 follow-builders 技能来追踪行业建造者动态。"
+**使用方式：** 由 `opc-researcher` 或 `/opc-research run` 在研究流程中引用此参考手册。
 
 ## 建造者情报框架
 
@@ -85,6 +85,6 @@ description: Use when you want to track what top builders in your industry are s
 ### 常见偏差
 - 忽略构建者所处阶段和资源条件。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 跟踪多个相似构建者，提取可迁移模式而不是照抄结果。
 

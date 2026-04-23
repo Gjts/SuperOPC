@@ -17,7 +17,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from event_bus import Event, EventBus, get_event_bus
+from engine.event_bus import Event, EventBus, get_event_bus
 
 
 # ---------------------------------------------------------------------------

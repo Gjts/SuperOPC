@@ -7,20 +7,38 @@ into pytest-native functions with proper fixtures and assertions.
 from __future__ import annotations
 
 import json
+import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from event_bus import CORE_EVENTS, Event, EventBus, get_event_bus, reset_event_bus
-from state_engine import (
-    VALID_TRANSITIONS,
-    ProjectPhase,
-    ProjectState,
-    StateEngine,
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = REPO_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from engine.context_assembler import BUDGET_PROFILES, PHASE_SKILL_PRIORITY, ContextAssembler
+from engine.cruise_controller import (
+    ACTION_AGENT_MAP,
+    READ_ONLY_SCRIPT_MAP,
+    CruiseController,
+    CruiseMode,
 )
-from decision_engine import (
+from engine.dag_engine import (
+    AgentRegistry,
+    DAGEngine,
+    ExecutionPlan,
+    ExecutionResult,
+    Wave,
+    parse_plan_file,
+    resolve_default_log_dir,
+    resolve_project_root,
+)
+from engine.dag_engine import Task as DTask
+from engine.decision_engine import (
     ActionType,
     ActionZone,
     Decision,
@@ -29,28 +47,17 @@ from decision_engine import (
     RuleEngine,
     StateMachineEngine,
 )
-from dag_engine import (
-    AgentRegistry,
-    DAGEngine,
-    ExecutionPlan,
-    ExecutionResult,
-    Wave,
-    parse_plan_file,
+from engine.event_bus import CORE_EVENTS, Event, EventBus, get_event_bus, reset_event_bus
+from engine.learning_store import LearningCategory, LearningStore
+from engine.notification import FileChannel, Notification, NotificationDispatcher
+from engine.profile_engine import DeveloperProfile, ProfileEngine
+from engine.scheduler import Scheduler
+from engine.state_engine import (
+    VALID_TRANSITIONS,
+    ProjectPhase,
+    ProjectState,
+    StateEngine,
 )
-from dag_engine import Task as DTask
-from profile_engine import DeveloperProfile, ProfileEngine
-from learning_store import LearningCategory, LearningStore
-from notification import FileChannel, Notification, NotificationDispatcher
-from cruise_controller import (
-    ACTION_AGENT_MAP,
-    READ_ONLY_SCRIPT_MAP,
-    CruiseController,
-    CruiseMode,
-)
-from scheduler import Scheduler
-from context_assembler import BUDGET_PROFILES, PHASE_SKILL_PRIORITY, ContextAssembler
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(autouse=True)
@@ -273,6 +280,25 @@ class TestDecisionEngine:
         de.decide()
         assert len(de.recent_decisions(10)) >= 2
 
+    def test_validation_debt_uses_verify_health_command(self, tmp_path: Path):
+        bus = EventBus()
+        se = StateEngine(tmp_path, bus)
+        se.load()
+        se.update(validation_debt=["missing verification"])
+        de = DecisionEngine(se, bus)
+        d = de.decide()
+        assert d.action == ActionType.RUN_TESTS
+        assert d.command == "opc-tools verify health"
+
+    def test_collect_intel_heuristic_uses_intel_status_command(self, tmp_path: Path):
+        bus = EventBus()
+        se = StateEngine(tmp_path, bus)
+        se.load()
+        de = DecisionEngine(se, bus)
+        ranked = de._heuristic.rank(se.state, {})
+        collect_intel = next(option for option in ranked if option.action == ActionType.COLLECT_INTEL)
+        assert collect_intel.command == "/opc-intel status"
+
 
 # =========================================================================
 # DAG Engine
@@ -366,6 +392,89 @@ class TestDAGEngine:
         assert parsed.goal == "Test parsing"
         assert len(parsed.waves) == 1
         assert len(parsed.waves[0].tasks) == 1
+
+    def test_same_wave_dependencies_wait_for_ready_tasks(self, tmp_path: Path, monkeypatch):
+        plan = ExecutionPlan(
+            goal="Respect dependencies",
+            waves=[
+                Wave(
+                    id="1",
+                    description="Wave 1",
+                    tasks=[
+                        DTask(id="t1", title="Task A", action="Do A"),
+                        DTask(id="t2", title="Task B", action="Do B"),
+                        DTask(id="t3", title="Task C", action="Do C", depends_on=["t1"]),
+                    ],
+                ),
+            ],
+        )
+        engine = DAGEngine(dry_run=True, log_dir=tmp_path / "log")
+        completed: set[str] = set()
+        lock = threading.Lock()
+
+        def fake_execute(task: DTask, result: ExecutionResult) -> bool:
+            with lock:
+                assert set(task.depends_on).issubset(completed)
+                completed.add(task.id)
+            return True
+
+        monkeypatch.setattr(engine, "_execute_task_with_retry", fake_execute)
+        result = engine.execute(plan)
+
+        assert result.status == "completed"
+        assert completed == {"t1", "t2", "t3"}
+
+    def test_wave_with_unresolved_dependencies_fails_closed(self, tmp_path: Path):
+        plan = ExecutionPlan(
+            goal="Fail on cycle",
+            waves=[
+                Wave(
+                    id="1",
+                    description="Wave 1",
+                    tasks=[
+                        DTask(id="t1", title="Task A", action="Do A", depends_on=["t2"]),
+                        DTask(id="t2", title="Task B", action="Do B", depends_on=["t1"]),
+                    ],
+                ),
+            ],
+        )
+        engine = DAGEngine(dry_run=True, log_dir=tmp_path / "log")
+        result = engine.execute(plan)
+
+        assert result.status == "failed"
+        assert result.tasks_failed == 2
+        assert any("unresolved in-wave dependencies" in entry["message"] for entry in result.log)
+
+    def test_run_agent_uses_project_root_as_cwd(self, tmp_path: Path, monkeypatch):
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        engine = DAGEngine(project_root=project_root)
+        task = DTask(id="t1", title="Task", action="Do it", agent="opc-executor")
+        captured: dict[str, Any] = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cwd"] = kwargs.get("cwd")
+
+            class FakeProc:
+                returncode = 0
+                stdout = "ok"
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setattr("engine.dag_engine.subprocess.run", fake_run)
+        assert engine._run_agent(task, ExecutionResult(plan_id="p", goal="g")) is True
+        assert captured["cwd"] == str(project_root)
+
+    def test_resolve_default_log_dir_uses_nearest_opc_root(self, tmp_path: Path):
+        project_root = tmp_path / "project"
+        plan_dir = project_root / ".opc" / "phases" / "01-demo"
+        plan_dir.mkdir(parents=True)
+        plan_path = plan_dir / "PLAN.md"
+        plan_path.write_text("# demo", encoding="utf-8")
+
+        assert resolve_project_root(plan_path) == project_root
+        assert resolve_default_log_dir(plan_path) == project_root / ".opc" / "execution-log"
 
 
 # =========================================================================
@@ -581,7 +690,7 @@ class TestCruiseDispatchContract:
 
             return FakeProc()
 
-        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
 
         decision = self._make_decision(ActionType.PLAN, "/opc-plan")
         result = cc._dispatch_command(decision)
@@ -604,7 +713,7 @@ class TestCruiseDispatchContract:
 
             return FakeProc()
 
-        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
         result = cc._dispatch_command(self._make_decision(ActionType.BUILD))
         assert result["agent"] == "opc-executor"
 
@@ -619,7 +728,7 @@ class TestCruiseDispatchContract:
 
             return FakeProc()
 
-        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
         result = cc._dispatch_command(self._make_decision(ActionType.REVIEW))
         assert result["agent"] == "opc-reviewer"
 
@@ -638,7 +747,7 @@ class TestCruiseDispatchContract:
 
             return FakeProc()
 
-        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
         # 让脚本文件存在避免 _run_python_script 提前返回
         script = (REPO_ROOT / "scripts" / "opc_health.py")
         assert script.exists(), "opc_health.py 必须存在"
@@ -650,6 +759,49 @@ class TestCruiseDispatchContract:
         cmd_str = " ".join(str(x) for x in captured["cmd"])
         assert "opc_health.py" in cmd_str
         assert "claude" not in cmd_str
+
+    def test_collect_intel_uses_intel_status_cli(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        captured: dict[str, Any] = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+
+            class FakeProc:
+                returncode = 0
+                stdout = "{}"
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
+        result = cc._dispatch_command(self._make_decision(ActionType.COLLECT_INTEL, "/opc-intel status"))
+
+        assert result["success"] is True
+        assert "opc-tools" in " ".join(str(x) for x in captured["cmd"])
+        assert "intel" in captured["cmd"]
+        assert "status" in captured["cmd"]
+
+    def test_run_tests_uses_verify_health_cli(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        captured: dict[str, Any] = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+
+            class FakeProc:
+                returncode = 0
+                stdout = "{}"
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
+        result = cc._dispatch_command(self._make_decision(ActionType.RUN_TESTS, "opc-tools verify health"))
+
+        assert result["success"] is True
+        assert "verify" in captured["cmd"]
+        assert "health" in captured["cmd"]
 
     def test_wait_returns_noop(self, tmp_path: Path):
         cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
@@ -669,7 +821,7 @@ class TestCruiseDispatchContract:
         def fake_run(cmd, **kwargs):
             raise FileNotFoundError("claude not found")
 
-        monkeypatch.setattr("cruise_controller.subprocess.run", fake_run)
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
         result = cc._dispatch_command(self._make_decision(ActionType.PLAN))
         assert result["success"] is False
         assert "claude" in result.get("error", "").lower()
@@ -681,6 +833,33 @@ class TestCruiseDispatchContract:
         assert not overlap, (
             f"READ_ONLY_SCRIPT_MAP 不应包含真执行 ActionType：{overlap}"
         )
+
+    def test_unsupported_green_action_fails_closed(self, tmp_path: Path):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        result = cc._dispatch_command(self._make_decision(ActionType.FORMAT_CODE, "/opc-format"))
+        assert result["success"] is False
+        assert result["action"] == "unhandled"
+
+    def test_failed_dispatch_does_not_count_as_executed(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        loaded_state = cc._state_engine.load()
+        monkeypatch.setattr(cc._state_engine, "load", lambda: loaded_state)
+        monkeypatch.setattr(
+            cc._decision_engine,
+            "decide",
+            lambda context: self._make_decision(ActionType.HEALTH_CHECK, "/opc-health"),
+        )
+        monkeypatch.setattr(
+            cc,
+            "_execute_decision",
+            lambda decision: {"success": False, "reason": "simulated failure"},
+        )
+
+        cc._heartbeat()
+
+        assert cc.status.actions_executed == 0
+        assert cc.status.consecutive_failures == 1
+        assert cc.status.errors
 
 
 # =========================================================================
@@ -716,7 +895,7 @@ class TestScheduler:
 
 class TestIntelEngine:
     def test_refresh_rebuilds_indexes_and_snapshot(self, tmp_path: Path):
-        from intel_engine import IntelEngine
+        from engine.intel_engine import IntelEngine
 
         project_root = tmp_path / "repo"
         (project_root / ".opc").mkdir(parents=True)
@@ -1000,9 +1179,7 @@ class TestInstinctGenerator:
 
 class TestMethodologyDatabase:
     def test_builtin_methodologies_loaded(self):
-        import sys
-        sys.path.insert(0, str(REPO_ROOT / "scripts" / "intelligence"))
-        from methodology_database import MethodologyDatabase
+        from intelligence.methodology_database import MethodologyDatabase
         db = MethodologyDatabase()
         domains = db.list_domains()
         assert len(domains) >= 5
@@ -1010,7 +1187,7 @@ class TestMethodologyDatabase:
         assert "engineering" in domains
 
     def test_query_by_domain(self):
-        from methodology_database import MethodologyDatabase
+        from intelligence.methodology_database import MethodologyDatabase
         db = MethodologyDatabase()
         results = db.query(domain="validation")
         assert len(results) >= 2
@@ -1018,14 +1195,14 @@ class TestMethodologyDatabase:
         assert "The Mom Test" in names
 
     def test_query_by_keyword(self):
-        from methodology_database import MethodologyDatabase
+        from intelligence.methodology_database import MethodologyDatabase
         db = MethodologyDatabase()
         results = db.query(keyword="pyramid")
         assert len(results) >= 1
         assert results[0].id == "minto-pyramid"
 
     def test_get_by_id(self):
-        from methodology_database import MethodologyDatabase
+        from intelligence.methodology_database import MethodologyDatabase
         db = MethodologyDatabase()
         m = db.get("tdd-kent-beck")
         assert m is not None
@@ -1033,7 +1210,7 @@ class TestMethodologyDatabase:
         assert len(m.steps) >= 4
 
     def test_context_injection(self):
-        from methodology_database import MethodologyDatabase
+        from intelligence.methodology_database import MethodologyDatabase
         db = MethodologyDatabase()
         injection = db.get_context_injection(domain="growth", limit=2)
         assert len(injection) >= 1
@@ -1041,7 +1218,7 @@ class TestMethodologyDatabase:
         assert "one_liner" in injection[0]
 
     def test_add_custom_methodology(self, tmp_path: Path):
-        from methodology_database import Methodology, MethodologyDatabase
+        from intelligence.methodology_database import Methodology, MethodologyDatabase
         db = MethodologyDatabase(db_dir=tmp_path / "methods")
         custom = Methodology(
             id="custom-test",

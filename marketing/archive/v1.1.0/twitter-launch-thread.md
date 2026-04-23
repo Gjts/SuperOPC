@@ -1,5 +1,7 @@
 # Twitter/X Launch Thread — SuperOPC v1.1.0
 
+> Archived launch asset for SuperOPC v1.1.0. Counts, feature lists, and release framing in this file are historical and should be refreshed before reuse.
+
 > Platform: Twitter/X
 > Language: English
 > Type: Launch Thread (10 tweets)
@@ -189,4 +191,3 @@ github.com/Gjts/SuperOPC
 - Reply to every comment within 2 hours
 - Follow up with a short demo video/GIF within 24h
 - Cross-post individual tweets as standalone posts the following week
-

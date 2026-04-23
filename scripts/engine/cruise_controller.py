@@ -29,10 +29,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from event_bus import EventBus, get_event_bus
-from state_engine import StateEngine, get_state_engine
-from decision_engine import ActionType, ActionZone, Decision, DecisionEngine
-from notification import NotificationDispatcher
+from engine.decision_engine import ActionType, ActionZone, Decision, DecisionEngine
+from engine.event_bus import EventBus, get_event_bus
+from engine.notification import NotificationDispatcher
+from engine.state_engine import StateEngine, get_state_engine
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts"
@@ -46,8 +46,9 @@ AGENT_EXECUTION_TIMEOUT_SECONDS = 600
 # 契约：凡是"真执行"类的 ActionType（YELLOW/RED 区），必须通过 agent workflow
 # 派发，而不是脚本直调。这保证了 cruise 模式遵守 skill-first / agent-workflow 铁律。
 #
-# GREEN 区只读查询（HEALTH_CHECK / COLLECT_INTEL / RUN_TESTS / FORMAT_CODE /
-# GENERATE_DOCS）走 read-only 脚本，属于 autonomous-ops skill 明确的白名单例外。
+# GREEN 区已实现的只读查询（HEALTH_CHECK / COLLECT_INTEL / RUN_TESTS）走
+# read-only entrypoint，属于 autonomous-ops skill 明确的白名单例外。
+# 未实现的 GREEN action 必须 fail closed，不能静默重定向到错误脚本。
 
 ACTION_AGENT_MAP: dict[str, str] = {
     # ActionType.value → agent name
@@ -61,13 +62,11 @@ ACTION_AGENT_MAP: dict[str, str] = {
     "pause": "opc-session-manager",
 }
 
-READ_ONLY_SCRIPT_MAP: dict[str, tuple[str, list[str]]] = {
-    # ActionType.value → (script relative path, args template)
-    "health_check": ("opc_health.py", ["--target", "all"]),
-    "collect_intel": ("opc_dashboard.py", ["--json"]),
-    "run_tests": ("opc_quality.py", []),
-    "format_code": ("opc_quality.py", ["--format-only"]),
-    "generate_docs": ("opc_health.py", ["--target", "repo"]),
+READ_ONLY_SCRIPT_MAP: dict[str, tuple[Path, list[str]]] = {
+    # ActionType.value → (python entrypoint path, args template)
+    "health_check": (REPO_ROOT / "scripts" / "opc_health.py", ["--target", "all"]),
+    "collect_intel": (REPO_ROOT / "bin" / "opc-tools", ["--raw", "intel", "status"]),
+    "run_tests": (REPO_ROOT / "bin" / "opc-tools", ["--raw", "verify", "health"]),
 }
 
 
@@ -199,9 +198,17 @@ class CruiseController:
         allowed = self._check_zone(decision)
 
         if allowed:
-            self._execute_decision(decision)
-            self._status.actions_executed += 1
-            self._status.consecutive_failures = 0
+            result = self._execute_decision(decision)
+            if result.get("success"):
+                self._status.actions_executed += 1
+                self._status.consecutive_failures = 0
+            else:
+                message = result.get("error") or result.get("stderr") or result.get("reason") or "decision dispatch failed"
+                self._status.errors.append(f"{_now()}: {decision.action.value} failed — {message}")
+                self._status.consecutive_failures += 1
+                if self._status.consecutive_failures >= self.MAX_CONSECUTIVE_FAILURES:
+                    self._emergency_stop(str(message))
+                    return
         elif decision.zone == ActionZone.RED:
             self._status.actions_escalated += 1
             self._notifier.notify(
@@ -227,25 +234,34 @@ class CruiseController:
             return False
         return False
 
-    def _execute_decision(self, decision: Decision) -> None:
-        self._log_decision(decision, executed=True)
+    def _execute_decision(self, decision: Decision) -> dict[str, Any]:
         result = self._dispatch_command(decision)
+        success = result.get("success", False)
+        self._log_decision(decision, executed=success)
 
         self._bus.publish("cruise.executed", {
             "command": decision.command,
             "zone": decision.zone.value,
             "action": decision.action.value,
-            "success": result.get("success", False),
+            "success": success,
             "heartbeat": self._status.heartbeat_count,
         }, source="cruise_controller")
 
         if decision.zone == ActionZone.YELLOW:
             self._notifier.notify(
-                f"[YELLOW] Executed: {decision.command}",
-                f"Reason: {decision.reason}\nResult: {'ok' if result.get('success') else 'failed'}",
-                level="info",
+                f"[YELLOW] {'Executed' if success else 'Failed'}: {decision.command}",
+                f"Reason: {decision.reason}\nResult: {'ok' if success else 'failed'}",
+                level="info" if success else "warning",
                 metadata=result,
             )
+        elif not success:
+            self._notifier.notify(
+                f"[{decision.zone.value.upper()}] Failed: {decision.command}",
+                f"Reason: {decision.reason}\nResult: {result.get('error') or result.get('reason') or 'failed'}",
+                level="warning",
+                metadata=result,
+            )
+        return result
 
     def _dispatch_command(self, decision: Decision) -> dict[str, Any]:
         """Route a decision through the skill-first / agent-workflow contract.
@@ -272,10 +288,17 @@ class CruiseController:
         # 路径 2：GREEN 区只读查询 → 白名单脚本
         script_entry = READ_ONLY_SCRIPT_MAP.get(action_value)
         if script_entry:
-            script_name, extra_args = script_entry
-            script_path = SCRIPTS_DIR / script_name
+            script_path, extra_args = script_entry
             args = ["--cwd", str(self._opc_dir.parent)] + list(extra_args)
-            return self._run_python_script(script_path, args)
+            return self._run_python_entrypoint(script_path, args)
+
+        if decision.zone == ActionZone.GREEN:
+            return {
+                "success": False,
+                "action": "unhandled",
+                "command": decision.command,
+                "reason": f"No read-only dispatch mapping for green-zone action '{action_value}'.",
+            }
 
         return self._run_opc_fallback(decision.command)
 
@@ -353,13 +376,13 @@ class CruiseController:
             sections.append(f"\nDecision context: {json.dumps(decision.context, ensure_ascii=False)[:800]}")
         return "\n".join(sections)
 
-    def _run_python_script(self, script: Path, args: list[str]) -> dict[str, Any]:
-        """Execute a Python script and capture its output."""
-        if not script.exists():
-            return {"success": False, "error": f"Script not found: {script}"}
+    def _run_python_entrypoint(self, entrypoint: Path, args: list[str]) -> dict[str, Any]:
+        """Execute a Python entrypoint and capture its output."""
+        if not entrypoint.exists():
+            return {"success": False, "error": f"Entrypoint not found: {entrypoint}"}
         try:
             proc = subprocess.run(
-                [sys.executable, str(script)] + args,
+                [sys.executable, str(entrypoint)] + args,
                 capture_output=True,
                 text=True,
                 timeout=EXECUTION_TIMEOUT_SECONDS,

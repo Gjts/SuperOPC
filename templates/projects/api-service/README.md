@@ -46,15 +46,15 @@ dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
   config.json         # API 服务工作流配置
 ```
 
-## 推荐技能组合
+## 推荐入口与参考组合
 
-| 阶段 | 技能 |
+| 阶段 | 入口 / 参考 |
 |------|------|
-| 设计 | `api-design` → `architecture-decision-records` |
-| 开发 | `dotnet-patterns` → `postgres-patterns` → `backend-patterns` |
-| 测试 | `tdd` → `e2e-testing` |
-| 部署 | `docker-patterns` → `deployment-patterns` |
-| 安全 | `security-review` |
+| 设计 | `/opc-plan` + `references/patterns/engineering/api-design.md` + `architecture-decision-records.md` |
+| 开发 | `/opc-build` + `dotnet-patterns.md` + `postgres-patterns.md` + `backend-patterns.md` |
+| 测试 | `Skill("tdd")` + `references/patterns/engineering/e2e-testing.md` |
+| 部署 | `references/patterns/engineering/docker-patterns.md` + `deployment-patterns.md` |
+| 安全 | `Skill("security-review")` |
 
 ## 适配的规则
 

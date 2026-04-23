@@ -7,7 +7,7 @@ description: Use when planning or analyzing customer interviews with The Mom Tes
 
 **核心原则：** 不问“你会不会用”，只问真实过去发生了什么。访谈要收集行为证据，不收集礼貌性鼓励。
 
-**宣布：** "我正在使用 user-interview 技能设计和分析用户访谈。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## The Mom Test 规则
 
@@ -105,6 +105,6 @@ description: Use when planning or analyzing customer interviews with The Mom Tes
 ### 常见偏差
 - 问题带引导，收集到的是“礼貌支持”。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 用非引导式问题获取真实痛点和现有行为。
 

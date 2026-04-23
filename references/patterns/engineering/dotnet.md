@@ -5,7 +5,7 @@ description: Use when building with .NET 8 Minimal API and EF Core. Covers endpo
 
 ## .NET 8 Minimal API 模式
 
-**宣布：** "我正在使用 dotnet-patterns 技能。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -184,6 +184,6 @@ users.MapPost("/", async (CreateUserRequest req,
 ### 常见偏差
 - 缺少清晰的依赖注入、验证和分层边界。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 采用 Minimal API + DI + 验证 + 分层约定。
 

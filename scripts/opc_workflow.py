@@ -4,27 +4,23 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-ENGINE_DIR = Path(__file__).resolve().parent / "engine"
-if str(ENGINE_DIR) not in sys.path:
-    sys.path.insert(0, str(ENGINE_DIR))
-
+from opc_common import find_opc_dir, now_iso, read_json, write_json
 from opc_insights import collect_project_insights
-
-# v2 engine imports — graceful fallback if engine modules are unavailable
-try:
-    from event_bus import EventBus, get_event_bus
-    from state_engine import StateEngine, get_state_engine
-    from decision_engine import DecisionEngine, ActionType
-
-    _V2_AVAILABLE = True
-except ImportError:
-    _V2_AVAILABLE = False
+from session_support import (
+    extract_handoff_next_steps,
+    first_resume_file,
+    get_v2_bus,
+    normalize_user_command,
+    path_exists_for_resume,
+    read_recent_audit_lines,
+    recommendation_from_insights,
+    update_state_continuity,
+)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -39,175 +35,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--only", type=int)
     parser.add_argument("--interactive", action="store_true")
     return parser.parse_args(argv)
-
-
-def now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def read_json(file_path: Path) -> dict[str, Any]:
-    try:
-        data = json.loads(file_path.read_text(encoding="utf-8"))
-        return data if isinstance(data, dict) else {}
-    except Exception:
-        return {}
-
-
-def write_json(file_path: Path, payload: dict[str, Any]) -> None:
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def read_recent_audit_lines(audit_log: Path, limit: int = 10) -> list[str]:
-    try:
-        lines = audit_log.read_text(encoding="utf-8").splitlines()
-        return lines[-limit:]
-    except OSError:
-        return []
-
-
-def _get_v2_bus(project_root: Path | None = None) -> Any:
-    """Get the v2 event bus if available, None otherwise."""
-    if not _V2_AVAILABLE:
-        return None
-    try:
-        opc_dir = _find_opc_dir(project_root or Path.cwd())
-        journal_dir = opc_dir / "events" if opc_dir else None
-        if journal_dir:
-            journal_dir.mkdir(parents=True, exist_ok=True)
-        return get_event_bus(journal_dir=journal_dir)
-    except Exception:
-        return None
-
-
-def _find_opc_dir(start: Path) -> Path | None:
-    """Walk up from start to find .opc/ directory."""
-    for candidate in [start] + list(start.parents):
-        opc = candidate / ".opc"
-        if opc.is_dir():
-            return opc
-    return None
-
-
-def _v2_decision_recommendation(insights: dict[str, Any]) -> dict[str, str] | None:
-    """Try to get a recommendation from the v2 decision engine."""
-    if not _V2_AVAILABLE:
-        return None
-    try:
-        project_root = Path(insights.get("projectRoot", "."))
-        opc_dir = _find_opc_dir(project_root)
-        if not opc_dir:
-            return None
-
-        bus = get_event_bus()
-        se = get_state_engine(opc_dir, bus)
-        se.load()
-
-        debt = insights.get("debt", {})
-        blocker_items = debt.get("blockerItems", [])
-        if blocker_items and not se.state.blockers:
-            for b in blocker_items:
-                se.state.blockers.append(b)
-
-        de = DecisionEngine(se, bus)
-
-        context: dict[str, Any] = {}
-        handoff_file = opc_dir / "HANDOFF.json"
-        if handoff_file.exists():
-            context["handoff_exists"] = True
-        if insights.get("validationDebt"):
-            context["quality_violations"] = insights["validationDebt"]
-
-        decision = de.decide(context)
-        return {
-            "command": decision.command,
-            "reason": decision.reason,
-            "zone": decision.zone.value,
-            "confidence": str(decision.confidence),
-            "source": "v2_decision_engine",
-        }
-    except Exception:
-        return None
-
-
-def recommendation_from_insights(insights: dict[str, Any]) -> dict[str, str]:
-    v2_result = _v2_decision_recommendation(insights)
-    if v2_result:
-        return v2_result
-
-    state = insights["state"]
-    roadmap = insights["roadmap"]
-    debt = insights["debt"]
-    validation_debt = insights["validationDebt"]
-
-    status = state.get("status", "未记录")
-    next_task = roadmap.get("nextTask", "未在 ROADMAP.md 中找到未完成计划")
-
-    if debt["blockers"] > 0:
-        return {
-            "command": "/opc-discuss",
-            "reason": f"当前存在 {debt['blockers']} 个阻塞，先澄清阻塞再推进执行。",
-        }
-    if validation_debt:
-        return {
-            "command": "/opc-progress",
-            "reason": "当前仍有验证欠债，先确认未验证事项，再继续推进。",
-        }
-    if status in {"准备规划", "规划中"}:
-        return {
-            "command": "/opc-plan",
-            "reason": "当前处于规划前后语境，下一步应收敛方案并生成计划。",
-        }
-    if status in {"准备执行", "执行中"}:
-        return {
-            "command": "/opc-build",
-            "reason": "当前状态已经进入执行路径，下一步应落实计划或继续实现。",
-        }
-    if status == "阶段完成":
-        return {
-            "command": "/opc-review",
-            "reason": "当前阶段已完成，优先做审查与验证，再决定 ship。",
-        }
-    if next_task and next_task != "未在 ROADMAP.md 中找到未完成计划":
-        return {
-            "command": "/opc-next",
-            "reason": f"路线图中的下一个未完成项是：{next_task}",
-        }
-    return {
-        "command": "/opc-discuss",
-        "reason": "缺少足够的状态信号，先通过讨论模式澄清当前目标。",
-    }
-
-
-def extract_handoff_next_steps(handoff: dict[str, Any]) -> list[str]:
-    next_steps = handoff.get("nextSteps")
-    if isinstance(next_steps, list):
-        return [str(item).strip() for item in next_steps if str(item).strip()]
-
-    legacy_next_step = handoff.get("nextStep")
-    if isinstance(legacy_next_step, str) and legacy_next_step.strip():
-        return [legacy_next_step.strip()]
-    return []
-
-
-def first_resume_file(handoff: dict[str, Any], fallback: str) -> str:
-    resume_files = handoff.get("resumeFiles")
-    if isinstance(resume_files, list):
-        for item in resume_files:
-            value = str(item).strip()
-            if value:
-                return value
-    return fallback
-
-
-def path_exists_for_resume(project_root: Path, candidate: str) -> bool:
-    if not candidate or candidate == "未记录":
-        return False
-
-    candidate_path = Path(candidate)
-    if candidate_path.is_absolute():
-        return candidate_path.exists()
-    return (project_root / candidate).exists()
 
 
 def collect_progress_snapshot(start_dir: Path) -> dict[str, Any]:
@@ -372,36 +199,6 @@ def build_handoff_payload(start_dir: Path, note: str = "", stop_point: str = "")
     }
 
 
-def _replace_inline_value(text: str, label: str, value: str, colon: str = "：") -> str:
-    pattern = re.compile(rf"({label}{re.escape(colon)}\s*).+$", re.MULTILINE)
-    return pattern.sub(lambda match: f"{match.group(1)}{value}", text, count=1)
-
-
-def update_state_continuity(state_file: Path, *, timestamp: str, stop_point: str, resume_file: str, recent_activity: str) -> None:
-    try:
-        content = state_file.read_text(encoding="utf-8")
-    except OSError:
-        return
-
-    replacements = {
-        "上次会话": timestamp,
-        "停止于": stop_point or "已记录到 HANDOFF.json",
-        "恢复文件": resume_file or "无",
-        "最近活动": recent_activity,
-    }
-
-    for label, value in replacements.items():
-        marker = f"{label}："
-        if marker in content:
-            content = _replace_inline_value(content, label, value)
-            continue
-        alt_marker = f"{label}:"
-        if alt_marker in content:
-            content = _replace_inline_value(content, label, value, colon=":")
-
-    state_file.write_text(content, encoding="utf-8")
-
-
 def pause_project(start_dir: Path, note: str = "", stop_point: str = "") -> dict[str, Any]:
     snapshot = collect_progress_snapshot(start_dir)
     opc_dir = Path(snapshot["files"]["state"]).parent
@@ -417,7 +214,7 @@ def pause_project(start_dir: Path, note: str = "", stop_point: str = "") -> dict
     )
     payload["handoffFile"] = str(handoff_file)
 
-    bus = _get_v2_bus(start_dir)
+    bus = get_v2_bus(start_dir)
     if bus:
         bus.publish("session.pause", {
             "project": payload.get("project", {}).get("name", ""),
@@ -466,7 +263,7 @@ def resume_project(start_dir: Path) -> dict[str, Any]:
         "recommendedAction": recommendation_from_insights(collect_project_insights(start_dir)),
     }
 
-    bus = _get_v2_bus(start_dir)
+    bus = get_v2_bus(start_dir)
     if bus:
         bus.publish("session.resume", {
             "project": result["project"].get("name", ""),
@@ -581,7 +378,37 @@ def format_session_report(report: dict[str, Any]) -> str:
         lines.append("Warnings:")
         lines.extend(f"- {warning}" for warning in report["warnings"])
 
+    report_file = report.get("reportFile")
+    if isinstance(report_file, str) and report_file.strip():
+        lines.append("")
+        lines.append(f"Report file: {report_file}")
+
     return "\n".join(lines)
+
+
+def _allocate_session_report_path(opc_dir: Path) -> Path:
+    report_dir = opc_dir / "session-reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    stem = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H%M")
+    candidate = report_dir / f"{stem}.md"
+    suffix = 2
+    while candidate.exists():
+        candidate = report_dir / f"{stem}-{suffix}.md"
+        suffix += 1
+    return candidate
+
+
+def generate_session_report(start_dir: Path) -> dict[str, Any]:
+    report = collect_session_report(start_dir)
+    opc_dir = find_opc_dir(start_dir)
+    if not opc_dir:
+        return report
+
+    report_path = _allocate_session_report_path(opc_dir)
+    report["generatedAt"] = now_iso()
+    report["reportFile"] = str(report_path.relative_to(opc_dir.parent)).replace("\\", "/")
+    report_path.write_text(format_session_report(report) + "\n", encoding="utf-8")
+    return report
 
 
 def _derive_autonomous_window(position: dict[str, Any], *, from_index: int | None, to_index: int | None, only: int | None) -> dict[str, int | None]:
@@ -631,7 +458,7 @@ def collect_autonomous_plan(
     mode = "autonomous"
 
     if blockers:
-        recommendation_command = "/opc-discuss"
+        recommendation_command = "/opc discuss"
         recommendation_reason = "当前仍有 blocker，先解除阻塞再进入自主推进。"
         mode = "blocked"
     elif validation_debt:
@@ -660,16 +487,16 @@ def collect_autonomous_plan(
     steps = [
         f"确认当前位置：{current_phase} · 当前计划={current_plan} · 目标范围={scope_label} · 状态={state['status']}",
         "优先读取 .opc/STATE.md、.opc/ROADMAP.md 与当前恢复文件，确认边界没有漂移。",
-        "根据当前位置优先路由到 /opc-next 推荐的主动作，再进入 /opc-plan、/opc-fast、/opc-quick、/opc-build 或 /opc-review。",
+        "根据当前位置优先路由到 /opc next 推荐的主动作，再进入 /opc-plan、/opc fast、/opc quick、/opc-build 或 /opc-review。",
         "如果所执行计划包含 checkpoint:decision 或 checkpoint:human-verify，则切换到交互式停点。",
         "逐项推进当前窗口内可自动执行的工作，并在每一项后记录最小验证结果。",
-        "若出现新 blocker、范围分歧或验证欠债扩大，立即停下并退回 /opc-discuss 或 /opc-progress。",
+        "若出现新 blocker、范围分歧或验证欠债扩大，立即停下并退回 /opc discuss 或 /opc-progress。",
     ]
 
     if mode == "blocked":
         steps = [
             "先列清 blocker 与缺失信息。",
-            "通过 /opc-discuss 收敛决策，再重新进入 /opc-autonomous。",
+            "通过 /opc discuss 收敛决策，再重新进入 /opc-autonomous。",
         ]
     elif mode == "needs-validation":
         steps = [
@@ -751,7 +578,7 @@ def run_cli(default_mode: str) -> int:
         payload = collect_progress_snapshot(start_dir)
         output = json.dumps(payload, ensure_ascii=False, indent=2) if args.json else format_progress(payload)
     elif mode == "report":
-        payload = collect_session_report(start_dir)
+        payload = generate_session_report(start_dir)
         output = json.dumps(payload, ensure_ascii=False, indent=2) if args.json else format_session_report(payload)
     elif mode == "pause":
         payload = pause_project(start_dir, note=args.note, stop_point=args.stop_point)
@@ -766,6 +593,7 @@ def run_cli(default_mode: str) -> int:
     elif mode == "next":
         payload = collect_progress_snapshot(start_dir)
         recommendation = payload["recommendation"]
+        recommendation["command"] = normalize_user_command(recommendation["command"])
         output = json.dumps(recommendation, ensure_ascii=False, indent=2) if args.json else f"{recommendation['command']} — {recommendation['reason']}"
     elif mode == "autonomous":
         payload = collect_autonomous_plan(

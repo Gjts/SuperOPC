@@ -7,7 +7,7 @@ description: Use when defining how the product should sound across landing pages
 
 **核心原则：** 品牌语调不是“更会写”，而是让用户在多个接触点感受到同一个判断系统。
 
-**宣布：** "我正在使用 brand-voice 技能定义品牌语调。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 语调系统
 
@@ -77,6 +77,6 @@ description: Use when defining how the product should sound across landing pages
 ### 常见偏差
 - 今天像专家，明天像段子手，品牌语气漂移。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 用统一语调支柱和禁用词维护一致品牌表达。
 

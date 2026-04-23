@@ -22,7 +22,7 @@
 /opc-plan TaskFlow RESTful API 设计
 ```
 
-SuperOPC 使用 `api-design` 技能规划 API：
+SuperOPC 会让 `opc-planner` / `opc-executor` 参考 `references/patterns/engineering/api-design.md` 规划 API：
 
 ```
 ## API 端点设计
@@ -51,7 +51,7 @@ POST   /api/v1/auth/refresh       # 刷新 Token
 /opc-plan 数据库 Schema 和迁移
 ```
 
-SuperOPC 使用 `database-migrations` + `postgres-patterns` 技能：
+SuperOPC 会结合 `references/patterns/engineering/database-migrations.md` 与 `postgres-patterns.md` 设计数据层：
 
 ```csharp
 // Entities
@@ -109,7 +109,7 @@ REFACTOR → 提取 Service 层，添加 FluentValidation
 /opc-plan Docker 化和 CI/CD 配置
 ```
 
-使用 `docker-patterns` + `deployment-patterns` 技能：
+会参考 `references/patterns/engineering/docker-patterns.md` 与 `deployment-patterns.md` 设计交付路径：
 
 ```dockerfile
 # 多阶段构建
@@ -125,18 +125,18 @@ EXPOSE 8080
 ENTRYPOINT ["dotnet", "TaskFlow.Api.dll"]
 ```
 
-## 关键技能使用
+## 关键参考与能力
 
-| 技能 | 场景 |
+| 参考 / 能力 | 场景 |
 |------|------|
-| `api-design` | RESTful 端点设计 + 版本策略 |
-| `dotnet-patterns` | Minimal API + DI + Middleware |
-| `postgres-patterns` | 索引优化 + 查询调优 |
-| `database-migrations` | EF Core Code-First 迁移 |
-| `backend-patterns` | Repository + Service 分层 |
-| `tdd` | 每个端点先写测试 |
-| `docker-patterns` | 多阶段构建 + docker-compose |
-| `security-review` | OWASP 检查 |
+| `references/patterns/engineering/api-design.md` | RESTful 端点设计 + 版本策略 |
+| `references/patterns/engineering/dotnet-patterns.md` | Minimal API + DI + Middleware |
+| `references/patterns/engineering/postgres-patterns.md` | 索引优化 + 查询调优 |
+| `references/patterns/engineering/database-migrations.md` | EF Core Code-First 迁移 |
+| `references/patterns/engineering/backend-patterns.md` | Repository + Service 分层 |
+| `Skill("tdd")` | 每个端点先写测试 |
+| `references/patterns/engineering/docker-patterns.md` | 多阶段构建 + docker-compose |
+| `Skill("security-review")` | OWASP 检查 |
 
 ## 测试策略
 

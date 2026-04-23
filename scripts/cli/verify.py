@@ -23,6 +23,7 @@ from cli.core import (
     safe_read,
     to_posix,
 )
+from quality_project_checks import validate_project_checks
 
 
 # ---------------------------------------------------------------------------
@@ -272,49 +273,22 @@ def cmd_verify_consistency(cwd: Path, raw: bool) -> None:
 
 def cmd_verify_health(cwd: Path, repair: bool, raw: bool) -> None:
     """Check .opc/ integrity, optionally repair missing structures."""
-    paths = opc_paths(cwd)
+    report = validate_project_checks(cwd, repair)
     issues: list[str] = []
-    repaired: list[str] = []
+    warnings: list[str] = []
+    for check in report["checks"]:
+        message = f"{check['id']}: {check['message']}"
+        if check["status"] == "fail":
+            issues.append(message)
+        elif check["status"] == "warn":
+            warnings.append(message)
 
-    # Check and optionally create missing directories
-    required_dirs = ["phases", "research", "debug", "quick", "todos", "threads", "seeds"]
-    for name in required_dirs:
-        d = paths["opc"] / name
-        if not d.exists():
-            issues.append(f"Missing directory: {name}/")
-            if repair:
-                d.mkdir(parents=True, exist_ok=True)
-                repaired.append(f"Created {name}/")
-
-    # Check required files
-    required_files = {
-        "PROJECT.md": paths["project"],
-        "STATE.md": paths["state"],
-        "config.json": paths["config"],
-    }
-    for label, fp in required_files.items():
-        if not fp.exists():
-            issues.append(f"Missing file: {label}")
-            if repair and label == "config.json":
-                from cli.core import CONFIG_DEFAULTS
-                import json
-                fp.write_text(json.dumps(CONFIG_DEFAULTS, ensure_ascii=False, indent=2), encoding="utf-8")
-                repaired.append(f"Created {label} with defaults")
-
-    # Check todos subdirs
-    for sub in ["pending", "completed"]:
-        todo_sub = paths["opc"] / "todos" / sub
-        if not todo_sub.exists():
-            issues.append(f"Missing: todos/{sub}/")
-            if repair:
-                todo_sub.mkdir(parents=True, exist_ok=True)
-                repaired.append(f"Created todos/{sub}/")
-
-    healthy = not issues
+    healthy = report["summary"]["fail"] == 0
     output({
         "healthy": healthy,
         "issues": issues,
-        "repaired": repaired,
+        "warnings": warnings,
+        "repaired": report["repairs"],
     }, raw, "healthy" if healthy else f"unhealthy ({len(issues)} issues)")
 
 

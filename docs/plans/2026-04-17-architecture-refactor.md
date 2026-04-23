@@ -1,13 +1,13 @@
 # SuperOPC 架构重构 — Skill-Dispatcher / Agent-Workflow 模式
 
-> **设计规格：** `docs/REFACTOR-PLAN.md`
+> **设计规格：** `docs/archive/REFACTOR-PLAN.md`
 > **目标：** 把 command/skill/agent 三层重叠职责清理成 **skill 触发 → agent 持有 workflow** 的单源结构
 > **预估时间：** 4-6 小时（分 4 个 commit）
 
 <opc-plan>
   <metadata>
     <goal>建立 dispatcher-skill / atomic-skill / agent-workflow 三角契约，消除 command/skill/agent 跨层重复</goal>
-    <spec-url>docs/REFACTOR-PLAN.md</spec-url>
+    <spec-url>docs/archive/REFACTOR-PLAN.md</spec-url>
     <estimated-time>4-6h</estimated-time>
   </metadata>
 

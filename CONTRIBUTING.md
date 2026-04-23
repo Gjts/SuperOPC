@@ -76,11 +76,13 @@ skills/
 
 | 类别 | 目录 | 用途 |
 |------|------|------|
-| 产品开发 | `skills/product/` | 从构思到交付的产品流程 |
-| 工程质量 | `skills/engineering/` | 编码、测试、调试、部署 |
-| 商业运营 | `skills/business/` | 定价、营销、财务、法务 |
-| 市场情报 | `skills/intelligence/` | 市场研究、竞品分析、趋势追踪 |
-| 学习进化 | `skills/learning/` | 技能创建、系统进化 |
+| 元层 / 派发 | `skills/using-superopc/` | how-to-use、workflow 路由、session、autonomous 等 |
+| 产品开发 | `skills/product/` | planning / implementing / reviewing / shipping 派发器 |
+| 工程质量 | `skills/engineering/` | debugging / security-review 派发器 + atomic 技能 |
+| 商业运营 | `skills/business/` | business-advisory 派发器 |
+| 学习进化 | `skills/learning/` | continuous-learning |
+
+技术栈方法论、市场研究方法与 rubric 已迁移到 `references/`，不再通过 `skills/intelligence/` 这类目录暴露。
 
 ### SKILL.md 模板
 
@@ -211,7 +213,7 @@ commands/
     {command-name}.md
 ```
 
-### 命令模板
+### 命令模板（薄入口）
 
 ```markdown
 ---
@@ -219,24 +221,21 @@ name: opc-command-name
 description: 一句话描述此命令的用途
 ---
 
-# /opc-command-name -- 命令标题
-
-## 流程
-
-1. **步骤一**
-   - 具体操作
-
-2. **步骤二**
-   - 具体操作
-
-## 调用技能
-
-- 技能 1 -> 技能 2
-
-## 输出
-
-描述命令执行后的产出...
+# /opc-command-name
+一句话说明这是哪个入口。
+## 动作
+调用 `dispatcher-skill-id` skill，传入 `$ARGUMENTS`。
+如属本地 runtime / MIXED 白名单，在这里显式声明受控例外。
+## 参数
+- `$ARGUMENTS` — 用户输入
 ```
+
+命令贡献约束：
+
+- `commands/opc/*.md` 默认保持在 15 行以内
+- command 只做入口，不承载 workflow、决策树、审查规则
+- workflow 细节归 `agents/`，方法论归 `references/`
+- 只有 `AGENTS.md` 白名单里的本地 runtime / MIXED CLI 可以直调脚本
 
 ---
 
@@ -432,11 +431,10 @@ SuperOPC/
   references/         # 引用文档
   templates/          # .opc / handoff 模板
   skills/             # 技能系统（核心）
-    using-superopc/   # 元技能
-    product/          # 产品技能组
-    engineering/      # 工程技能组
-    business/         # 商业技能组
-    intelligence/     # 情报技能组
+    using-superopc/   # 元层 + dispatcher
+    product/          # 产品派发器
+    engineering/      # 工程派发器 + atomic
+    business/         # 商业派发器
     learning/         # 学习技能组
   CLAUDE.md           # 系统指令
   AGENTS.md           # 代理协调规则

@@ -5,7 +5,7 @@ description: Use when working with PostgreSQL 15. Covers indexing strategies, qu
 
 ## PostgreSQL 15 模式
 
-**宣布：** "我正在使用 postgres-patterns 技能。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -158,6 +158,6 @@ ALTER TABLE users ALTER COLUMN age TYPE bigint;
 ### 常见偏差
 - 忽略索引、事务边界和连接池。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先按访问路径设计索引与事务，再落查询。
 

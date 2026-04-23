@@ -10,7 +10,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from cli.core import error
+from cli.core import error, set_pick_field
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ Verify Operations:
 Profile Operations:
   profile show [--injection]          Show developer profile (or context injection)
   profile export [--dir <path>]       Export USER-PROFILE.md
-  profile record --command <cmd>      Record an interaction (optional --project, --signals JSON)
+  profile record --command <cmd>      Record an interaction (optional --project, --signals JSON or key:value pairs)
 
 Research Operations:
   research feed --query <topic>       Fetch multi-source feed into .opc/
@@ -183,11 +183,20 @@ def main() -> None:
         if idx + 1 < len(args):
             pick_field = args[idx + 1]
             args = args[:idx] + args[idx + 2:]
+        else:
+            error("--pick requires a field name")
+
+    if pick_field and not raw:
+        error("--pick requires --raw")
 
     command = args[0] if args else ""
     sub_args = args[1:]
 
-    _dispatch(command, sub_args, cwd, raw, pick_field)
+    set_pick_field(pick_field)
+    try:
+        _dispatch(command, sub_args, cwd, raw, pick_field)
+    finally:
+        set_pick_field(None)
 
 
 def _dispatch(command: str, args: list[str], cwd: Path, raw: bool, pick: str | None) -> None:

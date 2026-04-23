@@ -5,7 +5,7 @@ description: Use when designing new API endpoints, reviewing API contracts, addi
 
 ## API 设计模式
 
-**宣布：** "我正在使用 api-design 技能来设计 API。"
+**使用方式：** 由实现 / 审查 agent 按技术栈上下文引用此工程模式手册。
 
 ## 何时激活
 
@@ -177,6 +177,6 @@ type UserConnection {
 ### 常见偏差
 - 接口路径、状态码和数据契约随手定。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先定义资源模型、契约和错误语义，再写实现。
 

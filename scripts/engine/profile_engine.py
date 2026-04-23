@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from event_bus import EventBus, get_event_bus
+from engine.event_bus import EventBus, get_event_bus
 
 
 # ---------------------------------------------------------------------------
@@ -139,8 +139,8 @@ class ProfileEngine:
 
         commands_used = session_data.get("commands", [])
         if commands_used:
-            quick_count = sum(1 for c in commands_used if c in ("/opc-fast", "/opc-quick"))
-            plan_count = sum(1 for c in commands_used if c in ("/opc-plan", "/opc-discuss"))
+            quick_count = sum(1 for c in commands_used if c in ("/opc-fast", "/opc-quick", "/opc fast", "/opc quick"))
+            plan_count = sum(1 for c in commands_used if c in ("/opc-plan", "/opc-discuss", "/opc discuss"))
             if quick_count > plan_count * 2:
                 signals["communication_style"] = "terse"
                 signals["decision_pattern"] = "intuitive"

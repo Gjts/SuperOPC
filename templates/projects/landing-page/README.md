@@ -45,14 +45,14 @@ npm install framer-motion react-hook-form
   config.json         # 轻量工作流配置
 ```
 
-## 推荐技能组合
+## 推荐入口与参考组合
 
-| 阶段 | 技能 |
+| 阶段 | 入口 / 参考 |
 |------|------|
-| 文案 | `brand-voice` → `content-engine` |
-| 开发 | `nextjs-patterns` → `frontend-patterns` |
-| SEO | `seo` |
-| 增长 | `first-customers` → `validate-idea` |
+| 文案 | `/opc-business`（brand-voice / content-engine 子活动） |
+| 开发 | `/opc-plan` / `/opc-build` + `nextjs-patterns.md` + `frontend-patterns.md` |
+| SEO | `/opc-business`（seo 子活动） |
+| 增长 | `/opc-business`（first-customers / validate-idea 子活动） |
 
 ## 页面结构
 

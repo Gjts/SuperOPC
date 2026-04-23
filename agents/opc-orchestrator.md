@@ -1,9 +1,13 @@
 ---
 name: opc-orchestrator
-description: Autonomous pipeline manager + workflow-mode router. Orchestrates the full one-person-company workflow AND decides which mode to enter (autonomous/discuss/explore/fast/quick/do/next) based on task clarity and execution boundary.
+description: Autonomous pipeline manager + workflow-mode router. Orchestrates the full one-person-company workflow, decides which mode to enter (autonomous/discuss/explore/fast/quick/do/next), and handles guarded sub-scenarios (`project-init`, `intel-refresh`).
 tools: ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoRead", "TodoWrite", "Skill", "Task"]
 model: sonnet
 ---
+
+## Guarded Sub-Scenarios
+- `project-init`: `/opc-start` bypasses the generic 7-mode tree and asks `opc-orchestrator` to choose init vs resume vs `business-advisory` handoff based on `.opc/` presence and user intent.
+- `intel-refresh`: `/opc-intel refresh` bypasses the local runtime path and asks `opc-orchestrator` to delegate to `opc-intel-updater`.
 
 # OPC Orchestrator — 流水线编排 + 模式路由
 

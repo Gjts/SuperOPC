@@ -15,23 +15,15 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from event_bus import EventBus, get_event_bus
-from state_engine import ProjectPhase, ProjectState, StateEngine
-from profile_engine import ProfileEngine
-from learning_store import LearningStore
-
-try:
-    from intelligence.methodology_database import MethodologyDatabase
-except ImportError:
-    scripts_dir = str(Path(__file__).resolve().parent.parent)
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    from intelligence.methodology_database import MethodologyDatabase
+from engine.event_bus import EventBus, get_event_bus
+from engine.learning_store import LearningStore
+from engine.profile_engine import ProfileEngine
+from engine.state_engine import ProjectPhase, ProjectState, StateEngine
+from intelligence.methodology_database import MethodologyDatabase
 
 
 # ---------------------------------------------------------------------------

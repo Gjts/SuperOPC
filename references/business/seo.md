@@ -7,7 +7,7 @@ description: Use when planning search acquisition, content clusters, landing pag
 
 **核心原则：** SEO 不是写更多文章，而是围绕高意图问题建立可持续入口。先选有购买/试用意图的词，再扩展规模。
 
-**宣布：** "我正在使用 seo 技能规划搜索增长。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 关键词优先级
 
@@ -79,6 +79,6 @@ description: Use when planning search acquisition, content clusters, landing pag
 ### 常见偏差
 - 不做搜索意图分层，文章和转化页混写。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先按搜索意图和内容集群规划，再安排产出。
 

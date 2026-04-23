@@ -7,7 +7,7 @@ description: Use when someone has a business idea and wants to test if it's wort
 
 **核心原则：** 验证通过销售实现，不是通过构建。不要花几个月构建没人要的产品。
 
-**宣布：** "我正在使用 validate-idea 技能，在写代码之前验证这个想法。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 极简验证流程
 
@@ -59,6 +59,6 @@ description: Use when someone has a business idea and wants to test if it's wort
 ### 常见偏差
 - 在没有证据前把个人直觉当市场需求。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先验证用户痛点、替代方案和付费意愿，再决定是否投入。
 

@@ -7,7 +7,7 @@ description: Use when looking for a business idea, trying to find your community
 
 **核心原则：** 从社区开始，不是从产品想法开始。最好的一人公司是由已经深度融入社区的人构建的。
 
-**宣布：** "我正在使用 find-community 技能，帮你找到值得服务的社区。"
+**使用方式：** 由 `opc-business-advisor` 在对应子活动中引用此参考手册。
 
 ## 框架：识别你的社区
 
@@ -49,6 +49,6 @@ Reddit, Discord, Slack, Twitter/X, 微信群, 知乎, 即刻, YouTube 等。
 ### 常见偏差
 - 跳过社区规则和已有讨论，直接硬推产品。
 
-### 使用技能后的纠正
+### 应用本手册后的纠正
 - 先定位已有高密度用户社区，再用社区语言切入。
 

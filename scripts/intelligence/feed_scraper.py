@@ -2,7 +2,8 @@
 """
 feed_scraper.py — Multi-source Intelligence Radar for SuperOPC.
 
-Inspired by Follow-Builders, last30days, and market-research skills.
+Inspired by the Follow Builders / last30days approaches and the
+market-research reference handbook.
 Fetches multi-source intelligence to provide grounded, anti-hallucination
 context before any validation or brainstorming.
 

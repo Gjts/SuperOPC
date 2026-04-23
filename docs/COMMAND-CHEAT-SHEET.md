@@ -2,7 +2,7 @@
 
 **目的：** 用户面对 25 个 slash 命令时，30 秒内决定"我该用哪个"。
 
-> 背后契约：命令 → dispatcher skill → agent。完整契约见 `AGENTS.md` §架构契约；Python 脚本调用规则见 §Read-only CLI 白名单例外。
+> 背后契约：命令 → dispatcher skill → agent。完整契约见 `AGENTS.md` §架构契约；Python / `bin/opc-tools` 调用规则见 §本地 runtime 白名单例外。
 
 ---
 
@@ -36,10 +36,10 @@
 │
 ├── 查看项目仪表盘（只读）                → /opc-dashboard
 ├── 查看结构化指标（JSON）                → /opc-stats
-├── 跑项目健康检查                        → /opc-health [--repair]
+├── 跑项目健康检查 / 可选安全 repair       → /opc-health [--repair]
 ├── 查询代码库情报                        → /opc-intel query <term>
 ├── 查看开发者画像                        → /opc-profile
-├── 查看研究产物索引                      → /opc-research
+├── 运行 research feed / insights / run   → /opc-research <subcommand>
 │
 ├── 快速记一条跨会话上下文                → /opc-thread <名称>
 ├── 快速记一个未来想法（种子）            → /opc-seed <想法>
@@ -170,11 +170,11 @@
 
 ---
 
-## 🔧 只读 vs 写入 CLI 白名单（v1.4.2 分两档）
+## 🔧 本地 runtime vs 写入 CLI 白名单（v1.4.2 分两档）
 
-| 档 | 命令 | 是否允许直接 `python scripts/xxx.py` |
-|----|------|-------------------------------------|
-| **PURE 只读** | `/opc-health` `/opc-dashboard` `/opc-stats` `/opc-intel` `/opc-profile` `/opc-research` | ✅ 是（无副作用） |
+| 档 | 命令 | 是否允许直接调用本地 runtime |
+|----|------|------------------------------|
+| **LOCAL RUNTIME** | `/opc-health` `/opc-dashboard` `/opc-stats` `/opc-intel` `/opc-profile` `/opc-research` | ✅ 是（`dashboard` / `stats` 纯只读；`intel refresh` 走 dispatcher；`health` / `profile` / `research` 带受控本地写入） |
 | **MIXED 低摩擦** | `/opc-thread` `/opc-seed` `/opc-backlog` | ⚠️ 是（但创建模式会写 `.opc/`，stderr 输出 advisory） |
 | **派发器命令** | 其他 16 个（plan/build/review/ship/debug/security/business/pause/resume/progress/...） | ❌ 否（必须走 slash 命令派发 skill） |
 
