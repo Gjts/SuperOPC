@@ -74,7 +74,7 @@ def _v2_decision_recommendation(insights: dict[str, Any]) -> dict[str, str] | No
         if not opc_dir:
             return None
 
-        bus = get_event_bus()
+        bus = get_event_bus(journal_dir=opc_dir / "events")
         se = get_state_engine(opc_dir, bus)
         se.load()
 
@@ -84,11 +84,23 @@ def _v2_decision_recommendation(insights: dict[str, Any]) -> dict[str, str] | No
             for blocker in blocker_items:
                 se.state.blockers.append(blocker)
 
+        validation_debt = [
+            str(item).strip()
+            for item in insights.get("validationDebt", [])
+            if str(item).strip()
+        ]
+        if validation_debt and not se.state.blockers:
+            return {
+                "command": "/opc-progress",
+                "reason": "当前仍有验证欠债，先确认未验证事项，再继续推进。",
+                "zone": "green",
+                "confidence": "1.0",
+                "source": "session_validation_guard",
+            }
+
         context: dict[str, Any] = {}
         if (opc_dir / "HANDOFF.json").exists():
             context["handoff_exists"] = True
-        if insights.get("validationDebt"):
-            context["quality_violations"] = insights["validationDebt"]
 
         decision = DecisionEngine(se, bus).decide(context)
         return {

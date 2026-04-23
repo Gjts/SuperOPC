@@ -381,6 +381,14 @@ docs: update README with new skill
 ## 测试
 [你如何验证了这个贡献的有效性？]
 
+本仓库推荐统一使用：
+
+```bash
+python scripts/run_pytest.py tests/ -v
+```
+
+不要在 Windows 上默认直接运行 `python -m pytest`。仓库自带的 `scripts/run_pytest.py` 会处理临时目录、短路径和 pytest cleanup 的兼容性问题，CI 也走这条路径。
+
 ## 检查清单
 - [ ] frontmatter 格式正确（name + description）
 - [ ] 文件放在正确的目录

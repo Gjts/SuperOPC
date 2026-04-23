@@ -164,19 +164,26 @@ class EventBus:
 # Singleton
 # ---------------------------------------------------------------------------
 
-_global_bus: EventBus | None = None
+_global_buses: dict[str | None, EventBus] = {}
 _bus_lock = threading.Lock()
 
 
+def _bus_key(journal_dir: Path | None) -> str | None:
+    if journal_dir is None:
+        return None
+    return str(journal_dir.resolve())
+
+
 def get_event_bus(journal_dir: Path | None = None) -> EventBus:
-    global _global_bus
+    key = _bus_key(journal_dir)
     with _bus_lock:
-        if _global_bus is None:
-            _global_bus = EventBus(journal_dir=journal_dir)
-        return _global_bus
+        bus = _global_buses.get(key)
+        if bus is None:
+            bus = EventBus(journal_dir=journal_dir)
+            _global_buses[key] = bus
+        return bus
 
 
 def reset_event_bus() -> None:
-    global _global_bus
     with _bus_lock:
-        _global_bus = None
+        _global_buses.clear()

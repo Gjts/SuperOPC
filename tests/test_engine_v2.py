@@ -113,6 +113,21 @@ class TestEventBus:
         b2 = get_event_bus()
         assert b1 is b2
 
+    def test_journaled_singletons_are_isolated_per_dir(self, tmp_path: Path):
+        dir_a = tmp_path / "proj-a" / "events"
+        dir_b = tmp_path / "proj-b" / "events"
+
+        bus_a = get_event_bus(dir_a)
+        bus_b = get_event_bus(dir_b)
+
+        assert bus_a is not bus_b
+
+        bus_a.publish("journal.a", {"project": "a"})
+        bus_b.publish("journal.b", {"project": "b"})
+
+        assert "journal.a" in next(dir_a.glob("events-*.jsonl")).read_text(encoding="utf-8")
+        assert "journal.b" in next(dir_b.glob("events-*.jsonl")).read_text(encoding="utf-8")
+
     def test_core_events_defined(self):
         assert len(CORE_EVENTS) >= 20
 
@@ -198,6 +213,25 @@ class TestStateEngine:
         assert s2.project_name == "TestProject"
         assert s2.status == ProjectPhase.PLANNING
 
+    def test_reload_from_json_preserves_collection_fields(self, tmp_path: Path):
+        bus = EventBus()
+        engine = StateEngine(tmp_path, bus)
+        engine.load()
+        engine.update(
+            blockers=["API key missing"],
+            todos=["Wire up health check"],
+            validation_debt=["Run regression suite"],
+            business_metrics={"mrr": "100"},
+        )
+
+        engine2 = StateEngine(tmp_path, bus)
+        s2 = engine2.load()
+
+        assert s2.blockers == ["API key missing"]
+        assert s2.todos == ["Wire up health check"]
+        assert s2.validation_debt == ["Run regression suite"]
+        assert s2.business_metrics == {"mrr": "100"}
+
     def test_add_and_resolve_blocker(self, tmp_path: Path):
         bus = EventBus()
         engine = StateEngine(tmp_path, bus)
@@ -206,6 +240,21 @@ class TestStateEngine:
         assert len(engine.state.blockers) == 1
         engine.resolve_blocker("API key missing")
         assert len(engine.state.blockers) == 0
+
+    def test_default_bus_journals_per_project(self, tmp_path: Path):
+        opc_a = tmp_path / "proj-a" / ".opc"
+        opc_b = tmp_path / "proj-b" / ".opc"
+
+        engine_a = StateEngine(opc_a)
+        engine_b = StateEngine(opc_b)
+        engine_a.load()
+        engine_b.load()
+
+        assert engine_a.transition(ProjectPhase.PLANNING, reason="plan a")
+        assert engine_b.transition(ProjectPhase.PLANNING, reason="plan b")
+
+        assert list((opc_a / "events").glob("events-*.jsonl"))
+        assert list((opc_b / "events").glob("events-*.jsonl"))
 
     def test_transition_table_complete(self):
         assert all(isinstance(v, frozenset) for v in VALID_TRANSITIONS.values())

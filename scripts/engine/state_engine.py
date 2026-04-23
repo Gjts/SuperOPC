@@ -172,7 +172,9 @@ class StateEngine:
         except ValueError:
             status = ProjectPhase.IDLE
 
-        return ProjectState(status=status, **{k: v for k, v in data.items() if k != "status" and hasattr(ProjectState, k)})
+        allowed_fields = set(ProjectState.__dataclass_fields__)
+        payload = {k: v for k, v in data.items() if k != "status" and k in allowed_fields}
+        return ProjectState(status=status, **payload)
 
     # -- Markdown persistence (human-readable mirror) --
 

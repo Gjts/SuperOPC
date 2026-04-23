@@ -84,6 +84,18 @@ def test_progress_snapshot_exposes_validation_debt_and_resume_file(tmp_path: Pat
     assert snapshot["recommendation"]["command"] == "/opc discuss"
 
 
+def test_progress_snapshot_prefers_progress_for_validation_debt_without_blockers(tmp_path: Path) -> None:
+    project_root = create_sample_project(tmp_path)
+    state_file = project_root / ".opc" / "STATE.md"
+    state_text = state_file.read_text(encoding="utf-8").replace("- 等待验证输出格式\n", "")
+    state_file.write_text(state_text, encoding="utf-8")
+
+    snapshot = collect_progress_snapshot(project_root)
+
+    assert snapshot["validationDebt"] == ["未运行 CLI 冒烟测试"]
+    assert snapshot["recommendation"]["command"] == "/opc-progress"
+
+
 def test_pause_and_resume_round_trip(tmp_path: Path) -> None:
     project_root = create_sample_project(tmp_path)
 
