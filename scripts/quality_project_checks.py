@@ -101,8 +101,19 @@ def phase_artifact_key(file_path: Path, suffix: str) -> str:
     return stem
 
 
+def _group_verification_files_by_phase_dir(verification_files: list[Path]) -> dict[Path, list[Path]]:
+    groups: dict[Path, list[Path]] = {}
+    for file_path in verification_files:
+        groups.setdefault(file_path.parent, []).append(file_path)
+    return groups
+
+
 def validate_project_checks(start_dir: Path, repair: bool) -> dict[str, Any]:
-    original_opc_dir = find_opc_dir(start_dir)
+    start_root = start_dir.resolve()
+    local_opc_dir = start_root if start_root.name == ".opc" else start_root / ".opc"
+    original_opc_dir = local_opc_dir if local_opc_dir.is_dir() else find_opc_dir(start_dir)
+    if repair and not local_opc_dir.is_dir():
+        original_opc_dir = None
     opc_dir = original_opc_dir if original_opc_dir is not None else start_dir.resolve() / ".opc"
     project_root = opc_dir.parent
     checks: list[dict[str, Any]] = []
@@ -295,6 +306,24 @@ def validate_project_checks(start_dir: Path, repair: bool) -> dict[str, Any]:
 
     summary_files = gather_summary_files(opc_dir)
     verification_files = gather_verification_files(opc_dir)
+    duplicate_verification_groups = [
+        files
+        for files in _group_verification_files_by_phase_dir(verification_files).values()
+        if len(files) > 1
+    ]
+    if duplicate_verification_groups:
+        checks.append(
+            make_check(
+                "project.verification-duplicates",
+                "fail",
+                "同一阶段存在多个 VERIFICATION 文件，来源不唯一。",
+                severity="error",
+                files=[str(file) for group in duplicate_verification_groups for file in group],
+            )
+        )
+    else:
+        checks.append(make_check("project.verification-duplicates", "pass", "每个阶段只有一个 VERIFICATION 来源。"))
+
     verification_map = {phase_artifact_key(file, "VERIFICATION"): file for file in verification_files}
     if not summary_files:
         checks.append(make_check("project.summary-traceability", "pass", "尚无阶段 SUMMARY 文件需要检查。"))

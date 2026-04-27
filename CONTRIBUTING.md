@@ -387,7 +387,7 @@ docs: update README with new skill
 python scripts/run_pytest.py tests/ -v
 ```
 
-不要在 Windows 上默认直接运行 `python -m pytest`。仓库自带的 `scripts/run_pytest.py` 会处理临时目录、短路径和 pytest cleanup 的兼容性问题，CI 也走这条路径。
+不要在 Windows 上默认直接运行 `python -m pytest`。仓库自带的 `scripts/run_pytest.py` 会处理临时目录、短路径和 pytest cleanup 的兼容性问题，CI（含 release workflow）也走这条路径。
 
 ## 检查清单
 - [ ] frontmatter 格式正确（name + description）

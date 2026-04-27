@@ -248,10 +248,10 @@ def cmd_init_plan_phase(cwd: Path, phase_num: str, raw: bool) -> None:
 def cmd_init_new_project(cwd: Path, raw: bool) -> None:
     """All context for new-project workflow."""
     from cli.core import CONFIG_DEFAULTS
-    paths = opc_paths(cwd) if find_opc_exists(cwd) else {}
+    local_opc_exists = _local_opc_dir(cwd).is_dir()
 
     result = {
-        "opc_exists": bool(paths),
+        "opc_exists": local_opc_exists,
         "default_config": CONFIG_DEFAULTS,
         "cwd": to_posix(cwd),
         "timestamp": now_iso(),
@@ -369,6 +369,11 @@ def cmd_init_todos(cwd: Path, area: str | None, raw: bool) -> None:
 # ---------------------------------------------------------------------------
 # Utility
 # ---------------------------------------------------------------------------
+
+def _local_opc_dir(cwd: Path) -> Path:
+    resolved = cwd.resolve()
+    return resolved if resolved.name == ".opc" else resolved / ".opc"
+
 
 def find_opc_exists(cwd: Path) -> bool:
     """Check if .opc/ exists without raising an error."""

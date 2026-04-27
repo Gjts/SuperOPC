@@ -23,7 +23,7 @@ jobs:
 
       - name: Verify quality gates
         run: |
-          python -m pytest tests/test_session_workflow.py
+          python scripts/run_pytest.py tests/test_session_workflow.py
           python scripts/opc_health.py --cwd . --target repo --json
 
       - name: Generate integrations

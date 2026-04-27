@@ -32,6 +32,7 @@ if sys.stdout and sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8"
     except AttributeError:
         pass
 
+from engine.agent_runtime import AGENT_RUNTIME_CODEX, build_codex_handoff, detect_agent_runtime
 from engine.event_bus import EventBus, get_event_bus
 from opc_common import find_opc_dir
 
@@ -246,7 +247,8 @@ class DAGEngine:
         for wave in plan.waves:
             wave_ok = self._execute_wave(wave, result)
             if not wave_ok:
-                result.status = "failed"
+                if result.status != "handoff":
+                    result.status = "failed"
                 break
             result.waves_completed += 1
 
@@ -256,7 +258,7 @@ class DAGEngine:
         result.finished_at = _now()
         self._persist_result(result)
 
-        topic = "phase.complete" if result.status == "completed" else "task.failed"
+        topic = "phase.complete" if result.status == "completed" else "task.handoff" if result.status == "handoff" else "task.failed"
         self._bus.publish(topic, {"plan_id": plan.plan_id, "status": result.status}, source="dag_engine")
         return result
 
@@ -291,6 +293,9 @@ class DAGEngine:
                         if success:
                             result.tasks_completed += 1
                             self._completed_task_ids.add(task.id)
+                        elif task.status == "handoff":
+                            result.status = "handoff"
+                            return False
                         else:
                             result.tasks_failed += 1
                             return False
@@ -316,6 +321,10 @@ class DAGEngine:
                 task.status = "completed"
                 self._bus.publish("task.complete", {"task_id": task.id, "agent": task.agent}, source="dag_engine")
                 return True
+
+            if task.status == "handoff":
+                self._bus.publish("task.handoff", {"task_id": task.id, "agent": task.agent}, source="dag_engine")
+                return False
 
             if attempt < MAX_RETRIES:
                 self._log(result, f"  [RETRY] Task {task.id} failed (attempt {attempt}/{MAX_RETRIES}), retrying...")
@@ -347,6 +356,19 @@ class DAGEngine:
 
         self._log(result, f"  [{task.agent}] -> Task {task.id}: {task.title}")
         try:
+            runtime = detect_agent_runtime()
+            if runtime == AGENT_RUNTIME_CODEX:
+                handoff = build_codex_handoff(
+                    agent=task.agent,
+                    prompt=prompt,
+                    source="dag-engine",
+                    cwd=self._project_root,
+                )
+                task.result = json.dumps(handoff.get("handoff", {}), ensure_ascii=False)[:2000]
+                task.status = "handoff"
+                self._log(result, f"  [HANDOFF] Codex native agent required: {handoff['codex_agent']}")
+                return False
+
             proc = subprocess.run(
                 ["claude", "--print", "--agent", task.agent, prompt],
                 capture_output=True, text=True, timeout=300,

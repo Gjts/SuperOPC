@@ -15,6 +15,7 @@ from typing import Any
 from cli.core import (
     error,
     extract_field,
+    extract_first_field,
     load_config,
     now_iso,
     opc_dir,
@@ -23,6 +24,17 @@ from cli.core import (
     safe_read,
     to_posix,
 )
+
+
+STATE_FIELD_ALIASES: dict[str, tuple[str, ...]] = {
+    "Project Name": ("Project Name", "项目名称"),
+    "Current Focus": ("Current Focus", "当前焦点"),
+    "Status": ("Status", "状态"),
+    "Recent Activity": ("Recent Activity", "最近活动"),
+    "Last Session": ("Last Session", "上次会话"),
+    "Stop Point": ("Stop Point", "停止于"),
+    "Resume File": ("Resume File", "恢复文件"),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +146,43 @@ def _match_heading_title(content: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def _parse_position_line(content: str, label: str) -> tuple[str | None, str | None, str | None]:
+    pattern = re.compile(
+        rf"^{re.escape(label)}\s*[:：]\s*\[?([^\]\s/]+)\]?\s*/\s*\[?([^\]\s（(]+)\]?\s*(?:[（(]([^）)]*)[）)])?",
+        re.MULTILINE,
+    )
+    match = pattern.search(content)
+    if not match:
+        return None, None, None
+    return match.group(1).strip(), match.group(2).strip(), (match.group(3) or "").strip() or None
+
+
+def _replace_position_line(content: str, label: str, current: str, total: str, suffix: str) -> tuple[str, bool]:
+    pattern = re.compile(rf"^{re.escape(label)}\s*[:：].*$", re.MULTILINE)
+    replacement = f"{label}：[{current}] / [{total}]（{suffix}）"
+    if pattern.search(content):
+        return pattern.sub(replacement, content, count=1), True
+    return content, False
+
+
+def _state_field(content: str, field: str) -> str | None:
+    aliases = STATE_FIELD_ALIASES.get(field, (field,))
+    return extract_first_field(content, *aliases)
+
+
+def _state_position_field(content: str, field: str) -> str | None:
+    phase, total_phases, phase_name = _parse_position_line(content, "阶段")
+    plan, total_plans, _plan_label = _parse_position_line(content, "计划")
+    values = {
+        "Phase": phase,
+        "Total Phases": total_phases,
+        "Phase Name": phase_name,
+        "Current Plan": plan,
+        "Total Plans in Phase": total_plans,
+    }
+    return values.get(field)
+
+
 def _collect_flat_todos(cwd: Path, area: str | None) -> list[dict[str, str]]:
     todos_dir = opc_dir(cwd) / "todos"
     if not todos_dir.exists():
@@ -238,7 +287,7 @@ def cmd_state_get(cwd: Path, section: str | None, raw: bool) -> None:
         return
 
     # Try field extraction
-    value = extract_field(content, section)
+    value = _state_field(content, section) or _state_position_field(content, section)
     if value:
         output({section: value}, raw, value)
         return
@@ -295,7 +344,7 @@ def cmd_state_json(cwd: Path, raw: bool) -> None:
         "Recent Activity", "Last Session", "Stop Point", "Resume File",
     ]
     for f in known_fields:
-        fields[f] = extract_field(content, f)
+        fields[f] = _state_field(content, f) or _state_position_field(content, f)
     output(fields, raw=True)
 
 
@@ -309,6 +358,9 @@ def cmd_state_begin_phase(cwd: Path, named: dict[str, str | None], raw: bool) ->
         error("--phase is required for begin-phase")
 
     content = _read_state(cwd)
+    content, _ = _replace_position_line(content, "阶段", phase, plans or "0", name or "")
+    content, _ = _replace_position_line(content, "计划", "1", plans or "0", "当前阶段内")
+
     replacements = {
         "Status": "执行中",
         "Phase": phase,
@@ -329,10 +381,14 @@ def cmd_state_begin_phase(cwd: Path, named: dict[str, str | None], raw: bool) ->
 def cmd_state_advance_plan(cwd: Path, raw: bool) -> None:
     """Increment the current plan counter."""
     content = _read_state(cwd)
-    current = extract_field(content, "Current Plan")
+    current = _state_field(content, "Current Plan") or _state_position_field(content, "Current Plan")
     if current and current.isdigit():
         new_val = str(int(current) + 1)
-        content, _ = _replace_field(content, "Current Plan", new_val)
+        plan, total, suffix = _parse_position_line(content, "计划")
+        if plan:
+            content, _ = _replace_position_line(content, "计划", new_val, total or "0", suffix or "当前阶段内")
+        else:
+            content, _ = _replace_field(content, "Current Plan", new_val)
         _write_state(cwd, content)
         output({"current_plan": new_val}, raw, new_val)
     else:
@@ -444,14 +500,22 @@ def cmd_list_todos(cwd: Path, area: str | None, raw: bool) -> None:
 
 def _replace_field(content: str, field: str, value: str) -> tuple[str, bool]:
     """Replace a field value in STATE.md. Returns (new_content, success)."""
+    for candidate in STATE_FIELD_ALIASES.get(field, (field,)):
+        content, success = _replace_single_field(content, candidate, value)
+        if success:
+            return content, True
+    return content, False
+
+
+def _replace_single_field(content: str, field: str, value: str) -> tuple[str, bool]:
     escaped = re.escape(field)
     # Try **Field:** bold format
-    bold_pattern = re.compile(rf"(\*\*{escaped}:\*\*\s*)(.*)", re.IGNORECASE)
+    bold_pattern = re.compile(rf"(\*\*{escaped}\s*[:：]\*\*\s*)(.*)", re.IGNORECASE)
     if bold_pattern.search(content):
         return bold_pattern.sub(rf"\g<1>{value}", content, count=1), True
 
     # Try plain Field: format
-    plain_pattern = re.compile(rf"(^{escaped}:\s*)(.*)", re.IGNORECASE | re.MULTILINE)
+    plain_pattern = re.compile(rf"(^{escaped}\s*[:：]\s*)(.*)", re.IGNORECASE | re.MULTILINE)
     if plain_pattern.search(content):
         return plain_pattern.sub(rf"\g<1>{value}", content, count=1), True
 

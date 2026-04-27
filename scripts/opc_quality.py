@@ -40,6 +40,31 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _workflow_shell_command(raw_line: str) -> str:
+    command = raw_line.strip()
+    if command.startswith("- "):
+        command = command[2:].strip()
+    if command.startswith("run:"):
+        command = command[4:].strip()
+    return command
+
+
+def validate_workflow_pytest_entrypoints(repo_root: Path) -> list[str]:
+    findings: list[str] = []
+    for relative_path in REQUIRED_WORKFLOWS:
+        workflow_file = repo_root / relative_path
+        if not workflow_file.exists():
+            continue
+        content = workflow_file.read_text(encoding="utf-8", errors="ignore")
+        for line_number, line in enumerate(content.splitlines(), start=1):
+            command = _workflow_shell_command(line)
+            if command.startswith("python -m pytest") or command.startswith("pytest "):
+                findings.append(
+                    f"{relative_path}:{line_number}: use python scripts/run_pytest.py instead of {command}"
+                )
+    return findings
+
+
 def validate_repo_checks(start_dir: Path, repair: bool = False) -> dict[str, Any]:
     repo_root = find_repo_root(start_dir) or start_dir.resolve()
     checks: list[dict[str, Any]] = []
@@ -253,6 +278,21 @@ def validate_repo_checks(start_dir: Path, repair: bool = False) -> dict[str, Any
     else:
         checks.append(make_check("repo.ci-workflows", "pass", "GitHub Actions workflows 已就绪。"))
 
+    workflow_entrypoint_errors = validate_workflow_pytest_entrypoints(repo_root)
+    if workflow_entrypoint_errors:
+        checks.append(
+            make_check(
+                "repo.ci-pytest-entrypoints",
+                "fail",
+                "GitHub Actions workflows must run pytest through scripts/run_pytest.py.",
+                severity="error",
+                files=[str(repo_root / path) for path in REQUIRED_WORKFLOWS if (repo_root / path).exists()],
+                details=workflow_entrypoint_errors,
+            )
+        )
+    else:
+        checks.append(make_check("repo.ci-pytest-entrypoints", "pass", "GitHub Actions pytest entrypoints use scripts/run_pytest.py."))
+
     plugin_payload = read_json(repo_root / ".claude-plugin" / "plugin.json")
     plugin_version = plugin_payload.get("version", "")
     if not plugin_version or not re.match(r"^\d+\.\d+\.\d+", plugin_version):
@@ -368,7 +408,11 @@ def collect_repo_quality_report(start_dir: Path, repair: bool = False) -> dict[s
     findings = [check for check in result["checks"] if check["status"] in {"warn", "fail", "fixed"}]
     quality_signals = {
         "requirementsCoverageDebt": 0,
-        "regressionDebt": sum(1 for check in result["checks"] if check["id"] == "repo.ci-workflows" and check["status"] != "pass"),
+        "regressionDebt": sum(
+            1
+            for check in result["checks"]
+            if check["id"] in {"repo.ci-workflows", "repo.ci-pytest-entrypoints"} and check["status"] != "pass"
+        ),
         "scopeDebt": 0,
         "traceabilityDebt": 0,
         "schemaDriftDebt": 0,

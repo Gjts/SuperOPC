@@ -141,6 +141,8 @@ def cmd_verify_plan_structure(cwd: Path, plan_path: str, raw: bool) -> None:
         return
 
     content = full_path.read_text(encoding="utf-8")
+    artifact_mode = _plan_artifact_mode(content)
+    non_build_artifact = artifact_mode in {"planning-demo", "validation-prep"}
 
     # Check frontmatter
     has_frontmatter = content.startswith("---")
@@ -190,12 +192,18 @@ def cmd_verify_plan_structure(cwd: Path, plan_path: str, raw: bool) -> None:
             errors.append("Pre-flight gate requires plan-check: APPROVED")
         if (gate_values["assumptions"] or "").upper() != "PASS":
             errors.append("Pre-flight gate requires assumptions: PASS")
-        if (gate_values["ready-for-build"] or "").lower() != "true":
+        ready_for_build = (gate_values["ready-for-build"] or "").lower()
+        if non_build_artifact and ready_for_build == "true":
+            errors.append("Non-build artifact plans must not mark ready-for-build: true")
+        elif not non_build_artifact and ready_for_build != "true":
             errors.append("Pre-flight gate requires ready-for-build: true")
+        elif non_build_artifact and ready_for_build not in {"false", "no"}:
+            errors.append("Non-build artifact plans require ready-for-build: false")
 
     valid = not errors
     output({
         "valid": valid,
+        "artifact_mode": artifact_mode,
         "has_frontmatter": has_frontmatter,
         "has_opc_plan_block": has_opc_plan_block,
         "tasks_found": tasks_found,
@@ -205,6 +213,27 @@ def cmd_verify_plan_structure(cwd: Path, plan_path: str, raw: bool) -> None:
         "preflight_gate": gate_values,
         "errors": errors,
     }, raw, "valid" if valid else "invalid")
+
+
+def _frontmatter_field(content: str, key: str) -> str | None:
+    match = re.search(r"^---\s*\n(?P<body>[\s\S]*?)\n---", content)
+    if not match:
+        return None
+    field_match = re.search(rf"^{re.escape(key)}:\s*(.+)$", match.group("body"), re.IGNORECASE | re.MULTILINE)
+    return field_match.group(1).strip() if field_match else None
+
+
+def _opc_plan_field(content: str, key: str) -> str | None:
+    match = re.search(r"<opc-plan>(?P<body>[\s\S]*?)</opc-plan>", content, re.IGNORECASE)
+    if not match:
+        return None
+    field_match = re.search(rf"^{re.escape(key)}:\s*(.+)$", match.group("body"), re.IGNORECASE | re.MULTILINE)
+    return field_match.group(1).strip() if field_match else None
+
+
+def _plan_artifact_mode(content: str) -> str:
+    value = _frontmatter_field(content, "evidence-mode") or _opc_plan_field(content, "mode") or ""
+    return value.strip().lower()
 
 
 def cmd_verify_phase_completeness(cwd: Path, phase_num: str, raw: bool) -> None:

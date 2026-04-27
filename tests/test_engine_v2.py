@@ -511,9 +511,51 @@ class TestDAGEngine:
 
             return FakeProc()
 
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "claude-code")
         monkeypatch.setattr("engine.dag_engine.subprocess.run", fake_run)
         assert engine._run_agent(task, ExecutionResult(plan_id="p", goal="g")) is True
         assert captured["cwd"] == str(project_root)
+
+    def test_run_agent_in_codex_runtime_returns_handoff_without_claude(self, tmp_path: Path, monkeypatch):
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        engine = DAGEngine(project_root=project_root)
+        task = DTask(id="t1", title="Task", action="Do it", agent="opc-executor")
+        result = ExecutionResult(plan_id="p", goal="g")
+
+        def fake_run(cmd, **kwargs):
+            raise AssertionError("Codex runtime must not call Claude")
+
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "codex")
+        monkeypatch.setattr("engine.dag_engine.subprocess.run", fake_run)
+
+        assert engine._run_agent(task, result) is False
+        assert task.status == "handoff"
+        assert any("Codex native agent required: executor" in entry["message"] for entry in result.log)
+        assert "opc-executor" in task.result
+        assert "executor" in task.result
+
+    def test_execute_in_codex_runtime_stops_at_handoff_without_retry(self, tmp_path: Path, monkeypatch):
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        engine = DAGEngine(project_root=project_root, log_dir=tmp_path / "log")
+        task = DTask(id="t1", title="Task", action="Do it", agent="opc-executor")
+        plan = ExecutionPlan(goal="handoff goal", waves=[Wave(id="1", tasks=[task])])
+
+        def fake_run(cmd, **kwargs):
+            raise AssertionError("Codex runtime must not call Claude")
+
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "codex")
+        monkeypatch.setattr("engine.dag_engine.subprocess.run", fake_run)
+
+        result = engine.execute(plan)
+
+        assert result.status == "handoff"
+        assert result.tasks_completed == 0
+        assert result.tasks_failed == 0
+        assert task.retry_count == 0
+        assert not any("[RETRY]" in entry["message"] for entry in result.log)
+        assert not any("[DEGRADE]" in entry["message"] for entry in result.log)
 
     def test_resolve_default_log_dir_uses_nearest_opc_root(self, tmp_path: Path):
         project_root = tmp_path / "project"
@@ -739,6 +781,7 @@ class TestCruiseDispatchContract:
 
             return FakeProc()
 
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "claude-code")
         monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
 
         decision = self._make_decision(ActionType.PLAN, "/opc-plan")
@@ -751,6 +794,46 @@ class TestCruiseDispatchContract:
         assert captured["cmd"][3] == "opc-planner"
         assert "opc_workflow.py" not in " ".join(str(x) for x in captured["cmd"])
 
+    def test_plan_action_in_codex_runtime_returns_native_handoff_without_claude(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+
+        def fake_run(cmd, **kwargs):
+            raise AssertionError("Codex runtime must not call Claude")
+
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "codex")
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
+
+        result = cc._dispatch_command(self._make_decision(ActionType.PLAN, "/opc-plan"))
+
+        assert result["success"] is False
+        assert result["status"] == "handoff"
+        assert result["executed"] is False
+        assert result["runtime"] == "codex"
+        assert result["dispatch_mode"] == "codex-native"
+        assert result["agent"] == "opc-planner"
+        assert result["codex_agent"] == "planner"
+        assert result["handoff"]["superopc_agent"] == "opc-planner"
+
+    def test_heartbeat_in_codex_runtime_counts_handoff_without_failure(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+
+        def fake_run(cmd, **kwargs):
+            raise AssertionError("Codex runtime must not call Claude")
+
+        def fake_decide(context):
+            return self._make_decision(ActionType.PLAN, "/opc-plan")
+
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "codex")
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
+        monkeypatch.setattr(cc._decision_engine, "decide", fake_decide)
+
+        cc._heartbeat()
+
+        assert cc.status.actions_escalated == 1
+        assert cc.status.actions_executed == 0
+        assert cc.status.consecutive_failures == 0
+        assert cc.status.errors == []
+
     def test_build_action_dispatches_opc_executor(self, tmp_path: Path, monkeypatch):
         cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
 
@@ -762,6 +845,7 @@ class TestCruiseDispatchContract:
 
             return FakeProc()
 
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "claude-code")
         monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
         result = cc._dispatch_command(self._make_decision(ActionType.BUILD))
         assert result["agent"] == "opc-executor"
@@ -777,6 +861,7 @@ class TestCruiseDispatchContract:
 
             return FakeProc()
 
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "claude-code")
         monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
         result = cc._dispatch_command(self._make_decision(ActionType.REVIEW))
         assert result["agent"] == "opc-reviewer"
@@ -870,6 +955,7 @@ class TestCruiseDispatchContract:
         def fake_run(cmd, **kwargs):
             raise FileNotFoundError("claude not found")
 
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "claude-code")
         monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
         result = cc._dispatch_command(self._make_decision(ActionType.PLAN))
         assert result["success"] is False

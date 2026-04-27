@@ -9,10 +9,18 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if os.name == "nt":
-    RUNTIME_ROOT = Path.home() / ".codex" / "memories" / "superopc-pytest-runtime"
-else:
-    RUNTIME_ROOT = REPO_ROOT / ".test_tmp" / "pytest-runtime"
+
+
+def _default_runtime_root(platform_name: str = os.name) -> Path:
+    override = os.environ.get("SUPEROPC_PYTEST_RUNTIME_ROOT")
+    if override:
+        return Path(override)
+    if platform_name == "nt":
+        return Path.home() / ".codex" / "memories" / "superopc-pytest-runtime"
+    return Path(tempfile.gettempdir()) / "superopc-pytest-runtime"
+
+
+RUNTIME_ROOT = _default_runtime_root()
 
 
 def _short_path(path: Path) -> str:

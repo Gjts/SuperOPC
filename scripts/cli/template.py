@@ -1,7 +1,7 @@
 """
 template.py — Template domain operations for opc-tools.
 
-Creates pre-filled PLAN.md, SUMMARY.md, and VERIFICATION.md files.
+Creates pre-filled PLAN.md, SUMMARY.md, and plan-prefixed VERIFICATION.md files.
 """
 
 from __future__ import annotations
@@ -71,16 +71,17 @@ def cmd_template_fill(cwd: Path, template_type: str, named: dict[str, str | None
     if not phase_num:
         error("--phase is required for template fill")
 
-    plan_num = named.get("plan", "1")
-    name = named.get("name", "")
-    wave = named.get("wave", "1")
+    plan_num = named.get("plan") or "1"
+    name = named.get("name") or ""
+    plan_type = named.get("type") or "execute"
+    wave = named.get("wave") or "1"
 
     if template_type == "plan":
-        content = _fill_plan(phase_num, plan_num or "1", name, named.get("type", "execute"), wave or "1")
+        content = _fill_plan(phase_num, plan_num, name, plan_type, wave)
     elif template_type == "summary":
-        content = _fill_summary(phase_num, plan_num or "1", name)
+        content = _fill_summary(phase_num, plan_num, name)
     elif template_type == "verification":
-        content = _fill_verification(phase_num)
+        content = _fill_verification(phase_num, plan_num)
     else:
         error(f"Unknown template type: {template_type}. Available: plan, summary, verification")
         return  # unreachable, for type checker
@@ -93,12 +94,13 @@ def cmd_template_fill(cwd: Path, template_type: str, named: dict[str, str | None
         phase_dir = phases_dir / f"{phase_num.zfill(2)}-{slug}"
         phase_dir.mkdir(parents=True, exist_ok=True)
 
+    plan_prefix = plan_num.zfill(2)
     if template_type == "plan":
-        filename = f"{plan_num.zfill(2)}-PLAN.md" if plan_num != "1" else "01-PLAN.md"
+        filename = f"{plan_prefix}-PLAN.md"
     elif template_type == "summary":
-        filename = f"{plan_num.zfill(2)}-SUMMARY.md" if plan_num != "1" else "01-SUMMARY.md"
+        filename = f"{plan_prefix}-SUMMARY.md"
     else:
-        filename = "VERIFICATION.md"
+        filename = f"{plan_prefix}-VERIFICATION.md"
 
     out_path = phase_dir / filename
     out_path.write_text(content, encoding="utf-8")
@@ -208,10 +210,13 @@ completed: {now_iso()}
 """
 
 
-def _fill_verification(phase: str) -> str:
-    """Generate a pre-filled VERIFICATION.md."""
+def _fill_verification(phase: str, plan: str) -> str:
+    """Generate a pre-filled plan-prefixed VERIFICATION.md."""
+    verification_name = f"{plan.zfill(2)}-VERIFICATION"
     return f"""---
 phase: {phase}
+plan: {plan}
+verification: {verification_name}
 status: pending
 verified: null
 ---

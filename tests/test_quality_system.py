@@ -266,6 +266,32 @@ requirements-completed: [REQ-01, REQ-02]
     assert report["validationDebt"] == []
 
 
+def test_project_quality_report_fails_on_duplicate_phase_verifications(tmp_path: Path) -> None:
+    project_root = create_quality_project(tmp_path)
+    phase_dir = project_root / ".opc" / "phases" / "01-foundation"
+    (phase_dir / "VERIFICATION.md").write_text(
+        """---
+phase: 01-foundation
+verification: VERIFICATION
+requirements-verified: [REQ-01, REQ-02]
+---
+
+# Duplicate verification
+
+## 声明溯源
+- 验证证据：duplicate
+""",
+        encoding="utf-8",
+    )
+
+    report = collect_project_quality_report(project_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["project.verification-duplicates"]["status"] == "fail"
+    assert len(checks["project.verification-duplicates"]["files"]) == 2
+
+
 def test_project_quality_report_fails_on_unknown_requirement_ids(tmp_path: Path) -> None:
     project_root = create_quality_project(tmp_path)
     phase_dir = project_root / ".opc" / "phases" / "01-foundation"
@@ -456,6 +482,32 @@ def test_repo_quality_report_flags_broken_links_missing_workflows_and_version(tm
     assert checks["repo.ci-workflows"]["status"] == "fail"
     assert checks["repo.version"]["status"] == "fail"
     assert report["qualitySignals"]["regressionDebt"] >= 1
+
+
+def test_repo_quality_report_fails_on_direct_pytest_workflow_entrypoint(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    release_workflow = repo_root / ".github" / "workflows" / "release.yml"
+    release_workflow.write_text(
+        """name: Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify quality gates
+        run: |
+          python -m pytest tests/test_session_workflow.py
+""",
+        encoding="utf-8",
+    )
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["repo.ci-pytest-entrypoints"]["status"] == "fail"
+    assert any("python -m pytest" in detail for detail in checks["repo.ci-pytest-entrypoints"]["details"])
+    assert any("scripts/run_pytest.py" in detail for detail in checks["repo.ci-pytest-entrypoints"]["details"])
 
 
 def test_repo_quality_report_warns_on_transient_workspace_artifacts(tmp_path: Path) -> None:
@@ -745,6 +797,63 @@ def test_verify_plan_structure_passes_for_gate_approved_plan(tmp_path: Path, mon
     assert payload["has_plan_check"] is True
     assert payload["has_assumptions_analysis"] is True
     assert payload["preflight_gate"]["ready-for-build"] == "true"
+
+
+def test_verify_plan_structure_accepts_planning_demo_not_build_ready(tmp_path: Path, monkeypatch) -> None:
+    project_root = create_quality_project(tmp_path)
+    plan_file = project_root / "PLAN.md"
+    plan_file.write_text(
+        """---
+evidence-mode: planning-demo
+---
+
+# Demo Validation Plan
+
+**Goal:** Prepare honest validation artifacts before building
+
+## Task 1
+- [x] Document assumptions
+- [x] Define outreach prompts
+
+<opc-plan>
+mode: planning-demo
+goal: Prepare honest validation artifacts before building
+</opc-plan>
+
+## OPC Plan Check
+### 判决: APPROVED
+
+## OPC Assumptions Analysis
+### 🟢 已验证假设
+- Documentation scope confirmed
+
+## OPC Pre-flight Gate
+
+- plan-check: APPROVED
+- assumptions: PASS
+- ready-for-build: false
+""",
+        encoding="utf-8",
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_output(data, raw=False, text=None):
+        captured["data"] = data
+        raise SystemExit(0)
+
+    monkeypatch.setattr(verify_cli, "output", fake_output)
+
+    try:
+        verify_cli.cmd_verify_plan_structure(project_root, "PLAN.md", raw=True)
+    except SystemExit:
+        pass
+
+    payload = captured["data"]
+    assert isinstance(payload, dict)
+    assert payload["valid"] is True
+    assert payload["artifact_mode"] == "planning-demo"
+    assert payload["preflight_gate"]["ready-for-build"] == "false"
 
 
 def test_verify_plan_structure_fails_when_preflight_gate_missing(tmp_path: Path, monkeypatch) -> None:

@@ -7,7 +7,7 @@ Runtime modules (loaded on demand via direct imports):
   dag_engine         — DAG orchestration with retry/degrade/escalate
   decision_engine    — Three-layer decision (rules / state-machine / ICE)
   cruise_controller  — Autonomous cruise modes (watch/assist/cruise) and
-                       real agent dispatch via `claude --agent`
+                       host-aware agent dispatch
   scheduler          — Background cron for health checks, intel refresh
   profile_engine     — 8-dimension developer profiling across sessions
   learning_store     — Cross-project knowledge persistence

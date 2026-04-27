@@ -29,6 +29,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from engine.agent_runtime import AGENT_RUNTIME_CODEX, build_codex_handoff, detect_agent_runtime
 from engine.decision_engine import ActionType, ActionZone, Decision, DecisionEngine
 from engine.event_bus import EventBus, get_event_bus
 from engine.notification import NotificationDispatcher
@@ -202,6 +203,9 @@ class CruiseController:
             if result.get("success"):
                 self._status.actions_executed += 1
                 self._status.consecutive_failures = 0
+            elif _is_handoff_result(result):
+                self._status.actions_escalated += 1
+                self._status.consecutive_failures = 0
             else:
                 message = result.get("error") or result.get("stderr") or result.get("reason") or "decision dispatch failed"
                 self._status.errors.append(f"{_now()}: {decision.action.value} failed — {message}")
@@ -237,6 +241,7 @@ class CruiseController:
     def _execute_decision(self, decision: Decision) -> dict[str, Any]:
         result = self._dispatch_command(decision)
         success = result.get("success", False)
+        handoff = _is_handoff_result(result)
         self._log_decision(decision, executed=success)
 
         self._bus.publish("cruise.executed", {
@@ -244,10 +249,18 @@ class CruiseController:
             "zone": decision.zone.value,
             "action": decision.action.value,
             "success": success,
+            "status": "handoff" if handoff else "executed" if success else "failed",
             "heartbeat": self._status.heartbeat_count,
         }, source="cruise_controller")
 
-        if decision.zone == ActionZone.YELLOW:
+        if handoff:
+            self._notifier.notify(
+                f"[{decision.zone.value.upper()}] Handoff: {decision.command}",
+                f"Reason: {decision.reason}\nResult: Codex native handoff required",
+                level="info",
+                metadata=result,
+            )
+        elif decision.zone == ActionZone.YELLOW:
             self._notifier.notify(
                 f"[YELLOW] {'Executed' if success else 'Failed'}: {decision.command}",
                 f"Reason: {decision.reason}\nResult: {'ok' if success else 'failed'}",
@@ -267,7 +280,7 @@ class CruiseController:
         """Route a decision through the skill-first / agent-workflow contract.
 
         契约（AGENTS.md）：
-          - YELLOW/RED 执行类 ActionType → claude --agent <owner> 真派发 agent
+          - YELLOW/RED 执行类 ActionType -> active host agent runtime
           - GREEN 只读查询 ActionType → 白名单脚本（autonomous-ops GREEN zone 例外）
           - WAIT/DISCUSS → noop
         """
@@ -283,7 +296,7 @@ class CruiseController:
         # 路径 1：真执行 → 派发 agent（skill-first 契约）
         agent_name = ACTION_AGENT_MAP.get(action_value)
         if agent_name:
-            return self._run_claude_agent(agent_name, decision)
+            return self._run_agent(agent_name, decision)
 
         # 路径 2：GREEN 区只读查询 → 白名单脚本
         script_entry = READ_ONLY_SCRIPT_MAP.get(action_value)
@@ -302,8 +315,8 @@ class CruiseController:
 
         return self._run_opc_fallback(decision.command)
 
-    def _run_claude_agent(self, agent: str, decision: Decision) -> dict[str, Any]:
-        """Dispatch to a real agent via `claude --print --agent` — skill-first 契约唯一合法路径。"""
+    def _run_agent(self, agent: str, decision: Decision) -> dict[str, Any]:
+        """Dispatch an agent through the active host runtime."""
         prompt = self._build_agent_prompt(agent, decision)
 
         self._bus.publish(
@@ -319,6 +332,24 @@ class CruiseController:
         )
 
         try:
+            runtime = detect_agent_runtime()
+            if runtime == AGENT_RUNTIME_CODEX:
+                handoff = build_codex_handoff(
+                    agent=agent,
+                    prompt=prompt,
+                    source="cruise-controller",
+                    cwd=self._opc_dir.parent,
+                )
+                handoff.update(
+                    {
+                        "agent": agent,
+                        "action": decision.action.value,
+                        "zone": decision.zone.value,
+                        "error": "Codex native agent execution must be handled by the current Codex host session.",
+                    }
+                )
+                return handoff
+
             proc = subprocess.run(
                 ["claude", "--print", "--agent", agent, prompt],
                 capture_output=True,
@@ -333,6 +364,7 @@ class CruiseController:
                 "stdout": proc.stdout[:2000] if proc.stdout else "",
                 "stderr": proc.stderr[:500] if proc.stderr else "",
                 "dispatch_mode": "agent",
+                "runtime": runtime,
             }
         except FileNotFoundError:
             return {
@@ -476,3 +508,7 @@ class CruiseController:
 
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _is_handoff_result(result: dict[str, Any]) -> bool:
+    return result.get("status") == "handoff" or result.get("handoff_only") is True

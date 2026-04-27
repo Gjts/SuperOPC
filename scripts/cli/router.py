@@ -121,6 +121,10 @@ Research Operations:
   research methods show <id>          Show methodology details
   research run --query <topic>        Run full pipeline and write .opc/research report
 
+Insight Operations:
+  dashboard                           Show operating dashboard for current .opc project
+  stats                               Show structured project metrics and debt summary
+
 Intel Operations:
   intel status                        Intel file freshness status
   intel query <term>                  Search across .opc/intel/*.json
@@ -132,7 +136,7 @@ Intel Operations:
 Template Operations:
   template fill summary --phase N     Create pre-filled SUMMARY.md
   template fill plan --phase N        Create pre-filled PLAN.md
-  template fill verification --phase N  Create pre-filled VERIFICATION.md
+  template fill verification --phase N  Create pre-filled NN-VERIFICATION.md
 
 Init (Compound) Operations:
   init execute-phase <phase>          All context for execute-phase workflow
@@ -143,6 +147,10 @@ Init (Compound) Operations:
   init verify-work <phase>            All context for verify-work workflow
 
 Utility Operations:
+  dispatch --skill <id> [--dry-run] [--timeout <seconds>] [-- <prompt>]
+                                    Resolve dispatcher skill to owning agent and active host runtime
+  dispatch --command </opc-...> [--dry-run] [--timeout <seconds>] [-- <prompt>]
+                                    Resolve slash command contract to dispatcher skill + agent
   generate-slug <text>                Convert text to URL-safe slug
   current-timestamp [full|date|filename]  Get formatted timestamp
   list-todos [area]                   Count and enumerate backlog items (plus legacy pending todos)
@@ -242,9 +250,16 @@ def _dispatch(command: str, args: list[str], cwd: Path, raw: bool, pick: str | N
         from cli.research import dispatch_research
         dispatch_research(args, cwd, raw)
 
+    elif command in ("dashboard", "stats"):
+        dispatch_insights(command, cwd, raw)
+
     elif command == "intel":
         from cli.intel import dispatch_intel
         dispatch_intel(args, cwd, raw)
+
+    elif command == "dispatch":
+        from cli.dispatch import dispatch_dispatch
+        dispatch_dispatch(args, cwd, raw)
 
     elif command == "generate-slug":
         from cli.core import generate_slug, output
@@ -283,3 +298,26 @@ def _dispatch(command: str, args: list[str], cwd: Path, raw: bool, pick: str | N
 
     else:
         error(f"Unknown command: {command}\nRun 'opc-tools help' for available commands.")
+
+
+def dispatch_insights(command: str, cwd: Path, raw: bool) -> None:
+    """Route local dashboard/stats commands through the insights runtime."""
+    from cli.core import output
+    from opc_insights import (
+        build_stats_payload,
+        collect_project_insights,
+        format_dashboard,
+        format_stats,
+    )
+
+    try:
+        insights = collect_project_insights(cwd)
+    except Exception as exc:
+        error(f"insights failed: {exc}")
+
+    if command == "dashboard":
+        output(insights, raw, format_dashboard(insights))
+        return
+
+    stats = build_stats_payload(insights)
+    output(stats, raw, format_stats(insights))

@@ -206,6 +206,28 @@ def parse_state(state_text: str) -> dict[str, Any]:
 
 
 def parse_git_info(project_root: Path) -> dict[str, Any]:
+    def git_output(args: list[str], *, retry_without_global_excludes: bool = False) -> str:
+        try:
+            return subprocess.check_output(
+                ["git", *args],
+                cwd=project_root,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError:
+            if not retry_without_global_excludes:
+                raise
+            return subprocess.check_output(
+                ["git", "-c", "core.excludesfile=", *args],
+                cwd=project_root,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                stderr=subprocess.DEVNULL,
+            )
+
     try:
         subprocess.run(
             ["git", "rev-parse", "--is-inside-work-tree"],
@@ -215,27 +237,12 @@ def parse_git_info(project_root: Path) -> dict[str, Any]:
             check=True,
         )
 
-        branch = subprocess.check_output(
-            ["git", "branch", "--show-current"],
-            cwd=project_root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip() or "DETACHED"
+        branch = git_output(["branch", "--show-current"]).strip() or "DETACHED"
 
-        status_output = subprocess.check_output(
-            ["git", "status", "--short"],
-            cwd=project_root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
+        status_output = git_output(["status", "--short"], retry_without_global_excludes=True).strip()
         dirty_files = len(status_output.splitlines()) if status_output else 0
 
-        last_commit = subprocess.check_output(
-            ["git", "log", "-1", "--pretty=format:%h %cs %s"],
-            cwd=project_root,
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip() or "无提交"
+        last_commit = git_output(["log", "-1", "--pretty=format:%h %cs %s"]).strip() or "无提交"
 
         return {
             "available": True,

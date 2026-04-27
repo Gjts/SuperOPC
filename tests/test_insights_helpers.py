@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import subprocess
+
 from insights_helpers import (
     parse_next_roadmap_task,
+    parse_git_info,
     parse_roadmap_progress,
     parse_state,
     parse_validation_debt,
@@ -97,3 +100,38 @@ def test_parse_validation_debt_merges_and_dedupes_sources() -> None:
         "未记录 MRR",
         "未知需求 ID",
     ]
+
+
+def test_parse_git_info_retries_status_without_global_excludesfile(monkeypatch, tmp_path) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    def fake_check_output(cmd, **kwargs):
+        calls.append(cmd)
+        assert kwargs.get("encoding") == "utf-8"
+        assert kwargs.get("errors") == "replace"
+        if cmd == ["git", "branch", "--show-current"]:
+            return "main\n"
+        if cmd == ["git", "status", "--short"]:
+            raise subprocess.CalledProcessError(1, cmd)
+        if cmd == ["git", "-c", "core.excludesfile=", "status", "--short"]:
+            return " M scripts/opc_insights.py\n?? tests/test_insights_helpers.py\n"
+        if cmd == ["git", "log", "-1", "--pretty=format:%h %cs %s"]:
+            return "abc1234 2026-04-27 test commit"
+        raise AssertionError(f"unexpected git command: {cmd}")
+
+    monkeypatch.setattr("insights_helpers.subprocess.run", fake_run)
+    monkeypatch.setattr("insights_helpers.subprocess.check_output", fake_check_output)
+
+    git_info = parse_git_info(tmp_path)
+
+    assert git_info == {
+        "available": True,
+        "branch": "main",
+        "dirtyFiles": 2,
+        "lastCommit": "abc1234 2026-04-27 test commit",
+    }
+    assert ["git", "-c", "core.excludesfile=", "status", "--short"] in calls
