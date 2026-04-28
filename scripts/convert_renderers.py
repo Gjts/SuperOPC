@@ -241,6 +241,58 @@ def write_runtime_metadata(runtime: str, out_dir: Path) -> None:
     write_file(runtime_root / "HOOKS.md", "".join(lines))
 
 
+def codex_plugin_manifest() -> dict[str, Any]:
+    return {
+        "name": "superopc",
+        "version": PLUGIN_VERSION,
+        "description": (
+            "SuperOPC - The One-Person Company Operating System. Agent workflows, skills, "
+            "commands, and multi-runtime exports for solo founders who build, ship, and grow."
+        ),
+        "author": {
+            "name": "Gjts",
+            "url": "https://github.com/gjts",
+        },
+        "homepage": "https://github.com/gjts/superopc",
+        "repository": "https://github.com/gjts/superopc",
+        "license": "MIT",
+        "keywords": [
+            "one-person-company",
+            "solo-founder",
+            "skills",
+            "agents",
+            "workflows",
+            "tdd",
+            "debugging",
+            "market-research",
+            "ai-coding",
+            "codex",
+        ],
+        "skills": "./skills/",
+        "interface": {
+            "displayName": "SuperOPC",
+            "shortDescription": "Agent workflows for one-person companies",
+            "longDescription": (
+                "Use SuperOPC to plan, build, review, ship, debug, audit, research, and operate "
+                "solo-founder projects with dispatcher skills and specialized agent workflows."
+            ),
+            "developerName": "Gjts",
+            "category": "Coding",
+            "capabilities": ["Interactive", "Read", "Write"],
+            "defaultPrompt": [
+                "Plan my next product feature.",
+                "Review this repo with SuperOPC.",
+                "Run a bounded solo-founder workflow.",
+            ],
+            "websiteURL": "https://github.com/gjts/superopc",
+            "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+            "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
+            "brandColor": "#2563EB",
+            "screenshots": [],
+        },
+    }
+
+
 def convert_claude_code(sources: list[SourceFile], out_dir: Path) -> int:
     count = 0
     runtime_root = out_dir / "claude-code"
@@ -331,6 +383,10 @@ def convert_codex(sources: list[SourceFile], out_dir: Path) -> int:
     for source in sources:
         write_file(runtime_output_path("codex", source, out_dir), render_agent_markdown(source, "codex"))
         count += 1
+    write_file(
+        out_dir / "codex" / ".codex-plugin" / "plugin.json",
+        json.dumps(codex_plugin_manifest(), ensure_ascii=False, indent=2) + "\n",
+    )
     write_runtime_metadata("codex", out_dir)
     return count
 

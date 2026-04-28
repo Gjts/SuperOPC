@@ -33,6 +33,7 @@ REQUIRED_WORKFLOWS = [
 TRACEABILITY_HEADINGS = ("声明溯源", "Claim Traceability", "Sources", "来源")
 
 REPO_REQUIRED_PATHS = [
+    ".codex-plugin/plugin.json",
     ".claude-plugin/plugin.json",
     "agents",
     "commands/opc",
@@ -55,31 +56,10 @@ TRANSIENT_WORKSPACE_GLOBS = [
     "pytest-cache-files-*",
 ]
 
-GENERATED_ARTIFACT_POLICY_FILE = Path("integrations/README.md")
-DIRECTORY_MAP_FILE = Path("docs/DIRECTORY-MAP.md")
 GITIGNORE_FILE = Path(".gitignore")
 
-GENERATED_ARTIFACT_POLICY_MARKERS = [
-    "generated-output",
-    "scripts/convert.py",
-    "Do not manually edit",
-    "python scripts/convert.py --tool all",
-]
-
-DIRECTORY_MAP_REQUIRED_MARKERS = [
-    "`marketing/`",
-    "`website/`",
-    "`integrations/`",
-    "`.manual_verify/`",
-    "`.pytest_tmp/`",
-    "`.test_tmp/`",
-    "`pytest-cache-files-*`",
-]
-
 GITIGNORE_REQUIRED_MARKERS = [
-    "integrations/*",
-    "!integrations/",
-    "!integrations/README.md",
+    "integrations/",
     ".manual_verify/",
     ".pytest_tmp/",
     ".test_tmp/",
@@ -95,10 +75,6 @@ SOURCE_MARKDOWN_GLOBS = [
 
 LINK_CHECK_GLOBS = [
     "README.md",
-    "CHANGELOG.md",
-    "CONTRIBUTING.md",
-    "SECURITY.md",
-    "COMMIT_STYLE.md",
     "AGENTS.md",
     "CLAUDE.md",
     "agents/*.md",
@@ -203,7 +179,11 @@ def split_csv_like(value: str) -> list[str]:
 def find_repo_root(start_dir: Path) -> Path | None:
     current = start_dir.resolve()
     for candidate in (current, *current.parents):
-        if (candidate / ".claude-plugin" / "plugin.json").exists() and (candidate / "commands" / "opc").is_dir():
+        has_plugin = (
+            (candidate / ".claude-plugin" / "plugin.json").exists()
+            or (candidate / ".codex-plugin" / "plugin.json").exists()
+        )
+        if has_plugin and (candidate / "commands" / "opc").is_dir():
             return candidate
     return None
 
@@ -267,24 +247,6 @@ def cleanup_transient_workspace_paths(repo_root: Path, paths: list[Path]) -> tup
             errors.append(f"{candidate.name}: {exc}")
 
     return removed, errors
-
-
-def validate_generated_artifact_policy(repo_root: Path) -> list[str]:
-    return validate_required_markers(
-        repo_root,
-        GENERATED_ARTIFACT_POLICY_FILE,
-        GENERATED_ARTIFACT_POLICY_MARKERS,
-        label="generated artifact policy",
-    )
-
-
-def validate_directory_map_coverage(repo_root: Path) -> list[str]:
-    return validate_required_markers(
-        repo_root,
-        DIRECTORY_MAP_FILE,
-        DIRECTORY_MAP_REQUIRED_MARKERS,
-        label="directory map",
-    )
 
 
 def validate_gitignore_workspace_policy(repo_root: Path) -> list[str]:
@@ -589,6 +551,22 @@ def validate_frontmatter_files(repo_root: Path) -> list[str]:
 
 
 def validate_plugin_manifest(repo_root: Path) -> list[str]:
+    errors: list[str] = []
+    errors.extend(validate_claude_plugin_manifest(repo_root))
+    errors.extend(validate_codex_plugin_manifest(repo_root))
+    return errors
+
+
+def validate_manifest_path_entry(repo_root: Path, plugin_file: Path, entry: Any) -> list[str]:
+    if not isinstance(entry, str) or not entry.strip():
+        return [f"{plugin_file}: path entry must be a non-empty string"]
+    target = repo_root / entry.lstrip("./")
+    if not target.exists():
+        return [f"{plugin_file}: missing referenced path {entry}"]
+    return []
+
+
+def validate_claude_plugin_manifest(repo_root: Path) -> list[str]:
     plugin_file = repo_root / ".claude-plugin" / "plugin.json"
     payload = read_json(plugin_file)
     errors: list[str] = []
@@ -600,9 +578,7 @@ def validate_plugin_manifest(repo_root: Path) -> list[str]:
         errors.append(f"{plugin_file}: agents must be a list")
     else:
         for entry in agents:
-            target = repo_root / str(entry).lstrip("./")
-            if not target.exists():
-                errors.append(f"{plugin_file}: missing referenced path {entry}")
+            errors.extend(validate_manifest_path_entry(repo_root, plugin_file, entry))
 
     hooks = payload.get("hooks")
     if hooks is not None:
@@ -610,9 +586,58 @@ def validate_plugin_manifest(repo_root: Path) -> list[str]:
             errors.append(f"{plugin_file}: hooks must be a list")
         else:
             for entry in hooks:
-                target = repo_root / str(entry).lstrip("./")
-                if not target.exists():
-                    errors.append(f"{plugin_file}: missing referenced path {entry}")
+                errors.extend(validate_manifest_path_entry(repo_root, plugin_file, entry))
+    return errors
+
+
+def validate_codex_plugin_manifest(repo_root: Path) -> list[str]:
+    plugin_file = repo_root / ".codex-plugin" / "plugin.json"
+    payload = read_json(plugin_file)
+    errors: list[str] = []
+    if not payload:
+        return [f"{plugin_file}: invalid JSON"]
+
+    for field in ("name", "version", "description"):
+        value = payload.get(field)
+        if not isinstance(value, str) or not value.strip():
+            errors.append(f"{plugin_file}: missing {field}")
+
+    skills = payload.get("skills")
+    if skills is None:
+        errors.append(f"{plugin_file}: missing skills")
+    else:
+        errors.extend(validate_manifest_path_entry(repo_root, plugin_file, skills))
+
+    for field in ("hooks", "mcpServers", "apps"):
+        value = payload.get(field)
+        if value is not None:
+            errors.extend(validate_manifest_path_entry(repo_root, plugin_file, value))
+
+    interface = payload.get("interface")
+    if not isinstance(interface, dict):
+        errors.append(f"{plugin_file}: interface must be an object")
+    else:
+        for field in ("displayName", "shortDescription", "category"):
+            value = interface.get(field)
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f"{plugin_file}: interface.{field} is required")
+
+        capabilities = interface.get("capabilities")
+        if capabilities is not None and not isinstance(capabilities, list):
+            errors.append(f"{plugin_file}: interface.capabilities must be a list")
+
+        for field in ("composerIcon", "logo"):
+            value = interface.get(field)
+            if value is not None:
+                errors.extend(validate_manifest_path_entry(repo_root, plugin_file, value))
+
+        screenshots = interface.get("screenshots")
+        if screenshots is not None:
+            if not isinstance(screenshots, list):
+                errors.append(f"{plugin_file}: interface.screenshots must be a list")
+            else:
+                for entry in screenshots:
+                    errors.extend(validate_manifest_path_entry(repo_root, plugin_file, entry))
     return errors
 
 

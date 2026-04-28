@@ -46,11 +46,7 @@ It is not yet published in a Claude Code-discoverable marketplace, so do **not**
 /plugin install superopc
 ```
 
-When the separate marketplace repository is live and verified, the expected end-user flow will be:
-```text
-/plugin marketplace add gjts/superopc-marketplace
-/plugin install superopc@superopc-marketplace
-```
+Do not use or document a marketplace install command until the separate marketplace repository is live and verified.
 
 ### Generate integrations for other tools
 ```bash
@@ -65,7 +61,7 @@ python scripts/convert.py --help
 
 ### Development reality for this repo
 
-- `Python 3.11+` is required for `scripts/convert.py`, `scripts/opc_*.py`, and the hook scripts (`CONTRIBUTING.md`).
+- `Python 3.11+` is required for `scripts/convert.py`, `scripts/opc_*.py`, and the hook scripts.
 - There is currently **no repo-root `package.json`, Makefile, or dedicated build/lint/test script** for this repository itself.
 - There is therefore **no repo-specific single-test command** to document right now.
 - Validation is mainly done by checking:
@@ -189,12 +185,8 @@ The repo docs describe these hooks as **advisory-first**: most warn rather than 
 - `agents/`
 - `commands/opc/`
 
-…and writes derived artifacts to `integrations/<tool>/` for:
-- Cursor
-- Windsurf
-- Gemini CLI
-- OpenCode
-- OpenClaw
+…and writes derived artifacts to `integrations/<tool>/` for 11 targets:
+Claude Code, Cursor, Windsurf, Copilot, Gemini CLI, OpenCode, Codex, Trae, Cline, Augment Code, and OpenClaw.
 
 `integrations/` should be treated as **generated output**, not the canonical source of truth.
 
@@ -206,11 +198,11 @@ The plugin manifest should stay aligned with the full shipped agent set in `agen
 
 ## Workflow artifacts and expectations
 
-- `/opc-plan` runs the unified planning flow (Phase 0-5 in `opc-planner`, covering both clarification and decomposition) and outputs a `PLAN.md` artifact (the command docs refer to `docs/plans/`).
+- `/opc-plan` runs the unified planning flow (Phase 0-5 in `opc-planner`, covering both clarification and decomposition) and outputs a `PLAN.md` artifact.
 - `/opc-build` consumes a `PLAN.md`, executes tasks with TDD, and produces `SUMMARY.md`.
 - `/opc-ship` verifies tests, summarizes changes, and handles merge / PR / keep / discard flows.
 - `/opc-health` validates `.opc` integrity, requirements coverage, summary traceability, plugin / hook wiring, and internal markdown links; `--repair` remains a guarded local-runtime fix path.
-- `/opc` is the natural-language entry; it dispatches `workflow-modes` skill which routes among 7 modes (watch / assist / cruise / fast / quick / discuss / explore). The reduced-ceremony quick path (no formal `PLAN.md`, still keeps TDD + atomic-task execution) is now reached via `/opc <natural-language>` → orchestrator → quick mode rather than a dedicated `/opc-quick` command.
+- `/opc` is the natural-language entry; it dispatches `workflow-modes` skill which routes among 7 modes (autonomous / discuss / explore / fast / quick / do / next). The reduced-ceremony quick path (no formal `PLAN.md`, still keeps TDD + atomic-task execution) is reached via `/opc <natural-language>` → orchestrator → quick mode rather than a dedicated `/opc-quick` command.
 - `/opc-debug` (v1.4.2): dispatches `debugging` skill → `opc-debugger` for 4-stage root-cause analysis.
 - `/opc-security` (v1.4.2): dispatches `security-review` skill → `opc-security-auditor` for OWASP Top 10 audit.
 - `/opc-business` (v1.4.2): dispatches `business-advisory` skill → `opc-business-advisor` with Anti-Build-Trap HARD-GATE.

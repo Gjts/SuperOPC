@@ -19,7 +19,7 @@ version: 1.4.1
 ## 派发
 使用 Task 工具派发 `opc-planner` agent。
 - **输入：** 用户需求、已批准设计、spec 路径或当前问题上下文
-- **输出：** `docs/plans/YYYY-MM-DD-<feature>.md`
+- **输出：** `.opc/phases/<phase-slug>/NN-PLAN.md`
 ## 边界
 - 本 skill 不执行 workflow；workflow 唯一事实源是 `agents/opc-planner.md`
 - PLAN 模板在 `references/plan-template.md`

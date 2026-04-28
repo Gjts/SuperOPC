@@ -8,8 +8,10 @@ import pytest
 from engine.agent_runtime import (
     AGENT_RUNTIME_CLAUDE_CODE,
     AGENT_RUNTIME_CODEX,
+    AGENT_RUNTIME_CODEX_EXEC,
     CODEX_AGENT_ROLE_MAP,
     codex_agent_role,
+    codex_command,
     detect_agent_runtime,
 )
 from engine.cruise_controller import ACTION_AGENT_MAP
@@ -24,6 +26,10 @@ def test_detect_agent_runtime_prefers_explicit_override() -> None:
     }
 
     assert detect_agent_runtime(env) == AGENT_RUNTIME_CLAUDE_CODE
+
+
+def test_detect_agent_runtime_supports_explicit_codex_exec_override() -> None:
+    assert detect_agent_runtime({"SUPEROPC_AGENT_RUNTIME": "codex-exec"}) == AGENT_RUNTIME_CODEX_EXEC
 
 
 def test_detect_agent_runtime_auto_detects_codex_markers() -> None:
@@ -80,3 +86,30 @@ def test_codex_role_map_covers_dispatchable_agents() -> None:
 def test_codex_agent_role_rejects_unknown_agents() -> None:
     with pytest.raises(ValueError, match="No Codex native role mapping"):
         codex_agent_role("opc-new-unmapped-agent")
+
+
+def test_codex_command_prefers_windows_native_vendor_binary(monkeypatch, tmp_path: Path) -> None:
+    wrapper = tmp_path / "npm" / "codex.CMD"
+    native = (
+        wrapper.parent
+        / "node_modules"
+        / "@openai"
+        / "codex"
+        / "node_modules"
+        / "@openai"
+        / "codex-win32-x64"
+        / "vendor"
+        / "x86_64-pc-windows-msvc"
+        / "codex"
+        / "codex.exe"
+    )
+    native.parent.mkdir(parents=True)
+    wrapper.parent.mkdir(parents=True, exist_ok=True)
+    wrapper.write_text("@echo off\n", encoding="utf-8")
+    native.write_text("", encoding="utf-8")
+
+    monkeypatch.delenv("SUPEROPC_CODEX_BIN", raising=False)
+    monkeypatch.setattr("engine.agent_runtime.os.name", "nt")
+    monkeypatch.setattr("engine.agent_runtime.shutil.which", lambda name: str(wrapper))
+
+    assert codex_command() == str(native)

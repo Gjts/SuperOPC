@@ -2,9 +2,8 @@
 """Aggregate ``.opc/routing/*.jsonl`` logs for Phase A observation window.
 
 The Phase A intent router (``scripts/engine/intent_router.py``) appends a
-JSONL record per ``route()`` call. After a 2-week observation window we
-need four hard data points to lock Phase B decisions (D1-D4 listed in
-``docs/plans/2026-05-05-skill-driven-runtime-phase-b.md``):
+JSONL record per ``route()`` call. The aggregate gives hard data points for
+L2/L3 routing rollout decisions:
 
 * **D1** — L2 embedding model: required iff ``L3 + fallback`` rate > 15 %.
 * **D4** — embedding load timing: *lazy* is safe iff ``L1`` rate > 70 %.
@@ -40,7 +39,7 @@ from typing import Any, Iterable, Iterator
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_ROUTING_DIR = REPO_ROOT / ".opc" / "routing"
 
-# Phase B decision thresholds (see docs/plans/2026-05-05-...-phase-b.md §D1/D4).
+# L2/L3 decision thresholds for routing rollout.
 L3_FALLBACK_JUSTIFIES_L2 = 0.15  # L3+fallback rate above which L2 is worth the cost
 L1_DOMINANT_FOR_LAZY = 0.70      # L1 hit rate above which lazy-load is safe
 LOW_CONFIDENCE_CUTOFF = 0.2      # below which a route is considered miss-ish

@@ -75,6 +75,23 @@ def _write_recording_fake_claude(bin_dir: Path, marker: Path, exit_code: int = 0
     script.chmod(0o755)
 
 
+def _write_recording_fake_codex(bin_dir: Path, marker: Path, exit_code: int = 0) -> None:
+    if os.name == "nt":
+        script = bin_dir / "codex.cmd"
+        script.write_text(
+            f"@echo off\n>> \"{marker}\" echo codex-called\necho fake codex ok\nexit /b {exit_code}\n",
+            encoding="utf-8",
+        )
+        return
+
+    script = bin_dir / "codex"
+    script.write_text(
+        f"#!/usr/bin/env sh\nprintf 'codex-called\\n' >> \"{marker}\"\necho fake codex ok\nexit {exit_code}\n",
+        encoding="utf-8",
+    )
+    script.chmod(0o755)
+
+
 def test_dispatch_skill_dry_run_returns_dispatch_metadata() -> None:
     result = _run_cli("dispatch", "--skill", "planning", "--dry-run", "--", "用户登录")
 
@@ -213,6 +230,41 @@ def test_dispatch_non_dry_run_uses_codex_runtime_without_calling_claude() -> Non
     assert not marker.exists()
     assert not (project / ".claude").exists()
     assert not (project / ".codex").exists()
+
+
+def test_dispatch_non_dry_run_uses_codex_exec_runtime_to_call_codex() -> None:
+    root = _scratch_path("codex-exec-runtime-success")
+    fake_bin = root / "bin"
+    fake_bin.mkdir()
+    marker = root / "codex-called.txt"
+    _write_recording_fake_codex(fake_bin, marker)
+    project = root / "project"
+    project.mkdir()
+    env = os.environ.copy()
+    env["SUPEROPC_AGENT_RUNTIME"] = "codex-exec"
+    env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
+
+    result = _run_cli(
+        "--cwd",
+        str(project),
+        "dispatch",
+        "--skill",
+        "planning",
+        "--",
+        "plan login",
+        env=env,
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload["success"] is True
+    assert payload["executed"] is True
+    assert payload["runtime"] == "codex-exec"
+    assert payload["dispatch_mode"] == "codex-exec"
+    assert payload["agent"] == "opc-planner"
+    assert payload["stdout"].strip() == "fake codex ok"
+    assert marker.exists()
+    assert not (project / ".claude").exists()
 
 
 def test_dispatch_non_dry_run_failure_exits_nonzero_in_claude_code_runtime() -> None:

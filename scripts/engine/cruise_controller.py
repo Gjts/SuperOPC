@@ -29,7 +29,15 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from engine.agent_runtime import AGENT_RUNTIME_CODEX, build_codex_handoff, detect_agent_runtime
+from engine.agent_runtime import (
+    AGENT_RUNTIME_CODEX,
+    AGENT_RUNTIME_CODEX_EXEC,
+    build_codex_handoff,
+    build_codex_exec_prompt,
+    codex_command,
+    codex_exec_env,
+    detect_agent_runtime,
+)
 from engine.decision_engine import ActionType, ActionZone, Decision, DecisionEngine
 from engine.event_bus import EventBus, get_event_bus
 from engine.notification import NotificationDispatcher
@@ -331,6 +339,7 @@ class CruiseController:
             source="cruise_controller",
         )
 
+        runtime = "unknown"
         try:
             runtime = detect_agent_runtime()
             if runtime == AGENT_RUNTIME_CODEX:
@@ -350,6 +359,41 @@ class CruiseController:
                 )
                 return handoff
 
+            if runtime == AGENT_RUNTIME_CODEX_EXEC:
+                codex_prompt = build_codex_exec_prompt(
+                    agent=agent,
+                    prompt=prompt,
+                    source="cruise-controller",
+                )
+                proc = subprocess.run(
+                    [
+                        codex_command(),
+                        "exec",
+                        "-C",
+                        str(self._opc_dir.parent),
+                        "--skip-git-repo-check",
+                        "--full-auto",
+                        "-",
+                    ],
+                    capture_output=True,
+                    input=codex_prompt,
+                    text=True,
+                    timeout=AGENT_EXECUTION_TIMEOUT_SECONDS,
+                    cwd=str(self._opc_dir.parent),
+                    env=codex_exec_env(),
+                )
+                return {
+                    "success": proc.returncode == 0,
+                    "returncode": proc.returncode,
+                    "agent": agent,
+                    "stdout": proc.stdout[:2000] if proc.stdout else "",
+                    "stderr": proc.stderr[:500] if proc.stderr else "",
+                    "dispatch_mode": "codex-exec",
+                    "runtime": runtime,
+                    "executed": proc.returncode == 0,
+                    "status": "completed" if proc.returncode == 0 else "failed",
+                }
+
             proc = subprocess.run(
                 ["claude", "--print", "--agent", agent, prompt],
                 capture_output=True,
@@ -367,6 +411,14 @@ class CruiseController:
                 "runtime": runtime,
             }
         except FileNotFoundError:
+            if runtime == AGENT_RUNTIME_CODEX_EXEC:
+                return {
+                    "success": False,
+                    "agent": agent,
+                    "error": "'codex' CLI not found - cannot dispatch agent.",
+                    "dispatch_mode": "codex-exec",
+                    "runtime": runtime,
+                }
             return {
                 "success": False,
                 "agent": agent,

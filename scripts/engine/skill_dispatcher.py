@@ -13,14 +13,20 @@ import re
 import shutil
 import subprocess
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from engine.agent_runtime import (
     AGENT_RUNTIME_CODEX,
+    AGENT_RUNTIME_CODEX_EXEC,
     build_codex_handoff,
+    build_codex_exec_prompt,
+    codex_command,
+    codex_exec_env,
     detect_agent_runtime,
 )
+from engine.event_bus import EventBus, get_event_bus
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_REGISTRY = REPO_ROOT / "skills" / "registry.json"
@@ -195,6 +201,60 @@ def _claude_command() -> str:
     return shutil.which("claude") or "claude"
 
 
+def _project_event_bus(cwd: Path) -> EventBus | None:
+    opc_dir = cwd / ".opc"
+    if not opc_dir.is_dir():
+        return None
+    return get_event_bus(opc_dir / "events")
+
+
+def _publish_dispatch_event(
+    bus: EventBus | None,
+    topic: str,
+    *,
+    target: DispatchTarget,
+    runtime: str,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    if bus is None:
+        return
+
+    payload: dict[str, Any] = {
+        "skill_id": target.skill_id,
+        "agent": target.agent,
+        "runtime": runtime,
+        "source_command": target.source_command,
+        "sub_scenario": target.sub_scenario,
+        "prompt_present": bool(target.prompt.strip()),
+    }
+    if extra:
+        payload.update(extra)
+    bus.publish(topic, payload, source="skill_dispatcher")
+
+
+def _persist_handoff(cwd: Path, payload: dict[str, Any]) -> str | None:
+    opc_dir = cwd / ".opc"
+    if not opc_dir.is_dir():
+        return None
+
+    handoff_dir = opc_dir / "agent-handoffs"
+    handoff_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    skill_id = _safe_slug(str(payload.get("skill_id") or "skill"))
+    agent = _safe_slug(str(payload.get("agent") or "agent"))
+    path = handoff_dir / f"{timestamp}-{skill_id}-{agent}.json"
+
+    saved = dict(payload)
+    saved["generatedAt"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    path.write_text(json.dumps(saved, ensure_ascii=False, indent=2), encoding="utf-8")
+    return str(path)
+
+
+def _safe_slug(value: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", value).strip("-")
+    return slug or "item"
+
+
 def dispatch_to_agent(
     *,
     skill_id: str | None = None,
@@ -222,9 +282,12 @@ def dispatch_to_agent(
         return payload
 
     run_cwd_path = (cwd or REPO_ROOT).resolve()
+    bus = _project_event_bus(run_cwd_path)
     try:
         runtime = detect_agent_runtime()
         payload["runtime"] = runtime
+        _publish_dispatch_event(bus, "skill.routed", target=target, runtime=runtime)
+        _publish_dispatch_event(bus, "agent.workflow.requested", target=target, runtime=runtime)
         if runtime == AGENT_RUNTIME_CODEX:
             payload.update(
                 build_codex_handoff(
@@ -234,9 +297,88 @@ def dispatch_to_agent(
                     cwd=run_cwd_path,
                 )
             )
+            handoff_file = _persist_handoff(run_cwd_path, payload)
+            if handoff_file:
+                payload["handoff_file"] = handoff_file
+            _publish_dispatch_event(
+                bus,
+                "agent.workflow.handoff",
+                target=target,
+                runtime=runtime,
+                extra={
+                    "codex_agent": payload.get("codex_agent"),
+                    "handoff_file": handoff_file,
+                    "handoff_only": True,
+                },
+            )
+            return payload
+
+        if runtime == AGENT_RUNTIME_CODEX_EXEC:
+            payload["dispatch_mode"] = "codex-exec"
+            _publish_dispatch_event(
+                bus,
+                "agent.workflow.started",
+                target=target,
+                runtime=runtime,
+                extra={"dispatch_mode": "codex-exec"},
+            )
+            codex_prompt = build_codex_exec_prompt(
+                agent=target.agent,
+                prompt=agent_prompt,
+                source="skill-dispatcher",
+            )
+            proc = subprocess.run(
+                [
+                    codex_command(),
+                    "exec",
+                    "-C",
+                    str(run_cwd_path),
+                    "--skip-git-repo-check",
+                    "--full-auto",
+                    "-",
+                ],
+                capture_output=True,
+                input=codex_prompt,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=timeout_seconds,
+                cwd=str(run_cwd_path),
+                env=codex_exec_env(),
+            )
+            stdout = proc.stdout or ""
+            stderr = proc.stderr or ""
+            payload.update(
+                {
+                    "success": proc.returncode == 0,
+                    "status": "completed" if proc.returncode == 0 else "failed",
+                    "executed": proc.returncode == 0,
+                    "returncode": proc.returncode,
+                    "stdout": stdout,
+                    "stderr": stderr,
+                }
+            )
+            _publish_dispatch_event(
+                bus,
+                "agent.workflow.completed" if payload["success"] else "agent.workflow.failed",
+                target=target,
+                runtime=runtime,
+                extra={
+                    "dispatch_mode": "codex-exec",
+                    "returncode": proc.returncode,
+                    "success": payload["success"],
+                },
+            )
             return payload
 
         payload.update(ensure_agent_available(target.agent, run_cwd_path))
+        _publish_dispatch_event(
+            bus,
+            "agent.workflow.started",
+            target=target,
+            runtime=runtime,
+            extra={"dispatch_mode": "agent"},
+        )
         proc = subprocess.run(
             [_claude_command(), "--print", "--agent", target.agent, agent_prompt],
             capture_output=True,
@@ -259,13 +401,34 @@ def dispatch_to_agent(
         )
         if proc.returncode == 0 and empty_stdout:
             payload["error"] = "Claude returned no output"
+        _publish_dispatch_event(
+            bus,
+            "agent.workflow.completed" if payload["success"] else "agent.workflow.failed",
+            target=target,
+            runtime=runtime,
+            extra={
+                "dispatch_mode": "agent",
+                "returncode": proc.returncode,
+                "success": payload["success"],
+                "error": payload.get("error"),
+            },
+        )
         return payload
     except FileNotFoundError:
+        runtime = payload.get("runtime", "unknown")
+        tool = "codex" if runtime == AGENT_RUNTIME_CODEX_EXEC else "claude"
         payload.update(
             {
                 "success": False,
-                "error": "'claude' CLI not found - cannot dispatch agent",
+                "error": f"'{tool}' CLI not found - cannot dispatch agent",
             }
+        )
+        _publish_dispatch_event(
+            bus,
+            "agent.workflow.failed",
+            target=target,
+            runtime=payload.get("runtime", "unknown"),
+            extra={"dispatch_mode": payload.get("dispatch_mode"), "error": payload["error"]},
         )
         return payload
     except subprocess.TimeoutExpired:
@@ -275,6 +438,13 @@ def dispatch_to_agent(
                 "error": f"Agent {target.agent} timed out after {timeout_seconds}s",
             }
         )
+        _publish_dispatch_event(
+            bus,
+            "agent.workflow.failed",
+            target=target,
+            runtime=payload.get("runtime", "unknown"),
+            extra={"dispatch_mode": payload.get("dispatch_mode"), "error": payload["error"]},
+        )
         return payload
     except Exception as exc:
         payload.update(
@@ -282,5 +452,12 @@ def dispatch_to_agent(
                 "success": False,
                 "error": str(exc),
             }
+        )
+        _publish_dispatch_event(
+            bus,
+            "agent.workflow.failed",
+            target=target,
+            runtime=payload.get("runtime", "unknown"),
+            extra={"dispatch_mode": payload.get("dispatch_mode"), "error": payload["error"]},
         )
         return payload

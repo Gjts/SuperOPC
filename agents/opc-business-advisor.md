@@ -127,7 +127,7 @@ model: sonnet
 ## 🔗 关联
 
 - **入口：** `skills/business/advisory/SKILL.md`（dispatcher）
-- **方法论源：** `references/business/*.md`（20 个一人公司 playbook）
+- **方法论源：** `references/business/*.md`（19 个一人公司 playbook）+ 内置 Anti-Build-Trap 硬门
 - **下游 domain agents：** opc-pricing-analyst / opc-seo-specialist / opc-content-creator / opc-growth-hacker
 - **下游 core agents：** opc-planner（Anti-Build-Trap 通过后进入产品规划）
 - **上游 skill：** 若涉及调研，派发 opc-researcher

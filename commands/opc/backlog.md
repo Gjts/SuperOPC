@@ -1,6 +1,6 @@
 ---
 name: opc-backlog
-description: Park an idea in .opc/backlog without promoting it to the active roadmap
+description: Park an idea in .opc/todos without promoting it to the active roadmap
 ---
 # /opc-backlog
 待规划池入口。

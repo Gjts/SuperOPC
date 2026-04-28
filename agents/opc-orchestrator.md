@@ -85,7 +85,7 @@ model: sonnet
 
 ### 编排规则
 
-1. **读取项目状态** —— 检查 `.opc/STATE.md`、`docs/plans/`、`docs/specs/` 了解当前进度
+1. **读取项目状态** —— 检查 `.opc/STATE.md`、`.opc/REQUIREMENTS.md`、`.opc/phases/` 了解当前进度
 2. **判断下一步** —— 根据状态决定派发哪个 dispatcher skill 或 agent
 3. **派发子代理** —— 每任务创建新子代理上下文（参考 `Skill("agent-dispatch")`）
 4. **监控进度** —— 跟踪 TodoWrite 状态

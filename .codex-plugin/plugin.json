@@ -1,0 +1,47 @@
+{
+  "name": "superopc",
+  "version": "1.4.2",
+  "description": "SuperOPC - The One-Person Company Operating System. Agent workflows, skills, commands, and multi-runtime exports for solo founders who build, ship, and grow.",
+  "author": {
+    "name": "Gjts",
+    "url": "https://github.com/gjts"
+  },
+  "homepage": "https://github.com/gjts/superopc",
+  "repository": "https://github.com/gjts/superopc",
+  "license": "MIT",
+  "keywords": [
+    "one-person-company",
+    "solo-founder",
+    "skills",
+    "agents",
+    "workflows",
+    "tdd",
+    "debugging",
+    "market-research",
+    "ai-coding",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "SuperOPC",
+    "shortDescription": "Agent workflows for one-person companies",
+    "longDescription": "Use SuperOPC to plan, build, review, ship, debug, audit, research, and operate solo-founder projects with dispatcher skills and specialized agent workflows.",
+    "developerName": "Gjts",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Plan my next product feature.",
+      "Review this repo with SuperOPC.",
+      "Run a bounded solo-founder workflow."
+    ],
+    "websiteURL": "https://github.com/gjts/superopc",
+    "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+    "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}

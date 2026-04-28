@@ -55,7 +55,7 @@ SuperOPC 的 PLAN.md 使用 XML + Markdown 混合结构。`<opc-plan>` 包裹的
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | `<metadata>.goal` | 是 | 一句话概括这份 PLAN 要交付什么 |
-| `<metadata>.spec-url` | 建议 | 指向 `docs/specs/` 下的设计规格，便于溯源 |
+| `<metadata>.spec-url` | 建议 | 指向外部规格、需求来源或 `.opc/` 内相关文件，便于溯源 |
 | `<metadata>.estimated-time` | 建议 | 形如 `4-6h`，供一人公司排期 |
 | `<wave>.id` | 是 | 从 `1` 开始递增，语义等同波次序号 |
 | `<wave>.description` | 是 | 一句话说明这个波次在整体中的位置 |

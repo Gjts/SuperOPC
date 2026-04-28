@@ -20,8 +20,6 @@ from quality_helpers import (
     merge_summaries,
     resolve_targets,
     summarize_checks,
-    validate_directory_map_coverage,
-    validate_generated_artifact_policy,
     validate_frontmatter_files,
     validate_gitignore_workspace_policy,
     validate_hook_registry,
@@ -217,50 +215,6 @@ def validate_repo_checks(start_dir: Path, repair: bool = False) -> dict[str, Any
                 "pass",
                 "Workspace ignore policy covers generated and transient directories.",
                 files=[str(repo_root / ".gitignore")],
-            )
-        )
-
-    directory_map_errors = validate_directory_map_coverage(repo_root)
-    if directory_map_errors:
-        checks.append(
-            make_check(
-                "repo.directory-map",
-                "fail",
-                "Directory map is missing required top-level directory coverage.",
-                severity="error",
-                details=directory_map_errors,
-                files=[str(repo_root / "docs" / "DIRECTORY-MAP.md")],
-            )
-        )
-    else:
-        checks.append(
-            make_check(
-                "repo.directory-map",
-                "pass",
-                "Directory map documents the key source, generated, and local-runtime directories.",
-                files=[str(repo_root / "docs" / "DIRECTORY-MAP.md")],
-            )
-        )
-
-    generated_artifact_policy_errors = validate_generated_artifact_policy(repo_root)
-    if generated_artifact_policy_errors:
-        checks.append(
-            make_check(
-                "repo.generated-artifacts",
-                "fail",
-                "Generated artifact policy for integrations/ is missing or incomplete.",
-                severity="error",
-                details=generated_artifact_policy_errors,
-                files=[str(repo_root / "integrations" / "README.md")],
-            )
-        )
-    else:
-        checks.append(
-            make_check(
-                "repo.generated-artifacts",
-                "pass",
-                "Generated artifact policy for integrations/ is documented and points to scripts/convert.py.",
-                files=[str(repo_root / "integrations" / "README.md")],
             )
         )
 

@@ -92,7 +92,7 @@ PLAN.md 草稿完成后，**必须**通过两道门才能交付：
 
 ### Phase 5: 输出
 
-**最终 PLAN.md 保存到** `docs/plans/YYYY-MM-DD-<feature>.md`，结构：
+**最终 PLAN.md 保存到** `.opc/phases/<phase-slug>/NN-PLAN.md`，结构：
 
 1. 机器可读主体：`<opc-plan>` XML 包裹的波次化任务
 2. `## OPC Plan Check` — plan-checker 输出

@@ -17,7 +17,7 @@ Tiers:
 If all tiers miss, `using-superopc` is returned with confidence 0 so the
 skill-first bootstrap still runs.
 
-Design: docs/adr/0002-intent-router-tiers.md
+Design: skills/registry.json, AGENTS.md, and the router tests
 Tests:  tests/engine/test_intent_router.py
 """
 from __future__ import annotations

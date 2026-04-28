@@ -7,6 +7,7 @@ into pytest-native functions with proper fixtures and assertions.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import threading
 import time
@@ -535,6 +536,42 @@ class TestDAGEngine:
         assert "opc-executor" in task.result
         assert "executor" in task.result
 
+    def test_run_agent_in_codex_exec_runtime_runs_codex_cli(self, tmp_path: Path, monkeypatch):
+        project_root = tmp_path / "project"
+        project_root.mkdir()
+        engine = DAGEngine(project_root=project_root)
+        task = DTask(id="t1", title="Task", action="Do it", agent="opc-executor")
+        captured: dict[str, Any] = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            captured["cwd"] = kwargs.get("cwd")
+            captured["env"] = kwargs.get("env")
+            captured["stdin"] = kwargs.get("stdin")
+            captured["input"] = kwargs.get("input")
+
+            class FakeProc:
+                returncode = 0
+                stdout = "codex dag ok"
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "codex-exec")
+        monkeypatch.setattr("engine.dag_engine.subprocess.run", fake_run)
+
+        assert engine._run_agent(task, ExecutionResult(plan_id="p", goal="g")) is True
+        cmd = captured["cmd"]
+        assert cmd[1:4] == ["exec", "-C", str(project_root)]
+        assert "--full-auto" in cmd
+        assert cmd[-1] == "-"
+        assert "agents/opc-executor.md" in captured["input"]
+        assert "Task: Task" in captured["input"]
+        assert captured["cwd"] == str(project_root)
+        assert captured["env"]["SUPEROPC_AGENT_RUNTIME"] == "codex"
+        assert captured["stdin"] is None
+        assert task.result == "codex dag ok"
+
     def test_execute_in_codex_runtime_stops_at_handoff_without_retry(self, tmp_path: Path, monkeypatch):
         project_root = tmp_path / "project"
         project_root.mkdir()
@@ -813,6 +850,45 @@ class TestCruiseDispatchContract:
         assert result["agent"] == "opc-planner"
         assert result["codex_agent"] == "planner"
         assert result["handoff"]["superopc_agent"] == "opc-planner"
+
+    def test_plan_action_in_codex_exec_runtime_runs_codex_cli(self, tmp_path: Path, monkeypatch):
+        cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
+        captured: dict[str, Any] = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            captured["cwd"] = kwargs.get("cwd")
+            captured["env"] = kwargs.get("env")
+            captured["stdin"] = kwargs.get("stdin")
+            captured["input"] = kwargs.get("input")
+
+            class FakeProc:
+                returncode = 0
+                stdout = "codex cruise ok"
+                stderr = ""
+
+            return FakeProc()
+
+        monkeypatch.setenv("SUPEROPC_AGENT_RUNTIME", "codex-exec")
+        monkeypatch.setattr("engine.cruise_controller.subprocess.run", fake_run)
+
+        result = cc._dispatch_command(self._make_decision(ActionType.PLAN, "/opc-plan"))
+
+        cmd = captured["cmd"]
+        assert cmd[1:4] == ["exec", "-C", str(tmp_path.parent)]
+        assert "--full-auto" in cmd
+        assert cmd[-1] == "-"
+        assert "agents/opc-planner.md" in captured["input"]
+        assert "Suggested command equivalent: /opc-plan" in captured["input"]
+        assert captured["cwd"] == str(tmp_path.parent)
+        assert captured["env"]["SUPEROPC_AGENT_RUNTIME"] == "codex"
+        assert captured["stdin"] is None
+        assert result["success"] is True
+        assert result["executed"] is True
+        assert result["runtime"] == "codex-exec"
+        assert result["dispatch_mode"] == "codex-exec"
+        assert result["agent"] == "opc-planner"
+        assert result["stdout"] == "codex cruise ok"
 
     def test_heartbeat_in_codex_runtime_counts_handoff_without_failure(self, tmp_path: Path, monkeypatch):
         cc = CruiseController(tmp_path, mode=CruiseMode.CRUISE)
@@ -1253,14 +1329,14 @@ class TestContextAssembler:
 
 class TestInstinctGenerator:
     def test_no_patterns_returns_empty(self, tmp_path: Path):
-        from instinct_generator import InstinctGenerator
+        from engine.instinct_generator import InstinctGenerator
         store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
         gen = InstinctGenerator(repo_root=tmp_path, store=store, bus=EventBus())
         result = gen.run(min_occurrences=3)
         assert result == []
 
     def test_generates_instincts_from_observations(self, tmp_path: Path):
-        from instinct_generator import InstinctGenerator
+        from engine.instinct_generator import InstinctGenerator
         store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
         obs_file = tmp_path / "learn" / "observations.jsonl"
         obs_file.parent.mkdir(parents=True, exist_ok=True)
@@ -1278,7 +1354,7 @@ class TestInstinctGenerator:
         assert (rules_dir / "instinct-index.json").exists()
 
     def test_dry_run_writes_no_files(self, tmp_path: Path):
-        from instinct_generator import InstinctGenerator
+        from engine.instinct_generator import InstinctGenerator
         store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
         obs_file = tmp_path / "learn" / "observations.jsonl"
         obs_file.parent.mkdir(parents=True, exist_ok=True)
@@ -1291,7 +1367,7 @@ class TestInstinctGenerator:
         assert not (tmp_path / "rules" / "personal").exists()
 
     def test_tdd_ratio_detection(self, tmp_path: Path):
-        from instinct_generator import InstinctGenerator
+        from engine.instinct_generator import InstinctGenerator
         store = LearningStore(store_dir=tmp_path / "learn", bus=EventBus())
         obs_file = tmp_path / "learn" / "observations.jsonl"
         obs_file.parent.mkdir(parents=True, exist_ok=True)

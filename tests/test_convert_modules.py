@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import convert_renderers
@@ -79,3 +80,18 @@ def test_adapt_body_rewrites_paths_and_tool_names_for_codex() -> None:
     assert "~/.codex/skills/demo/" in adapted
     assert ".codex/commands/opc/" in adapted
     assert "Codex can ask-user before loading prompt." in adapted
+
+
+def test_convert_codex_writes_plugin_manifest(tmp_path: Path) -> None:
+    source = make_source(name="Planning")
+
+    count = convert_renderers.convert_codex([source], tmp_path)
+
+    manifest_file = tmp_path / "codex" / ".codex-plugin" / "plugin.json"
+    payload = json.loads(manifest_file.read_text(encoding="utf-8"))
+    assert count == 1
+    assert payload["name"] == "superopc"
+    assert payload["version"] == convert_renderers.PLUGIN_VERSION
+    assert payload["skills"] == "./skills/"
+    assert payload["interface"]["displayName"] == "SuperOPC"
+    assert payload["interface"]["category"] == "Coding"

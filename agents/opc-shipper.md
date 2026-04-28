@@ -114,8 +114,8 @@ PR body 模板：
 [如何回滚]
 
 ## 关联
-- Spec: docs/specs/...
-- Plan: docs/plans/...
+- Spec: external spec / `.opc/REQUIREMENTS.md`
+- Plan: `.opc/phases/<phase>/NN-PLAN.md`
 - Review: 判决 PASS
 ~~~
 

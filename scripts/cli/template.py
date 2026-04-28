@@ -6,21 +6,13 @@ Creates pre-filled PLAN.md, SUMMARY.md, and plan-prefixed VERIFICATION.md files.
 
 from __future__ import annotations
 
-import re
-from pathlib import Path
-from typing import Any
-
 from cli.core import (
     error,
-    extract_field,
     find_phase_dir,
     generate_slug,
-    normalize_phase_name,
     now_iso,
     opc_dir,
-    opc_paths,
     output,
-    safe_read,
     to_posix,
 )
 
@@ -40,10 +32,8 @@ def dispatch_template(args: list[str], cwd: Path, raw: bool) -> None:
         template_type = rest[0]
         named = _extract_named(rest[1:], ["phase", "plan", "name", "type", "wave", "fields"])
         cmd_template_fill(cwd, template_type, named, raw)
-    elif sub == "select":
-        cmd_template_select(cwd, rest[0] if rest else None, raw)
     else:
-        error(f"Unknown template subcommand: {sub}\nAvailable: fill, select")
+        error(f"Unknown template subcommand: {sub}\nAvailable: fill")
 
 
 def _extract_named(args: list[str], keys: list[str]) -> dict[str, str | None]:
@@ -111,20 +101,6 @@ def cmd_template_fill(cwd: Path, template_type: str, named: dict[str, str | None
         "template_type": template_type,
         "phase": phase_num,
     }, raw, to_posix(out_path.relative_to(cwd)))
-
-
-def cmd_template_select(cwd: Path, project_type: str | None, raw: bool) -> None:
-    """List available project templates."""
-    templates_dir = Path(__file__).resolve().parent.parent.parent / "templates" / "projects"
-    templates: list[dict[str, str]] = []
-    if templates_dir.exists():
-        for d in sorted(templates_dir.iterdir()):
-            if d.is_dir():
-                readme = d / "README.md"
-                desc = safe_read(readme).split("\n")[0] if readme.exists() else d.name
-                templates.append({"name": d.name, "description": desc, "path": to_posix(d)})
-
-    output({"templates": templates, "count": len(templates)}, raw, "\n".join(t["name"] for t in templates))
 
 
 # ---------------------------------------------------------------------------

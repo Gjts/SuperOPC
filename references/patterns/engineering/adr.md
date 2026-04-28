@@ -65,7 +65,7 @@ description: Use when making significant architectural decisions — framework, 
 ## 文件组织
 
 ```
-docs/adr/
+.opc/decisions/
   0001-use-nextjs-14-app-router.md
   0002-choose-supabase-over-firebase.md
   0003-adopt-stripe-for-payments.md

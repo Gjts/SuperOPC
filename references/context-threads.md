@@ -30,7 +30,7 @@ SuperOPC v0.8.0 的上下文线程体系用于保存**不适合直接进入当�
 |------|------|------|----------|
 | Thread | `.opc/threads/*.md` | 持续中的轻量上下文线程 | 有反复回来的调查/讨论线索时 |
 | Seed | `.opc/seeds/SEED-NNN-slug.md` | 带触发条件的远期想法 | 现在不做，但未来应浮现时 |
-| Backlog | `.opc/backlog/BACKLOG-NNN-slug.md` | 停放待规划事项 | 已值得保留，但暂不进主线时 |
+| Backlog | `.opc/todos/BACKLOG-NNN-slug.md` | 停放待规划事项 | 已值得保留，但暂不进主线时 |
 
 ---
 
@@ -61,7 +61,7 @@ SuperOPC v0.8.0 的上下文线程体系用于保存**不适合直接进入当�
 | `HANDOFF.json` | 当前主工作暂停点 | 不做长期线程管理 |
 | `threads/` | 轻量持续上下文 | 不定义触发式远期策略 |
 | `seeds/` | 远期想法 + 触发条件 | 不承担进行中上下文 |
-| `backlog/` | 停放待规划项 | 不替代正式 roadmap |
+| `todos/` | 停放待规划项 | 不替代正式 roadmap |
 
 ---
 
@@ -79,7 +79,7 @@ SuperOPC v0.8.0 的上下文线程体系用于保存**不适合直接进入当�
 - 写 `/opc-backlog`
 
 ### 准备真正推进
-- 从 thread / seed / backlog 转到 `/opc-discuss` 或 `/opc-plan`
+- 从 thread / seed / backlog 转到 `/opc discuss ...` 或 `/opc-plan`
 
 ---
 

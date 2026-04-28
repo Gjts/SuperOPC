@@ -1,9 +1,8 @@
 # SuperOPC generated files
-integrations/*
-!integrations/
-!integrations/README.md
+integrations/
 # All runtime state under .opc/ is local-only (sessions/audit.log/routing/intelligence/…)
 .opc/
+.omx/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -222,6 +221,4 @@ __marimo__/
 # SuperOPC
 .worktrees/
 worktrees/
-docs/plans/*.draft.md
-docs/research/*.draft.md
 .manual_verify/

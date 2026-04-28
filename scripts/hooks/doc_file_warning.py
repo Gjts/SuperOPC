@@ -10,17 +10,11 @@ from common import get_first_path, get_tool_input, read_stdin_json, write_messag
 
 RECOGNIZED_DOCS = {
     "README.md",
-    "CONTRIBUTING.md",
-    "CHANGELOG.md",
-    "SECURITY.md",
     "LICENSE",
     "CLAUDE.md",
     "AGENTS.md",
-    "ROADMAP.md",
-    "CODE_OF_CONDUCT.md",
-    "ARCHITECTURE.md",
 }
-RECOGNIZED_DIRS = ("docs/", "skills/", "agents/", "commands/", ".opc/")
+RECOGNIZED_DIRS = ("references/", "rules/", "skills/", "agents/", "commands/", ".opc/")
 
 
 def main() -> int:
@@ -35,7 +29,7 @@ def main() -> int:
     if not is_recognized:
         write_message(
             f'SuperOPC: Creating "{basename}" outside standard paths. '
-            "Consider placing docs in docs/, skills in skills/, or using a recognized root file."
+            "Consider placing docs in references/, rules/, skills/, or using a recognized root file."
         )
 
     return 0

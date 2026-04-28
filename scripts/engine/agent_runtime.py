@@ -1,18 +1,22 @@
 """
 Host-aware agent runtime helpers for SuperOPC.
 
-The Python runtime can invoke Claude Code through its CLI, but Codex native
-subagents are owned by the current Codex host session. In Codex, SuperOPC must
-emit an explicit handoff instead of launching Claude.
+The Python runtime can invoke Claude Code through its CLI. Codex native
+subagents are owned by the current Codex host session, so the default Codex
+runtime emits an explicit handoff. For fully non-interactive local execution,
+the opt-in codex-exec runtime launches `codex exec` and asks it to run the
+project agent workflow.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 from typing import Any, Mapping
 
 AGENT_RUNTIME_CODEX = "codex"
+AGENT_RUNTIME_CODEX_EXEC = "codex-exec"
 AGENT_RUNTIME_CLAUDE_CODE = "claude-code"
 
 _RUNTIME_ALIASES = {
@@ -23,7 +27,13 @@ _RUNTIME_ALIASES = {
     "codex": AGENT_RUNTIME_CODEX,
     "codex-cli": AGENT_RUNTIME_CODEX,
     "openai-codex": AGENT_RUNTIME_CODEX,
+    "codex-exec": AGENT_RUNTIME_CODEX_EXEC,
+    "codexexec": AGENT_RUNTIME_CODEX_EXEC,
+    "codex-cli-exec": AGENT_RUNTIME_CODEX_EXEC,
 }
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+AGENTS_SOURCE_DIR = REPO_ROOT / "agents"
 
 _CODEX_ENV_MARKERS = (
     "CODEX_THREAD_ID",
@@ -134,3 +144,91 @@ def build_codex_handoff(
         "handoff": handoff,
         "stdout": f"Codex-native handoff prepared for {agent} via {role}",
     }
+
+
+def codex_command() -> str:
+    configured = os.environ.get("SUPEROPC_CODEX_BIN")
+    if configured:
+        return configured
+    resolved = shutil.which("codex")
+    if resolved:
+        native = _windows_native_codex_binary(Path(resolved))
+        return str(native or resolved)
+    return "codex"
+
+
+def _windows_native_codex_binary(wrapper_path: Path) -> Path | None:
+    if os.name != "nt":
+        return None
+    if wrapper_path.suffix.lower() not in {".cmd", ".bat", ".ps1"}:
+        return None
+
+    candidate = (
+        wrapper_path.parent
+        / "node_modules"
+        / "@openai"
+        / "codex"
+        / "node_modules"
+        / "@openai"
+        / "codex-win32-x64"
+        / "vendor"
+        / "x86_64-pc-windows-msvc"
+        / "codex"
+        / "codex.exe"
+    )
+    return candidate if candidate.exists() else None
+
+
+def codex_exec_env(base_env: Mapping[str, str] | None = None) -> dict[str, str]:
+    env = dict(os.environ if base_env is None else base_env)
+    env["SUPEROPC_AGENT_RUNTIME"] = AGENT_RUNTIME_CODEX
+    env["SUPEROPC_AGENT_PARENT_RUNTIME"] = AGENT_RUNTIME_CODEX_EXEC
+    return env
+
+
+def find_agent_source(agent: str) -> Path | None:
+    for base_dir in (
+        AGENTS_SOURCE_DIR,
+        AGENTS_SOURCE_DIR / "domain",
+        AGENTS_SOURCE_DIR / "matrix",
+    ):
+        candidate = base_dir / f"{agent}.md"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def agent_source_ref(agent: str) -> str:
+    source_path = find_agent_source(agent)
+    if source_path is None:
+        raise ValueError(f"Agent source not found for {agent}")
+    try:
+        return source_path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return source_path.as_posix()
+
+
+def build_codex_exec_prompt(
+    *,
+    agent: str,
+    prompt: str,
+    source: str,
+) -> str:
+    agent_ref = agent_source_ref(agent)
+    sections = [
+        "==== SUPEROPC CODEX EXEC AGENT WORKFLOW ====",
+        "You are executing a SuperOPC project agent workflow in a non-interactive Codex subprocess.",
+        f"SuperOPC agent: `{agent}`",
+        f"Workflow source: `{agent_ref}`",
+        f"Dispatch source: `{source}`",
+        "",
+        "Required procedure:",
+        "1. Read the workflow source file first.",
+        "2. Follow that agent workflow as the authoritative contract.",
+        "3. Keep work inside the current project unless the workflow explicitly requires otherwise.",
+        "4. Do not launch Claude Code from this Codex execution.",
+        "5. Produce a concise final summary with files changed and verification run.",
+    ]
+    if prompt.strip():
+        sections.extend(["", "Dispatch input:", prompt.strip()])
+    return "\n".join(sections)

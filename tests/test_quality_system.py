@@ -113,12 +113,11 @@ def create_quality_repo(
     repo_root = tmp_path / "quality-repo"
 
     required_dirs = [
+        ".codex-plugin",
         ".claude-plugin",
         "agents",
         "commands/opc",
-        "docs",
         "hooks",
-        "integrations",
         "references",
         "rules/common",
         "scripts/hooks",
@@ -143,31 +142,8 @@ def create_quality_repo(
         "---\nname: example-skill\ndescription: Example skill\n---\n\n# Skill\n",
         encoding="utf-8",
     )
-    (repo_root / "integrations" / "README.md").write_text(
-        "# Integrations Output\n\n"
-        "`integrations/` is a generated-output directory.\n\n"
-        "Source of truth lives in `agents/`, `commands/`, `skills/`, and `scripts/convert.py`.\n\n"
-        "Do not manually edit runtime files under `integrations/<tool>/`.\n\n"
-        "Regenerate them with `python scripts/convert.py --tool all`.\n",
-        encoding="utf-8",
-    )
-    (repo_root / "docs" / "DIRECTORY-MAP.md").write_text(
-        "# Directory Map\n\n"
-        "| Path | Notes |\n"
-        "| --- | --- |\n"
-        "| `marketing/` | launch assets |\n"
-        "| `website/` | landing page |\n"
-        "| `integrations/` | generated runtime output |\n"
-        "| `.manual_verify/` | manual verification temp files |\n"
-        "| `.pytest_tmp/` | legacy pytest temp files |\n"
-        "| `.test_tmp/` | controlled test workspace |\n"
-        "| `pytest-cache-files-*` | transient pytest cache directories |\n",
-        encoding="utf-8",
-    )
     (repo_root / ".gitignore").write_text(
-        "integrations/*\n"
-        "!integrations/\n"
-        "!integrations/README.md\n"
+        "integrations/\n"
         ".manual_verify/\n"
         ".pytest_tmp/\n"
         ".test_tmp/\n"
@@ -177,7 +153,7 @@ def create_quality_repo(
     (repo_root / "scripts" / "convert.py").write_text("print('convert')\n", encoding="utf-8")
     (repo_root / "scripts" / "hooks" / "mock.py").write_text("print('ok')\n", encoding="utf-8")
     (repo_root / "README.md").write_text(
-        "# Repo\n\n[Broken](docs/missing.md)\n" if broken_link else "# Repo\n",
+        "# Repo\n\n[Broken](references/missing.md)\n" if broken_link else "# Repo\n",
         encoding="utf-8",
     )
 
@@ -188,6 +164,24 @@ def create_quality_repo(
                 "version": version,
                 "agents": ["./agents/example.md"],
                 "hooks": ["./hooks/hooks.json"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    (repo_root / ".codex-plugin" / "plugin.json").write_text(
+        json.dumps(
+            {
+                "name": "quality-repo",
+                "version": version,
+                "description": "Quality repo test plugin",
+                "skills": "./skills/",
+                "interface": {
+                    "displayName": "Quality Repo",
+                    "shortDescription": "Quality repo",
+                    "category": "Coding",
+                },
             },
             ensure_ascii=False,
             indent=2,
@@ -540,18 +534,6 @@ def test_repo_quality_report_repair_removes_transient_workspace_artifacts(tmp_pa
     assert "removed pytest-cache-files-temp" in report["repairs"]
 
 
-def test_repo_quality_report_fails_on_missing_generated_artifact_policy(tmp_path: Path) -> None:
-    repo_root = create_quality_repo(tmp_path)
-    (repo_root / "integrations" / "README.md").unlink()
-
-    report = collect_repo_quality_report(repo_root)
-    checks = {check["id"]: check for check in report["checks"]}
-
-    assert report["ok"] is False
-    assert checks["repo.generated-artifacts"]["status"] == "fail"
-    assert "missing generated artifact policy integrations/README.md" in checks["repo.generated-artifacts"]["details"][0]
-
-
 def test_repo_quality_report_fails_on_missing_gitignore_workspace_policy(tmp_path: Path) -> None:
     repo_root = create_quality_repo(tmp_path)
     (repo_root / ".gitignore").write_text("integrations/*\n", encoding="utf-8")
@@ -562,18 +544,6 @@ def test_repo_quality_report_fails_on_missing_gitignore_workspace_policy(tmp_pat
     assert report["ok"] is False
     assert checks["repo.gitignore-policy"]["status"] == "fail"
     assert any(".manual_verify/" in detail for detail in checks["repo.gitignore-policy"]["details"])
-
-
-def test_repo_quality_report_fails_on_incomplete_directory_map(tmp_path: Path) -> None:
-    repo_root = create_quality_repo(tmp_path)
-    (repo_root / "docs" / "DIRECTORY-MAP.md").write_text("# Directory Map\n\n| Path | Notes |\n| --- | --- |\n| `integrations/` | generated |\n", encoding="utf-8")
-
-    report = collect_repo_quality_report(repo_root)
-    checks = {check["id"]: check for check in report["checks"]}
-
-    assert report["ok"] is False
-    assert checks["repo.directory-map"]["status"] == "fail"
-    assert any("`website/`" in detail for detail in checks["repo.directory-map"]["details"])
 
 
 def test_repo_quality_report_fails_on_invalid_hook_registry_reference(tmp_path: Path) -> None:
@@ -633,6 +603,34 @@ def test_repo_quality_report_fails_on_invalid_plugin_manifest_reference(tmp_path
     assert report["ok"] is False
     assert checks["repo.plugin-manifest"]["status"] == "fail"
     assert any("missing referenced path ./agents/missing.md" in detail for detail in checks["repo.plugin-manifest"]["details"])
+
+
+def test_repo_quality_report_fails_on_invalid_codex_plugin_manifest_reference(tmp_path: Path) -> None:
+    repo_root = create_quality_repo(tmp_path)
+    plugin_file = repo_root / ".codex-plugin" / "plugin.json"
+    plugin_file.write_text(
+        json.dumps(
+            {
+                "name": "quality-repo",
+                "version": "0.9.0",
+                "skills": "./missing-skills/",
+                "interface": {
+                    "displayName": "Quality Repo",
+                    "category": "Coding",
+                },
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    report = collect_repo_quality_report(repo_root)
+    checks = {check["id"]: check for check in report["checks"]}
+
+    assert report["ok"] is False
+    assert checks["repo.plugin-manifest"]["status"] == "fail"
+    assert any("missing referenced path ./missing-skills/" in detail for detail in checks["repo.plugin-manifest"]["details"])
 
 
 def test_repo_quality_report_fails_on_missing_frontmatter_in_domain_agent(tmp_path: Path) -> None:

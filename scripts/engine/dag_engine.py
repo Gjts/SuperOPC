@@ -32,7 +32,15 @@ if sys.stdout and sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8"
     except AttributeError:
         pass
 
-from engine.agent_runtime import AGENT_RUNTIME_CODEX, build_codex_handoff, detect_agent_runtime
+from engine.agent_runtime import (
+    AGENT_RUNTIME_CODEX,
+    AGENT_RUNTIME_CODEX_EXEC,
+    build_codex_handoff,
+    build_codex_exec_prompt,
+    codex_command,
+    codex_exec_env,
+    detect_agent_runtime,
+)
 from engine.event_bus import EventBus, get_event_bus
 from opc_common import find_opc_dir
 
@@ -355,6 +363,7 @@ class DAGEngine:
             return True
 
         self._log(result, f"  [{task.agent}] -> Task {task.id}: {task.title}")
+        runtime = "unknown"
         try:
             runtime = detect_agent_runtime()
             if runtime == AGENT_RUNTIME_CODEX:
@@ -368,6 +377,31 @@ class DAGEngine:
                 task.status = "handoff"
                 self._log(result, f"  [HANDOFF] Codex native agent required: {handoff['codex_agent']}")
                 return False
+            if runtime == AGENT_RUNTIME_CODEX_EXEC:
+                codex_prompt = build_codex_exec_prompt(
+                    agent=task.agent,
+                    prompt=prompt,
+                    source="dag-engine",
+                )
+                proc = subprocess.run(
+                    [
+                        codex_command(),
+                        "exec",
+                        "-C",
+                        str(self._project_root),
+                        "--skip-git-repo-check",
+                        "--full-auto",
+                        "-",
+                    ],
+                    capture_output=True,
+                    input=codex_prompt,
+                    text=True,
+                    timeout=300,
+                    cwd=str(self._project_root),
+                    env=codex_exec_env(),
+                )
+                task.result = proc.stdout[:2000] if proc.stdout else ""
+                return proc.returncode == 0
 
             proc = subprocess.run(
                 ["claude", "--print", "--agent", task.agent, prompt],
@@ -377,7 +411,8 @@ class DAGEngine:
             task.result = proc.stdout[:2000] if proc.stdout else ""
             return proc.returncode == 0
         except FileNotFoundError:
-            self._log(result, f"  [!] 'claude' CLI not found. Use --dry-run mode.")
+            tool = "codex" if runtime == AGENT_RUNTIME_CODEX_EXEC else "claude"
+            self._log(result, f"  [!] '{tool}' CLI not found. Use --dry-run mode.")
             return False
         except subprocess.TimeoutExpired:
             self._log(result, f"  [!] Task {task.id} timed out after 300s.")

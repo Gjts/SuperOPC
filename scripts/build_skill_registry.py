@@ -6,7 +6,7 @@ Usage:
     python scripts/build_skill_registry.py --check      # validate only; non-zero on drift
     python scripts/build_skill_registry.py --registry PATH  # custom registry path (check)
 
-Design: docs/adr/0001-skill-registry-schema.md
+Design: skills/registry.schema.json and AGENTS.md
 Tests:  tests/engine/test_build_skill_registry.py
 """
 from __future__ import annotations

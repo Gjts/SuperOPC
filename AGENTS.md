@@ -130,11 +130,11 @@ Command (<= 15 行入口) ──> Dispatcher Skill (<= 60 行派发器) ──> 
 
 ~~~
 商业请求 → business-advisory skill → opc-business-advisor
-         → Phase 0 子活动识别（20 个）
+         → Phase 0 子活动识别（20 个商业场景：19 个 playbook + Anti-Build-Trap 硬门）
          → Anti-Build-Trap HARD-GATE（validate-idea + find-community 检查）
          → Phase 2 本地执行 或 委派 domain agent
              （seo / content / growth / pricing）
-         → 按 references/business/<sub-activity>.md 方法论输出决策建议
+         → 按 references/business/<sub-activity>.md 方法论或内置硬门输出决策建议
 ~~~
 
 ### 快速任务路径

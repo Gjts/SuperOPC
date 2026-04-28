@@ -128,7 +128,7 @@ PHASE_REFERENCE_PRIORITY: dict[ProjectPhase, list[str]] = {
         "patterns/engineering/docker", "business/seo", "business/content-engine",
     ],
     ProjectPhase.PAUSED: [
-        "gates", "context-budget", "session-management", "handoff-format",
+        "gates", "context-budget", "context-threads", "handoff-format",
     ],
 }
 

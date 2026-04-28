@@ -2,7 +2,7 @@
   "$schema": "SuperOPC Skill Registry",
   "version": "2.0.0-phase-a",
   "description": "Generated from SKILL.md frontmatter. DO NOT EDIT MANUALLY.",
-  "generated_at": "2026-04-23T09:59:53Z",
+  "generated_at": "2026-04-28T10:35:45Z",
   "skills": [
     {
       "id": "agent-dispatch",
@@ -551,7 +551,7 @@
       "path": "skills/using-superopc/SKILL.md",
       "type": "meta",
       "description": "Use when starting any conversation — establishes how to find and use SuperOPC skills, requiring skill invocation before ANY response. This is the meta-skill that teaches AI how to operate as a one-person company OS.",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "triggers": {
         "keywords": [],
         "phrases": []

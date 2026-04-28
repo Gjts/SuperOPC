@@ -7,7 +7,7 @@ tags: [meta, skill-first, bootstrap, system, fallback]
 triggers:
   keywords: []
   phrases: []
-version: 1.4.1
+version: 1.4.2
 ---
 
 <SUBAGENT-STOP>
@@ -60,7 +60,7 @@ v1.4.2 起，`session-management` 和 `autonomous-ops` 从 meta 升级为 dispat
 | **debugging** | opc-debugger | Bug / 异常 / 测试失败 → 四阶段根因分析 |
 | **security-review** | opc-security-auditor | OWASP Top 10 + 密钥 / 注入 / 配置审计 |
 | **business-advisory** | opc-business-advisor | 一人公司商业活动入口：定价 / 验证 / MVP / 获客 / 营销 / SEO / 法务 / 财务等 |
-| **workflow-modes** | opc-orchestrator | 7 模式路由决策（watch / assist / cruise / fast / quick / discuss / explore） |
+| **workflow-modes** | opc-orchestrator | 7 模式路由决策（autonomous / discuss / explore / fast / quick / do / next） |
 | **session-management** | opc-session-manager | Pause / Resume / Progress / Session-report 四个会话连续性子场景 |
 | **autonomous-ops** | opc-cruise-operator | Cruise / Heartbeat / Autonomous-advance + GREEN/YELLOW/RED 三区权限 + Anti-Build-Trap |
 
@@ -82,13 +82,13 @@ v1.4.2 起，`session-management` 和 `autonomous-ops` 从 meta 升级为 dispat
 | **using-superopc/SKILL.md**（本文件） | 总则：如何发现与调用 skill |
 | **developer-profile** | 8 维度开发者画像跨会话持久化 |
 
-### � 学习（Learning — 1 个）
+### 学习（Learning — 1 个）
 
 | 技能 | 何时使用 |
 |------|---------|
 | **continuous-learning** | 交互中持续学习（PostToolUse 观察管道 + 模式检测 + 本能演化） |
 
-### � 已下沉到 references/（不再是 skill）
+### 已下沉到 references/（不再是 skill）
 
 - `references/patterns/engineering/` — 13 个技术栈 patterns（nextjs / dotnet / postgres / docker / kotlin-compose / api-design / ADR / codebase-onboarding / database-migrations / deployment / e2e-testing / frontend / backend）
 - `references/business/` — 19 个一人公司 playbook（pricing / mvp / validate-idea / first-customers / find-community / processize / seo / content-engine / brand-voice / marketing-plan / grow-sustainably / user-interview / investor-materials / legal-basics / finance-ops / company-values / product-lens / daily-standup / minimalist-review）

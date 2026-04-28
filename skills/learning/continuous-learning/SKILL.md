@@ -92,7 +92,7 @@ SuperOPC 通过 PostToolUse 钩子自动捕获工具使用模式，无需手动�
 |------|---------|
 | 原始观察 | `~/.opc/learnings/observations.jsonl` |
 | 本能/洞察 | `~/.opc/learnings/{category}/{id}.json` |
-| 项目特定知识 | 项目的 docs/ 目录 |
+| 项目特定知识 | 项目的 `.opc/` 或 `references/` 知识文件 |
 | 通用工作流改进 | SuperOPC skills/ 更新 |
 | 个人偏好和习惯 | `~/.opc/USER-PROFILE.json` |
 | 技术决策记录 | ADR (Architecture Decision Records) |

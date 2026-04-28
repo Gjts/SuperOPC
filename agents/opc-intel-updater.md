@@ -119,7 +119,7 @@ tools:
       "context": "需要全栈框架支持 SSR 和 API routes",
       "decision": "使用 Next.js 14 App Router",
       "consequences": ["学习曲线", "生态完善"],
-      "file": "docs/adr/001-nextjs.md"
+      "file": ".opc/decisions/001-nextjs.md"
     }
   }
 }
@@ -160,7 +160,7 @@ Grep 路由定义、端点声明、CLI 命令注册。
 ### Step 6: 架构决策
 
 综合 Step 2-5 的发现，提取架构模式和决策。
-查找 `docs/adr/`、代码中的架构注释、README 中的架构说明。
+查找 `.opc/decisions/`、代码中的架构注释、README 中的架构说明。
 写入 `arch-decisions.json`。
 
 ### Step 7: 验证
